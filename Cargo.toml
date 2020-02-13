@@ -1,0 +1,20 @@
+[package]
+name = "vulkayes-core"
+version = "0.1.0"
+authors = ["edward"]
+edition = "2018"
+
+[features]
+default = ["rust_host_allocator"]
+rust_host_allocator = []
+
+[dependencies]
+ash = "0.29"
+
+log = "0.4"
+
+rustc-hash = "1"
+err-derive = "0.2"
+
+[dev-dependencies]
+edwardium_logger = { path = "/Users/edward/Documents/Libraries/edwardium_logger" }
