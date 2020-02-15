@@ -4,7 +4,7 @@ use std::mem::MaybeUninit;
 use std::ptr::null_mut;
 use std::sync::{Mutex, MutexGuard, Once};
 
-use ash::vk::{SystemAllocationScope, InternalAllocationType};
+use ash::vk::{InternalAllocationType, SystemAllocationScope};
 
 static mut ALLOCATOR: MaybeUninit<Mutex<RustHostMemoryAllocator>> = MaybeUninit::uninit();
 static ALLOCATOR_INIT: Once = Once::new();

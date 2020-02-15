@@ -2,12 +2,11 @@ use std::convert::TryInto;
 use std::ffi::{CString, NulError};
 use std::os::raw::c_char;
 
-use ash::Entry;
 use ash::extensions::ext::DebugReport;
 use ash::version::{EntryV1_0, InstanceV1_0};
 use ash::vk::AllocationCallbacks;
-use err_derive::Error;
 
+use crate::entry::Entry;
 use crate::memory::host::HostMemoryAllocator;
 
 pub mod debug;
@@ -42,7 +41,7 @@ impl<'a> TryInto<ash::vk::ApplicationInfo> for ApplicationInfo<'a> {
 }
 
 pub struct Instance {
-	entry: ash::Entry,
+	entry: Entry,
 	instance: ash::Instance,
 	allocation_callbacks: Option<AllocationCallbacks>,
 
@@ -57,7 +56,7 @@ impl Instance {
 		extensions: impl IntoIterator<Item = &'a str>,
 		host_memory_allocator: HostMemoryAllocator,
 		debug_callback: debug::DebugCallback,
-	) -> Result<Self, error::InstanceCreationError> {
+	) -> Result<Self, error::InstanceError> {
 		let app_info = application_info.try_into()?;
 
 		let cstr_layers = layers.into_iter().map(CString::new).collect::<Result<Vec<_>, _>>()?;
@@ -77,7 +76,7 @@ impl Instance {
 		let instance = unsafe {
 			log::debug!("Creating instance with {:?} layers: {:?} extensions: {:?} allocation_callbacks: {:?}", application_info, cstr_layers, cstr_extensions, allocation_callbacks);
 
-			entry.create_instance(
+			entry.as_ref().create_instance(
 				&create_info,
 				allocation_callbacks.as_ref(),
 			)?
@@ -86,7 +85,7 @@ impl Instance {
 		let debug = match debug_callback.into() {
 			None => None,
 			Some(ref create_info) => {
-				let loader = DebugReport::new(&entry, &instance);
+				let loader = DebugReport::new(entry.as_ref(), &instance);
 				let callback = unsafe {
 					loader.create_debug_report_callback(create_info, None)?
 				};

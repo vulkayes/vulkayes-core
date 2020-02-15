@@ -6,6 +6,7 @@ edition = "2018"
 
 [features]
 default = ["rust_host_allocator"]
+
 rust_host_allocator = []
 
 [dependencies]

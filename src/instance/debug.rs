@@ -1,7 +1,8 @@
-use ash::vk::{DebugReportCallbackCreateInfoEXT, DebugReportFlagsEXT, DebugReportObjectTypeEXT, Bool32};
-use std::os::raw::c_char;
-use std::ffi::{c_void, CStr};
 use std::borrow::Cow;
+use std::ffi::{c_void, CStr};
+use std::os::raw::c_char;
+
+use ash::vk::{Bool32, DebugReportCallbackCreateInfoEXT, DebugReportFlagsEXT, DebugReportObjectTypeEXT};
 
 unsafe_enum_variants! {
 	enum DebugCallbackInner {
@@ -20,11 +21,11 @@ impl Into<Option<DebugReportCallbackCreateInfoEXT>> for DebugCallback {
 			DebugCallbackInner::Default => {
 				Some(
 					DebugReportCallbackCreateInfoEXT::builder()
-					.flags(DebugReportFlagsEXT::all())
-					.pfn_callback(
-						Some(default_debug_callback)
-					)
-					.build()
+						.flags(DebugReportFlagsEXT::all())
+						.pfn_callback(
+							Some(default_debug_callback)
+						)
+						.build()
 				)
 			}
 			DebugCallbackInner::Custom(info) => Some(info)
@@ -52,7 +53,7 @@ unsafe extern "system" fn default_debug_callback(
 	_p_user_data: *mut c_void,
 ) -> Bool32 {
 	let perf_optional = if flags == DebugReportFlagsEXT::PERFORMANCE_WARNING {
-		"{PERF}"
+		"{PERF} "
 	} else {
 		""
 	};
