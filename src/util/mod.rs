@@ -1,8 +1,10 @@
-use std::convert::TryFrom;
-use std::fmt::{Debug, Display, Error, Formatter};
-use std::ops::Deref;
-use std::os::raw::c_char;
-use std::str::Utf8Error;
+use std::{
+	convert::TryFrom,
+	fmt::{Debug, Display, Error, Formatter},
+	ops::Deref,
+	os::raw::c_char,
+	str::Utf8Error
+};
 
 /// Generates a private enum and a public newtype struct that only has that enum as a value.
 /// Also generated constructors on the struct that match the enum variants.
@@ -83,8 +85,6 @@ macro_rules! vk_result_error {
 }
 
 /// A utf8 encoded null-terminated string that is backed by a fixed-size array.
-///
-///
 #[derive(Clone, Copy)]
 pub struct VkSmallString {
 	array: [c_char; Self::MAX_STRING_SIZE],
@@ -109,20 +109,10 @@ impl TryFrom<[c_char; Self::MAX_STRING_SIZE]> for VkSmallString {
 		let len = array.iter().enumerate().find(|(_, &byte)| byte == 0).unwrap().0;
 
 		unsafe {
-			std::str::from_utf8(
-				std::slice::from_raw_parts(
-					array.as_ptr() as *const u8,
-					len
-				)
-			)?
+			std::str::from_utf8(std::slice::from_raw_parts(array.as_ptr() as *const u8, len))?
 		};
 
-		Ok(
-			VkSmallString {
-				array,
-				len
-			}
-		)
+		Ok(VkSmallString { array, len })
 	}
 }
 impl Deref for VkSmallString {
@@ -130,22 +120,16 @@ impl Deref for VkSmallString {
 
 	fn deref(&self) -> &Self::Target {
 		unsafe {
-			std::str::from_utf8_unchecked(
-				std::slice::from_raw_parts(
-					self.array.as_ptr() as *const u8,
-					self.len
-				)
-			)
+			std::str::from_utf8_unchecked(std::slice::from_raw_parts(
+				self.array.as_ptr() as *const u8,
+				self.len
+			))
 		}
 	}
 }
 impl Debug for VkSmallString {
-	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-		write!(f, "{}", self.deref())
-	}
+	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> { write!(f, "{}", self.deref()) }
 }
 impl Display for VkSmallString {
-	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-		write!(f, "{}", self.deref())
-	}
+	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> { write!(f, "{}", self.deref()) }
 }

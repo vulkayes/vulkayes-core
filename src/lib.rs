@@ -14,10 +14,10 @@ pub mod util;
 
 pub mod memory;
 
+pub mod device;
 pub mod entry;
 pub mod instance;
 pub mod physical_device;
-pub mod device;
 
 #[cfg(test)]
 mod tests {
@@ -27,9 +27,7 @@ mod tests {
 
 	pub fn setup_testing_logger() {
 		let logger = edwardium_logger::Logger::new(
-			[
-				edwardium_logger::targets::stderr::StderrTarget::new(log::Level::Trace)
-			],
+			[edwardium_logger::targets::stderr::StderrTarget::new(log::Level::Trace)],
 			std::time::Instant::now()
 		);
 		logger.init_boxed();
@@ -62,12 +60,13 @@ mod tests {
 				application_version: 0,
 				engine_name: "test",
 				engine_version: 0,
-				api_version: ash::vk_make_version!(1, 2, 0),
+				api_version: ash::vk_make_version!(1, 2, 0)
 			},
 			None,
 			None,
 			HostMemoryAllocator::Rust(),
-			instance::debug::DebugCallback::None(),
-		).unwrap();
+			instance::debug::DebugCallback::None()
+		)
+		.unwrap();
 	}
 }

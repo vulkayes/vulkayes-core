@@ -22,21 +22,13 @@ impl HostMemoryAllocator {
 		unsafe {
 			HostMemoryAllocator::Custom(
 				AllocationCallbacks::builder()
-					.pfn_allocation(
-						Some(rust::RustHostMemoryAllocator::rust_alloc)
-					)
-					.pfn_reallocation(
-						Some(rust::RustHostMemoryAllocator::rust_realloc)
-					)
-					.pfn_free(
-						Some(rust::RustHostMemoryAllocator::rust_free)
-					)
-					.pfn_internal_allocation(
-						Some(rust::RustHostMemoryAllocator::rust_internal_allocation)
-					)
-					.pfn_internal_free(
-						Some(rust::RustHostMemoryAllocator::rust_internal_free)
-					)
+					.pfn_allocation(Some(rust::RustHostMemoryAllocator::rust_alloc))
+					.pfn_reallocation(Some(rust::RustHostMemoryAllocator::rust_realloc))
+					.pfn_free(Some(rust::RustHostMemoryAllocator::rust_free))
+					.pfn_internal_allocation(Some(
+						rust::RustHostMemoryAllocator::rust_internal_allocation
+					))
+					.pfn_internal_free(Some(rust::RustHostMemoryAllocator::rust_internal_free))
 					.build()
 			)
 		}
@@ -51,7 +43,5 @@ impl Into<Option<AllocationCallbacks>> for HostMemoryAllocator {
 	}
 }
 impl Default for HostMemoryAllocator {
-	fn default() -> Self {
-		HostMemoryAllocator::Unspecified()
-	}
+	fn default() -> Self { HostMemoryAllocator::Unspecified() }
 }
