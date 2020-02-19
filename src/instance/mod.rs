@@ -1,6 +1,8 @@
 use std::{
 	convert::TryInto,
 	ffi::{CString, NulError},
+	fmt::{Debug, Error, Formatter},
+	ops::Deref,
 	os::raw::c_char
 };
 
@@ -10,18 +12,24 @@ use ash::{
 	vk::AllocationCallbacks
 };
 
-use crate::{entry::Entry, memory::host::HostMemoryAllocator};
+use crate::{
+	entry::Entry,
+	memory::host::HostMemoryAllocator,
+	physical_device::PhysicalDevice,
+	util::fmt::VkVersion,
+	Vrc
+};
 
 pub mod debug;
 pub mod error;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct ApplicationInfo<'a> {
 	pub application_name: &'a str,
 	pub engine_name: &'a str,
-	pub application_version: u32,
-	pub engine_version: u32,
-	pub api_version: u32
+	pub application_version: VkVersion,
+	pub engine_version: VkVersion,
+	pub api_version: VkVersion
 }
 impl<'a> TryInto<ash::vk::ApplicationInfo> for ApplicationInfo<'a> {
 	type Error = NulError;
@@ -30,13 +38,27 @@ impl<'a> TryInto<ash::vk::ApplicationInfo> for ApplicationInfo<'a> {
 		Ok(ash::vk::ApplicationInfo::builder()
 			.application_name(CString::new(self.application_name)?.as_ref())
 			.engine_name(CString::new(self.engine_name)?.as_ref())
-			.application_version(self.application_version)
-			.engine_version(self.engine_version)
-			.api_version(self.api_version)
+			.application_version(self.application_version.0)
+			.engine_version(self.engine_version.0)
+			.api_version(self.api_version.0)
 			.build())
 	}
 }
 
+struct InstanceDebug {
+	loader: DebugReport,
+	callback: ash::vk::DebugReportCallbackEXT,
+	allocation_callbacks: Option<AllocationCallbacks>
+}
+impl Debug for InstanceDebug {
+	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+		f.debug_struct("InstanceDebug")
+			.field("loader", &"<ash::_::DebugReport>")
+			.field("callback", &self.callback)
+			.field("allocation_callbacks", &self.allocation_callbacks)
+			.finish()
+	}
+}
 pub struct Instance {
 	entry: Entry,
 	instance: ash::Instance,
@@ -50,7 +72,7 @@ impl Instance {
 		entry: Entry, application_info: ApplicationInfo, layers: impl IntoIterator<Item = &'a str>,
 		extensions: impl IntoIterator<Item = &'a str>, host_memory_allocator: HostMemoryAllocator,
 		debug_callback: debug::DebugCallback
-	) -> Result<Self, error::InstanceError> {
+	) -> Result<Vrc<Self>, error::InstanceError> {
 		let app_info = application_info.try_into()?;
 
 		let cstr_layers = layers.into_iter().map(CString::new).collect::<Result<Vec<_>, _>>()?;
@@ -89,27 +111,46 @@ impl Instance {
 			}
 		};
 
-		Ok(Instance { entry, instance, allocation_callbacks, debug })
+		Ok(Vrc::new(Instance { entry, instance, allocation_callbacks, debug }))
 	}
+
+	pub fn physical_devices(
+		self: &Vrc<Self>
+	) -> Result<impl ExactSizeIterator<Item = PhysicalDevice>, error::PhysicalDeviceEnumerationError>
+	{
+		let elf = self.clone();
+		unsafe {
+			Ok(self.enumerate_physical_devices()?.into_iter().map(move |physical_device| {
+				PhysicalDevice { physical_device, instance: elf.clone() }
+			}))
+		}
+	}
+}
+impl Deref for Instance {
+	type Target = ash::Instance;
+
+	fn deref(&self) -> &Self::Target { &self.instance }
 }
 impl Drop for Instance {
 	fn drop(&mut self) {
 		unsafe {
+			if let Some(debug) = self.debug.as_mut() {
+				debug.loader.destroy_debug_report_callback(
+					debug.callback,
+					debug.allocation_callbacks.as_ref()
+				);
+			}
 			self.instance.destroy_instance(self.allocation_callbacks.as_ref());
 		}
 	}
 }
-
-struct InstanceDebug {
-	loader: DebugReport,
-	callback: ash::vk::DebugReportCallbackEXT,
-	allocation_callbacks: Option<AllocationCallbacks>
-}
-impl Drop for InstanceDebug {
-	fn drop(&mut self) {
-		unsafe {
-			self.loader
-				.destroy_debug_report_callback(self.callback, self.allocation_callbacks.as_ref());
-		}
+impl Debug for Instance {
+	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+		f.debug_struct("Instance")
+			.field("entry", &self.entry)
+			.field("instance", &crate::util::fmt::format_handle(self.instance.handle()))
+			.field("allocation_callbacks", &self.allocation_callbacks)
+			.field("debug", &self.debug)
+			.finish()
 	}
 }

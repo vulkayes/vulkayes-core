@@ -8,14 +8,21 @@ edition = "2018"
 default = ["rust_host_allocator"]
 
 rust_host_allocator = []
+non_atomic_vrc = []
 
 [dependencies]
+# core
 ash = "0.29"
 
-log = "0.4"
+# utility
+arrayvec = "0.5"
 
+# performance
 rustc-hash = "1"
-err-derive = "0.2"
+
+# debuging
+log = "0.4"
+thiserror = "1"
 
 [dev-dependencies]
 edwardium_logger = { path = "/Users/edward/Documents/Libraries/edwardium_logger" }
