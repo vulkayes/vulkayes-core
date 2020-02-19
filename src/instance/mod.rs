@@ -22,6 +22,8 @@ use crate::{
 
 pub mod debug;
 pub mod error;
+#[cfg(test)]
+pub mod test;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ApplicationInfo<'a> {
@@ -83,25 +85,44 @@ impl Instance {
 		let ptr_extensions: Vec<*const c_char> =
 			cstr_extensions.iter().map(|cstr| cstr.as_ptr()).collect();
 
+		log::debug!(
+			"Instance create info {:#?} {:#?} {:#?}",
+			application_info,
+			cstr_layers,
+			cstr_extensions
+		);
 		let create_info = ash::vk::InstanceCreateInfo::builder()
 			.application_info(&app_info)
 			.enabled_layer_names(ptr_layers.as_slice())
 			.enabled_extension_names(ptr_extensions.as_slice())
 			.build();
 
+		unsafe {
+			Instance::from_create_info(entry, create_info, host_memory_allocator, debug_callback)
+		}
+	}
+
+	/// Creates a new `Instance` from existing `InstanceCreateInfo`.
+	///
+	/// ### Safety
+	///
+	/// See https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkInstanceCreateInfo.html
+	pub unsafe fn from_create_info(
+		entry: Entry, create_info: ash::vk::InstanceCreateInfo,
+		host_memory_allocator: HostMemoryAllocator, debug_callback: debug::DebugCallback
+	) -> Result<Vrc<Self>, error::InstanceError> {
 		let allocation_callbacks: Option<AllocationCallbacks> = host_memory_allocator.into();
 
-		let instance = unsafe {
-			log::debug!("Creating instance with {:?} layers: {:?} extensions: {:?} allocation_callbacks: {:?}", application_info, cstr_layers, cstr_extensions, allocation_callbacks);
+		log::debug!("Creating instance with {:#?} {:#?}", create_info, allocation_callbacks);
+		let instance = entry.create_instance(&create_info, allocation_callbacks.as_ref())?;
 
-			entry.as_ref().create_instance(&create_info, allocation_callbacks.as_ref())?
-		};
+		// TODO: debug messenger, validation features, validation flags?
 
 		let debug = match debug_callback.into() {
 			None => None,
 			Some(ref create_info) => {
-				let loader = DebugReport::new(entry.as_ref(), &instance);
-				let callback = unsafe { loader.create_debug_report_callback(create_info, None)? };
+				let loader = DebugReport::new(entry.deref(), &instance);
+				let callback = loader.create_debug_report_callback(create_info, None)?;
 
 				Some(InstanceDebug {
 					loader,
@@ -120,9 +141,10 @@ impl Instance {
 	{
 		let elf = self.clone();
 		unsafe {
-			Ok(self.enumerate_physical_devices()?.into_iter().map(move |physical_device| {
-				PhysicalDevice { physical_device, instance: elf.clone() }
-			}))
+			Ok(self
+				.enumerate_physical_devices()?
+				.into_iter()
+				.map(move |physical_device| PhysicalDevice::new(elf.clone(), physical_device)))
 		}
 	}
 }

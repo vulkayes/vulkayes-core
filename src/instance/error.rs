@@ -15,7 +15,7 @@ vk_result_error! {
 		#[error("Instance load error.")]
 		LoadError(Vec<&'static str>),
 
-		#[error("Instance creation info strings could not be converted into CStr")]
+		#[error("Instance layer and/or extension strings could not be converted into CStr")]
 		NulError(#[from] std::ffi::NulError)
 	}
 }

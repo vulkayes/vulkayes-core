@@ -19,13 +19,26 @@ use ash::vk::{
 };
 
 pub mod enumerate;
+#[cfg(test)]
+pub mod test;
 
 #[derive(Clone)]
 pub struct PhysicalDevice {
-	pub(crate) physical_device: ash::vk::PhysicalDevice,
-	pub(crate) instance: crate::Vrc<Instance>
+	instance: crate::Vrc<Instance>,
+	physical_device: ash::vk::PhysicalDevice
 }
 impl PhysicalDevice {
+	/// Creates a new `PhysicalDevice` wrapper type.
+	///
+	/// ### Safety
+	///
+	/// The `instance` must be the parent of the `physical_device`.
+	pub unsafe fn new(
+		instance: crate::Vrc<Instance>, physical_device: ash::vk::PhysicalDevice
+	) -> Self {
+		PhysicalDevice { instance, physical_device }
+	}
+
 	pub fn extensions_properties(
 		&self
 	) -> Result<
@@ -89,8 +102,8 @@ impl Deref for PhysicalDevice {
 impl Debug for PhysicalDevice {
 	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
 		f.debug_struct("PhysicalDevice")
-			.field("physical_device", &crate::util::fmt::format_handle(self.physical_device))
 			.field("instance", &self.instance)
+			.field("physical_device", &crate::util::fmt::format_handle(self.physical_device))
 			.finish()
 	}
 }

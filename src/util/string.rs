@@ -17,6 +17,11 @@ impl VkSmallString {
 	// Right now this seems to be the correct value
 	pub const MAX_STRING_SIZE: usize = 256;
 
+	/// Creates a new `VkSmallString` from an existing `c_char` buffer.
+	///
+	/// ### Safety
+	///
+	/// They array bytes must be valid unicode.
 	pub unsafe fn from_c_string_unchecked(array: [c_char; Self::MAX_STRING_SIZE]) -> Self {
 		VkSmallString {
 			len: array.iter().enumerate().find(|(_, &byte)| byte == 0).unwrap().0,

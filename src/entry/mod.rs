@@ -7,6 +7,8 @@ use ash::version::EntryV1_0;
 use std::ops::Deref;
 
 pub mod enumerate;
+#[cfg(test)]
+pub mod test;
 
 pub struct Entry {
 	entry: ash::Entry
