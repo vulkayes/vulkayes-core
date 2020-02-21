@@ -2,14 +2,15 @@ use std::{
 	convert::TryInto,
 	fmt::{Debug, Error, Formatter}
 };
+use std::ops::Deref;
 
 use ash::version::EntryV1_0;
-use std::ops::Deref;
 
 pub mod enumerate;
 #[cfg(test)]
 pub mod test;
 
+#[derive(Clone)]
 pub struct Entry {
 	entry: ash::Entry
 }

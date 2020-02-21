@@ -25,6 +25,8 @@ pub mod device;
 pub mod entry;
 pub mod instance;
 pub mod physical_device;
+pub mod queue;
+pub mod surface;
 
 #[cfg(test)]
 mod test {

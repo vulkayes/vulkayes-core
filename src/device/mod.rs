@@ -1,3 +1,5 @@
+use std::{ffi::CString, fmt::Debug, os::raw::c_char};
+use std::fmt::Formatter;
 use std::ops::Deref;
 
 use ash::{
@@ -11,7 +13,7 @@ use crate::{
 	physical_device::PhysicalDevice,
 	Vrc
 };
-use std::{ffi::CString, fmt::Debug, os::raw::c_char};
+use crate::queue::Queue;
 
 pub mod error;
 #[cfg(test)]
@@ -25,8 +27,11 @@ pub struct QueueCreateInfo<P: AsRef<[f32]>> {
 }
 
 pub struct Device {
+	#[allow(dead_code)] // Need to keep the instance alive
 	instance: Vrc<Instance>,
 	device: ash::Device,
+
+	physical_device: PhysicalDevice,
 
 	allocation_callbacks: Option<AllocationCallbacks>
 }
@@ -36,7 +41,7 @@ impl Device {
 		layers: impl IntoIterator<Item = &'a str>, extensions: impl IntoIterator<Item = &'a str>,
 		features: ash::vk::PhysicalDeviceFeatures, physical_device: PhysicalDevice,
 		host_memory_allocator: HostMemoryAllocator
-	) -> Result<Vrc<Self>, error::DeviceError> {
+	) -> Result<(Vrc<Self>, Vec<Vrc<Queue>>), error::DeviceError> {
 		let queues = queues.as_ref();
 		let queue_create_infos: Vec<_> = queues
 			.iter()
@@ -85,7 +90,7 @@ impl Device {
 	pub unsafe fn from_create_info(
 		instance: Vrc<Instance>, create_info: DeviceCreateInfo, physical_device: PhysicalDevice,
 		host_memory_allocator: HostMemoryAllocator
-	) -> Result<Vrc<Self>, error::DeviceError> {
+	) -> Result<(Vrc<Self>, Vec<Vrc<Queue>>), error::DeviceError> {
 		let allocation_callbacks: Option<AllocationCallbacks> = host_memory_allocator.into();
 
 		log::debug!(
@@ -100,7 +105,40 @@ impl Device {
 			allocation_callbacks.as_ref()
 		)?;
 
-		Ok(Vrc::new(Device { instance, device, allocation_callbacks }))
+		let elf = Vrc::new(Device { instance, device, physical_device, allocation_callbacks });
+		let queues = elf.get_created_queues(create_info);
+
+		Ok(
+			(elf, queues)
+		)
+	}
+
+	unsafe fn get_created_queues(self: &Vrc<Self>, create_info: DeviceCreateInfo) -> Vec<Vrc<Queue>> {
+		let num = create_info.queue_create_info_count as usize;
+		let mut result = Vec::with_capacity(num);
+
+		for family in 0 .. num as isize {
+			let info = &*create_info.p_queue_create_infos.offset(family);
+
+			for index in 0 .. info.queue_count {
+				result.push(
+					Vrc::new(
+						Queue::from_device(
+							self.clone(),
+							info.flags,
+							info.queue_family_index,
+							index
+						)
+					)
+				);
+			}
+		}
+
+		result
+	}
+
+	pub fn physical_device(&self) -> &PhysicalDevice {
+		&self.physical_device
 	}
 }
 impl Deref for Device {
@@ -116,5 +154,13 @@ impl Drop for Device {
 
 			self.device.destroy_device(self.allocation_callbacks.as_ref());
 		}
+	}
+}
+impl Debug for Device {
+	fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+		f.debug_struct("Device")
+			.field("instance", &self.instance)
+			.field("device", &crate::util::fmt::format_handle(self.device.handle()))
+			.finish()
 	}
 }

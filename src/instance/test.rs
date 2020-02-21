@@ -3,9 +3,9 @@ use crate::{
 	instance,
 	instance::Instance,
 	memory::host::HostMemoryAllocator,
-	util::fmt::VkVersion,
 	Vrc
 };
+use crate::util::fmt::VkVersion;
 
 #[test]
 fn create_instance() {

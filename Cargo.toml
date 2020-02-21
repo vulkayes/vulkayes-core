@@ -5,7 +5,7 @@ authors = ["edward"]
 edition = "2018"
 
 [features]
-default = ["rust_host_allocator"]
+default = []
 
 rust_host_allocator = []
 non_atomic_vrc = []
@@ -25,4 +25,4 @@ log = "0.4"
 thiserror = "1"
 
 [dev-dependencies]
-edwardium_logger = { path = "/Users/edward/Documents/Libraries/edwardium_logger" }
+edwardium_logger = "1"

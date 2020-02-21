@@ -135,6 +135,10 @@ impl Instance {
 		Ok(Vrc::new(Instance { entry, instance, allocation_callbacks, debug }))
 	}
 
+	pub fn entry(&self) -> &Entry {
+		&self.entry
+	}
+
 	pub fn physical_devices(
 		self: &Vrc<Self>
 	) -> Result<impl ExactSizeIterator<Item = PhysicalDevice>, error::PhysicalDeviceEnumerationError>

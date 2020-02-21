@@ -1,12 +1,10 @@
-use crate::util::VkSmallString;
 use std::{
 	convert::TryFrom,
 	fmt::{Debug, Display, Error, Formatter}
 };
+use std::str::Utf8Error;
 
 use arrayvec::ArrayVec;
-
-use crate::util::fmt::VkVersion;
 use ash::vk::{
 	MemoryHeap,
 	MemoryType,
@@ -14,8 +12,10 @@ use ash::vk::{
 	PhysicalDeviceSparseProperties,
 	PhysicalDeviceType
 };
-use std::str::Utf8Error;
 use thiserror::Error;
+
+use crate::util::fmt::VkVersion;
+use crate::util::VkSmallString;
 
 vk_result_error! {
 	#[derive(Debug)]

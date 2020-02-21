@@ -5,8 +5,6 @@ use std::{
 };
 
 use ash::version::InstanceV1_0;
-
-use crate::instance::Instance;
 use ash::vk::{
 	Format,
 	FormatProperties,
@@ -17,6 +15,8 @@ use ash::vk::{
 	PhysicalDeviceFeatures,
 	QueueFamilyProperties
 };
+
+use crate::instance::Instance;
 
 pub mod enumerate;
 #[cfg(test)]
@@ -54,11 +54,11 @@ impl PhysicalDevice {
 		}
 	}
 
-	pub fn physical_device_format_properties(&self, format: Format) -> FormatProperties {
+	pub fn format_properties(&self, format: Format) -> FormatProperties {
 		unsafe { self.instance.get_physical_device_format_properties(self.physical_device, format) }
 	}
 
-	pub fn physical_device_image_format_properties(
+	pub fn image_format_properties(
 		&self, format: Format, image_type: ImageType, tiling: ImageTiling, usage: ImageUsageFlags,
 		flags: ImageCreateFlags
 	) -> Result<ash::vk::ImageFormatProperties, enumerate::ImageFormatPropertiesError> {
@@ -76,21 +76,21 @@ impl PhysicalDevice {
 		}
 	}
 
-	pub fn physical_device_memory_properties(&self) -> enumerate::PhysicalDeviceMemoryProperties {
+	pub fn memory_properties(&self) -> enumerate::PhysicalDeviceMemoryProperties {
 		unsafe { self.instance.get_physical_device_memory_properties(self.physical_device).into() }
 	}
 
-	pub fn physical_device_properties(&self) -> enumerate::PhysicalDeviceProperties {
+	pub fn properties(&self) -> enumerate::PhysicalDeviceProperties {
 		unsafe {
 			self.instance.get_physical_device_properties(self.physical_device).try_into().unwrap()
 		}
 	}
 
-	pub fn physical_device_queue_family_properties(&self) -> Vec<QueueFamilyProperties> {
+	pub fn queue_family_properties(&self) -> Vec<QueueFamilyProperties> {
 		unsafe { self.instance.get_physical_device_queue_family_properties(self.physical_device) }
 	}
 
-	pub fn physical_device_features(&self) -> PhysicalDeviceFeatures {
+	pub fn features(&self) -> PhysicalDeviceFeatures {
 		unsafe { self.instance.get_physical_device_features(self.physical_device) }
 	}
 }

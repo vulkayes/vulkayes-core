@@ -1,9 +1,11 @@
+use ash::vk::PhysicalDeviceFeatures;
+
 use crate::{
 	device::{Device, QueueCreateInfo},
 	instance::Instance,
 	Vrc
 };
-use ash::vk::PhysicalDeviceFeatures;
+use crate::queue::Queue;
 
 #[test]
 fn create_device() {
@@ -24,7 +26,7 @@ fn create_device() {
 			["VK_LAYER_LUNARG_standard_validation", "VK_LAYER_KHRONOS_validation"]
 				.iter()
 				.map(|&s| s),
-			["VK_KHR_swapchain"].iter().map(|&s| s),
+			None,
 			Default::default(),
 			physical_device,
 			Default::default()
@@ -35,7 +37,7 @@ fn create_device() {
 
 pub fn create_test_device(
 	instance: Vrc<Instance>, index: usize, features: PhysicalDeviceFeatures
-) -> Vrc<Device> {
+) -> (Vrc<Device>, Vec<Vrc<Queue>>) {
 	let physical_device = instance
 		.physical_devices()
 		.unwrap()
