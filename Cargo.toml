@@ -12,7 +12,8 @@ non_atomic_vrc = []
 
 [dependencies]
 # core
-ash = "0.29"
+# We use git repository because the published crate seems to be quite outdated
+ash = { git = "https://github.com/MaikKlein/ash", rev = "98def0a4e3c5f962f0cd50086700cacfcee1c62b" }
 
 # utility
 arrayvec = "0.5"

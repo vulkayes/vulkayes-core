@@ -1,5 +1,3 @@
-use thiserror::Error;
-
 vk_result_error! {
 	#[derive(Debug)]
 	pub enum DeviceError {

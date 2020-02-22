@@ -1,6 +1,7 @@
+//! An instance represents an instance of Vulkan application.
+
 use std::{
-	convert::TryInto,
-	ffi::{CString, NulError},
+	ffi::CString,
 	fmt::{Debug, Error, Formatter},
 	ops::Deref,
 	os::raw::c_char
@@ -33,19 +34,6 @@ pub struct ApplicationInfo<'a> {
 	pub engine_version: VkVersion,
 	pub api_version: VkVersion
 }
-impl<'a> TryInto<ash::vk::ApplicationInfo> for ApplicationInfo<'a> {
-	type Error = NulError;
-
-	fn try_into(self) -> Result<ash::vk::ApplicationInfo, Self::Error> {
-		Ok(ash::vk::ApplicationInfo::builder()
-			.application_name(CString::new(self.application_name)?.as_ref())
-			.engine_name(CString::new(self.engine_name)?.as_ref())
-			.application_version(self.application_version.0)
-			.engine_version(self.engine_version.0)
-			.api_version(self.api_version.0)
-			.build())
-	}
-}
 
 struct InstanceDebug {
 	loader: DebugReport,
@@ -75,7 +63,15 @@ impl Instance {
 		extensions: impl IntoIterator<Item = &'a str>, host_memory_allocator: HostMemoryAllocator,
 		debug_callback: debug::DebugCallback
 	) -> Result<Vrc<Self>, error::InstanceError> {
-		let app_info = application_info.try_into()?;
+		let application_name_c = CString::new(application_info.application_name)?;
+		let engine_name_c = CString::new(application_info.engine_name)?;
+
+		let app_info = ash::vk::ApplicationInfo::builder()
+			.application_name(application_name_c.as_ref())
+			.engine_name(engine_name_c.as_ref())
+			.application_version(application_info.application_version.0)
+			.engine_version(application_info.engine_version.0)
+			.api_version(application_info.api_version.0);
 
 		let cstr_layers = layers.into_iter().map(CString::new).collect::<Result<Vec<_>, _>>()?;
 		let ptr_layers: Vec<*const c_char> = cstr_layers.iter().map(|cstr| cstr.as_ptr()).collect();
@@ -94,8 +90,7 @@ impl Instance {
 		let create_info = ash::vk::InstanceCreateInfo::builder()
 			.application_info(&app_info)
 			.enabled_layer_names(ptr_layers.as_slice())
-			.enabled_extension_names(ptr_extensions.as_slice())
-			.build();
+			.enabled_extension_names(ptr_extensions.as_slice());
 
 		unsafe {
 			Instance::from_create_info(entry, create_info, host_memory_allocator, debug_callback)
@@ -106,14 +101,18 @@ impl Instance {
 	///
 	/// ### Safety
 	///
-	/// See https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkInstanceCreateInfo.html
+	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkInstanceCreateInfo.html>.
 	pub unsafe fn from_create_info(
-		entry: Entry, create_info: ash::vk::InstanceCreateInfo,
+		entry: Entry, create_info: impl Deref<Target = ash::vk::InstanceCreateInfo>,
 		host_memory_allocator: HostMemoryAllocator, debug_callback: debug::DebugCallback
 	) -> Result<Vrc<Self>, error::InstanceError> {
 		let allocation_callbacks: Option<AllocationCallbacks> = host_memory_allocator.into();
 
-		log::debug!("Creating instance with {:#?} {:#?}", create_info, allocation_callbacks);
+		log::debug!(
+			"Creating instance with {:#?} {:#?}",
+			create_info.deref(),
+			allocation_callbacks
+		);
 		let instance = entry.create_instance(&create_info, allocation_callbacks.as_ref())?;
 
 		// TODO: debug messenger, validation features, validation flags?
@@ -135,21 +134,21 @@ impl Instance {
 		Ok(Vrc::new(Instance { entry, instance, allocation_callbacks, debug }))
 	}
 
-	pub fn entry(&self) -> &Entry {
-		&self.entry
-	}
+	pub fn entry(&self) -> &Entry { &self.entry }
 
+	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkEnumeratePhysicalDevices.html>.
 	pub fn physical_devices(
 		self: &Vrc<Self>
 	) -> Result<impl ExactSizeIterator<Item = PhysicalDevice>, error::PhysicalDeviceEnumerationError>
 	{
 		let elf = self.clone();
-		unsafe {
-			Ok(self
-				.enumerate_physical_devices()?
+		let enumerator = unsafe {
+			self.enumerate_physical_devices()?
 				.into_iter()
-				.map(move |physical_device| PhysicalDevice::new(elf.clone(), physical_device)))
-		}
+				.map(move |physical_device| PhysicalDevice::new(elf.clone(), physical_device))
+		};
+
+		Ok(enumerator)
 	}
 }
 impl Deref for Instance {

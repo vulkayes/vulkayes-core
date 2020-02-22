@@ -10,7 +10,8 @@ unsafe_enum_variants! {
 		/// A custom allocator will be used.
 		///
 		/// ## Safety
-		/// See the [Vulkan Spec](https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#VkAllocationCallbacks) for info on safety.
+		///
+		/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#VkAllocationCallbacks>.
 		{unsafe} pub Custom(AllocationCallbacks)
 	} as pub HostMemoryAllocator
 }

@@ -1,6 +1,11 @@
-use std::{ffi::CString, fmt::Debug, os::raw::c_char};
-use std::fmt::Formatter;
-use std::ops::Deref;
+//! A device represents an instance of connection to a physical device.
+
+use std::{
+	ffi::CString,
+	fmt::{Debug, Formatter},
+	ops::Deref,
+	os::raw::c_char
+};
 
 use ash::{
 	version::{DeviceV1_0, InstanceV1_0},
@@ -11,9 +16,9 @@ use crate::{
 	instance::Instance,
 	memory::host::HostMemoryAllocator,
 	physical_device::PhysicalDevice,
+	queue::Queue,
 	Vrc
 };
-use crate::queue::Queue;
 
 pub mod error;
 #[cfg(test)]
@@ -27,8 +32,6 @@ pub struct QueueCreateInfo<P: AsRef<[f32]>> {
 }
 
 pub struct Device {
-	#[allow(dead_code)] // Need to keep the instance alive
-	instance: Vrc<Instance>,
 	device: ash::Device,
 
 	physical_device: PhysicalDevice,
@@ -37,12 +40,13 @@ pub struct Device {
 }
 impl Device {
 	pub fn new<'a, P: AsRef<[f32]> + Debug>(
-		instance: Vrc<Instance>, queues: impl AsRef<[QueueCreateInfo<P>]>,
+		physical_device: PhysicalDevice, queues: impl AsRef<[QueueCreateInfo<P>]>,
 		layers: impl IntoIterator<Item = &'a str>, extensions: impl IntoIterator<Item = &'a str>,
-		features: ash::vk::PhysicalDeviceFeatures, physical_device: PhysicalDevice,
-		host_memory_allocator: HostMemoryAllocator
+		features: ash::vk::PhysicalDeviceFeatures, host_memory_allocator: HostMemoryAllocator
 	) -> Result<(Vrc<Self>, Vec<Vrc<Queue>>), error::DeviceError> {
 		let queues = queues.as_ref();
+
+		// create infos pointer are valid because they are kept alive by queues argument
 		let queue_create_infos: Vec<_> = queues
 			.iter()
 			.map(|q| {
@@ -63,9 +67,8 @@ impl Device {
 			cstr_extensions.iter().map(|cstr| cstr.as_ptr()).collect();
 
 		log::debug!(
-			"Device create info {:#?} {:#?} {:#?} {:#?} {:#?}",
+			"Device create info {:#?} {:#?} {:#?} {:#?}",
 			queues,
-			queue_create_infos,
 			cstr_layers,
 			cstr_extensions,
 			features
@@ -74,21 +77,18 @@ impl Device {
 			.queue_create_infos(&queue_create_infos)
 			.enabled_layer_names(ptr_layers.as_slice())
 			.enabled_extension_names(ptr_extensions.as_slice())
-			.enabled_features(&features)
-			.build();
+			.enabled_features(&features);
 
-		unsafe {
-			Device::from_create_info(instance, create_info, physical_device, host_memory_allocator)
-		}
+		unsafe { Device::from_create_info(physical_device, create_info, host_memory_allocator) }
 	}
 
 	/// Creates a new `Device` from existing `DeviceCreateInfo`
 	///
 	/// ### Safety
 	///
-	/// See https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkDeviceCreateInfo.html
+	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkDeviceCreateInfo.html>.
 	pub unsafe fn from_create_info(
-		instance: Vrc<Instance>, create_info: DeviceCreateInfo, physical_device: PhysicalDevice,
+		physical_device: PhysicalDevice, create_info: impl Deref<Target = DeviceCreateInfo>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<(Vrc<Self>, Vec<Vrc<Queue>>), error::DeviceError> {
 		let allocation_callbacks: Option<AllocationCallbacks> = host_memory_allocator.into();
@@ -96,24 +96,24 @@ impl Device {
 		log::debug!(
 			"Creating device with {:#?} {:#?} {:#?}",
 			physical_device,
-			create_info,
+			create_info.deref(),
 			allocation_callbacks
 		);
-		let device = instance.create_device(
+		let device = physical_device.instance().create_device(
 			*physical_device,
 			&create_info,
 			allocation_callbacks.as_ref()
 		)?;
 
-		let elf = Vrc::new(Device { instance, device, physical_device, allocation_callbacks });
+		let elf = Vrc::new(Device { device, physical_device, allocation_callbacks });
 		let queues = elf.get_created_queues(create_info);
 
-		Ok(
-			(elf, queues)
-		)
+		Ok((elf, queues))
 	}
 
-	unsafe fn get_created_queues(self: &Vrc<Self>, create_info: DeviceCreateInfo) -> Vec<Vrc<Queue>> {
+	unsafe fn get_created_queues(
+		self: &Vrc<Self>, create_info: impl Deref<Target = DeviceCreateInfo>
+	) -> Vec<Vrc<Queue>> {
 		let num = create_info.queue_create_info_count as usize;
 		let mut result = Vec::with_capacity(num);
 
@@ -121,25 +121,21 @@ impl Device {
 			let info = &*create_info.p_queue_create_infos.offset(family);
 
 			for index in 0 .. info.queue_count {
-				result.push(
-					Vrc::new(
-						Queue::from_device(
-							self.clone(),
-							info.flags,
-							info.queue_family_index,
-							index
-						)
-					)
-				);
+				result.push(Vrc::new(Queue::from_device(
+					self.clone(),
+					info.flags,
+					info.queue_family_index,
+					index
+				)));
 			}
 		}
 
 		result
 	}
 
-	pub fn physical_device(&self) -> &PhysicalDevice {
-		&self.physical_device
-	}
+	pub fn physical_device(&self) -> &PhysicalDevice { &self.physical_device }
+
+	pub fn instance(&self) -> &Vrc<Instance> { self.physical_device.instance() }
 }
 impl Deref for Device {
 	type Target = ash::Device;
@@ -159,8 +155,9 @@ impl Drop for Device {
 impl Debug for Device {
 	fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
 		f.debug_struct("Device")
-			.field("instance", &self.instance)
 			.field("device", &crate::util::fmt::format_handle(self.device.handle()))
+			.field("physical_device", &self.physical_device)
+			.field("allocation_callbacks", &self.allocation_callbacks)
 			.finish()
 	}
 }

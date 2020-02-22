@@ -3,9 +3,9 @@ use crate::{
 	instance,
 	instance::Instance,
 	memory::host::HostMemoryAllocator,
+	util::fmt::VkVersion,
 	Vrc
 };
-use crate::util::fmt::VkVersion;
 
 #[test]
 fn create_instance() {
@@ -34,7 +34,7 @@ fn create_instance_rust_host_allocator() {
 			application_version: VkVersion::new(0, 1, 0),
 			engine_name: "test",
 			engine_version: VkVersion::new(0, 1, 0),
-			api_version: ash::vk_make_version!(1, 2, 0).into()
+			api_version: VkVersion::new(1, 2, 0)
 		},
 		None,
 		None,
@@ -49,7 +49,7 @@ pub fn create_test_instance() -> Vrc<Instance> {
 		entry::Entry::new().unwrap(),
 		instance::ApplicationInfo {
 			engine_name: "test",
-			api_version: ash::vk_make_version!(1, 2, 0).into(),
+			api_version: VkVersion::new(1, 2, 0),
 			..Default::default()
 		},
 		["VK_LAYER_LUNARG_standard_validation", "VK_LAYER_KHRONOS_validation"].iter().map(|&s| s),

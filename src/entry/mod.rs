@@ -1,8 +1,10 @@
+//! An Entry are the base loaded function pointers to Vulkan.
+
 use std::{
 	convert::TryInto,
-	fmt::{Debug, Error, Formatter}
+	fmt::{Debug, Error, Formatter},
+	ops::Deref
 };
-use std::ops::Deref;
 
 use ash::version::EntryV1_0;
 
@@ -17,6 +19,7 @@ pub struct Entry {
 impl Entry {
 	pub fn new() -> Result<Self, ash::LoadingError> { Ok(Entry { entry: ash::Entry::new()? }) }
 
+	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkEnumerateInstanceLayerProperties.html>.
 	pub fn instance_layers(
 		&self
 	) -> Result<
@@ -30,6 +33,7 @@ impl Entry {
 			.map(|v| v.try_into().unwrap()))
 	}
 
+	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkEnumerateInstanceExtensionProperties.html>.
 	pub fn instance_extensions(
 		&self
 	) -> Result<

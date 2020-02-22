@@ -25,7 +25,7 @@ pub fn format_handle<H: ash::vk::Handle>(handle: H) -> impl Debug + Display {
 pub struct VkVersion(pub u32);
 impl VkVersion {
 	pub fn new(major: u32, minor: u32, patch: u32) -> Self {
-		VkVersion(ash::vk_make_version!(major, minor, patch))
+		VkVersion(ash::vk::make_version(major, minor, patch))
 	}
 }
 impl Debug for VkVersion {
@@ -36,9 +36,9 @@ impl Display for VkVersion {
 		write!(
 			f,
 			"v{}.{}.{}",
-			ash::vk_version_major!(self.0),
-			ash::vk_version_minor!(self.0),
-			ash::vk_version_patch!(self.0)
+			ash::vk::version_major(self.0),
+			ash::vk::version_minor(self.0),
+			ash::vk::version_patch(self.0)
 		)
 	}
 }

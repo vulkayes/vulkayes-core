@@ -38,9 +38,6 @@ macro_rules! unsafe_enum_variants {
 }
 
 /// Generates a public enum that derives `thiserror::Error` with `VkResult` variants and their `From` impls.
-///
-/// Note: Due to restrictions on the syntax of `drive` and the fact that multiple use declarations are an error for the compiler,
-/// you have to import `thiserror::Error` yourself. It is exported by this crate.
 #[macro_export]
 macro_rules! vk_result_error {
 	(
@@ -55,6 +52,9 @@ macro_rules! vk_result_error {
 			$( $other: tt )*
 		}
 	) => {
+		#[allow(unused_imports)]
+		use thiserror::*;
+
 		$( #[$attribute] )*
 		#[derive(Error)]
 		pub enum $name {

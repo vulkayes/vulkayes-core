@@ -6,24 +6,30 @@ skinparam {
 	ComponentBorderThickness 1
 }
 
-component [Entry] #ffbf00
-component [Instance] <<Vrc>> #Yellow
+component [Instance] <<Vrc>> #ffbf00
+component [PhysicalDevice] #5d8aa8
 component [Window] #79443b
 component [Surface<W>] #ff9966
 component [Device] <<Vrc>> #318ce7
 component [Swapchain<W>] <<Vrc>> #cc0000
-component [Resources] #e3dac9
-
-[Entry] <.. [Instance]
+component [Queue] <<Vrc>> #ff033e
+component [Resource] <<Vrc>> #e3dac9
+component [CommandBuffer] <<Vrc>>
 
 [Instance] <-- [Surface<W>]
 [Window] <-- [Surface<W>]
 
-[Instance] <-- [Device]
+[Instance] <-- [PhysicalDevice]
+
+[PhysicalDevice] <-- [Device]
 
 [Surface<W>] <-- [Swapchain<W>]
 [Device] <-- [Swapchain<W>]
 
-[Device] <-- [Resources]
+[Device] <-- [Queue]
+
+[Device] <-- [Resource]
+
+[Resource] <-- [CommandBuffer]
 
 @enduml

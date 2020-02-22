@@ -3,9 +3,9 @@ use ash::vk::PhysicalDeviceFeatures;
 use crate::{
 	device::{Device, QueueCreateInfo},
 	instance::Instance,
+	queue::Queue,
 	Vrc
 };
-use crate::queue::Queue;
 
 #[test]
 fn create_device() {
@@ -21,14 +21,13 @@ fn create_device() {
 
 	for physical_device in instance.physical_devices().unwrap() {
 		let _device = Device::new(
-			instance.clone(),
+			physical_device,
 			&queue_create_infos,
 			["VK_LAYER_LUNARG_standard_validation", "VK_LAYER_KHRONOS_validation"]
 				.iter()
 				.map(|&s| s),
 			None,
 			Default::default(),
-			physical_device,
 			Default::default()
 		)
 		.expect("Could not create device");
@@ -44,7 +43,7 @@ pub fn create_test_device(
 		.nth(index)
 		.expect(&format!("Could not fine physical device with index {}", index));
 	Device::new(
-		instance,
+		physical_device,
 		[QueueCreateInfo {
 			queue_family_index: 0,
 			flags: Default::default(),
@@ -53,7 +52,6 @@ pub fn create_test_device(
 		["VK_LAYER_LUNARG_standard_validation", "VK_LAYER_KHRONOS_validation"].iter().map(|&s| s),
 		None,
 		features,
-		physical_device,
 		Default::default()
 	)
 	.expect("Could not create test device")

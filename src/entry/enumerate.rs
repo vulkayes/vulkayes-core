@@ -3,8 +3,6 @@ use std::{
 	fmt::{Display, Error, Formatter}
 };
 
-use thiserror::Error;
-
 use crate::util::{fmt::VkVersion, VkSmallString};
 
 vk_result_error! {

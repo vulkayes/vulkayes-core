@@ -2,8 +2,6 @@
 
 // Export `ash` because all other component will use it.
 pub use ash;
-// Export `thiserror` because of the `vk_result_error` macro.
-pub use thiserror;
 
 // Export these fast hash-collections for other components to use.
 // I found these to be fastest of { hashbrown, stdlib, fnv, fx } with a local benchmark, hopefully that's true for mostly everyone.
