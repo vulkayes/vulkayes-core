@@ -1,9 +1,8 @@
 use ash::vk::PhysicalDeviceFeatures;
 
 use crate::{
-	device::{Device, QueueCreateInfo},
+	device::{Device, DeviceData, QueueCreateInfo},
 	instance::Instance,
-	queue::Queue,
 	Vrc
 };
 
@@ -23,9 +22,12 @@ fn create_device() {
 		let _device = Device::new(
 			physical_device,
 			&queue_create_infos,
-			["VK_LAYER_LUNARG_standard_validation", "VK_LAYER_KHRONOS_validation"]
-				.iter()
-				.map(|&s| s),
+			[
+				"VK_LAYER_LUNARG_standard_validation",
+				"VK_LAYER_KHRONOS_validation"
+			]
+			.iter()
+			.map(|&s| s),
 			None,
 			Default::default(),
 			Default::default()
@@ -35,13 +37,18 @@ fn create_device() {
 }
 
 pub fn create_test_device(
-	instance: Vrc<Instance>, index: usize, features: PhysicalDeviceFeatures
-) -> (Vrc<Device>, Vec<Vrc<Queue>>) {
+	instance: Vrc<Instance>,
+	index: usize,
+	features: PhysicalDeviceFeatures
+) -> DeviceData {
 	let physical_device = instance
 		.physical_devices()
 		.unwrap()
 		.nth(index)
-		.expect(&format!("Could not fine physical device with index {}", index));
+		.expect(&format!(
+			"Could not fine physical device with index {}",
+			index
+		));
 	Device::new(
 		physical_device,
 		[QueueCreateInfo {
@@ -49,7 +56,12 @@ pub fn create_test_device(
 			flags: Default::default(),
 			queue_priorities: [1.0]
 		}],
-		["VK_LAYER_LUNARG_standard_validation", "VK_LAYER_KHRONOS_validation"].iter().map(|&s| s),
+		[
+			"VK_LAYER_LUNARG_standard_validation",
+			"VK_LAYER_KHRONOS_validation"
+		]
+		.iter()
+		.map(|&s| s),
 		None,
 		features,
 		Default::default()

@@ -17,7 +17,11 @@ pub struct Entry {
 	entry: ash::Entry
 }
 impl Entry {
-	pub fn new() -> Result<Self, ash::LoadingError> { Ok(Entry { entry: ash::Entry::new()? }) }
+	pub fn new() -> Result<Self, ash::LoadingError> {
+		Ok(Entry {
+			entry: ash::Entry::new()?
+		})
+	}
 
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkEnumerateInstanceLayerProperties.html>.
 	pub fn instance_layers(
@@ -50,10 +54,14 @@ impl Entry {
 impl Deref for Entry {
 	type Target = ash::Entry;
 
-	fn deref(&self) -> &Self::Target { &self.entry }
+	fn deref(&self) -> &Self::Target {
+		&self.entry
+	}
 }
 impl Debug for Entry {
 	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-		f.debug_struct("Entry").field("entry", &"<ash::Entry>").finish()
+		f.debug_struct("Entry")
+			.field("entry", &"<ash::Entry>")
+			.finish()
 	}
 }

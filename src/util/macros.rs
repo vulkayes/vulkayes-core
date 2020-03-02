@@ -27,7 +27,7 @@ macro_rules! unsafe_enum_variants {
 			$(
 				$(#[$variant_attribute])*
 				#[allow(non_snake_case)]
-				$v $($safety)? fn $variant($( $( $variant_data: $variant_data ),+ )?) -> Self {
+				$v const $($safety)? fn $variant($( $( $variant_data: $variant_data ),+ )?) -> Self {
 					$name(
 						$inner_name::$variant $( ($( $variant_data ),+) )?
 					)
@@ -73,7 +73,7 @@ macro_rules! vk_result_error {
 					$(
 						ash::vk::Result::$vk_error => $name::$vk_error,
 					)+
-					_ => unreachable!()
+					_ => unreachable!("Cannot create {} from {}", stringify!($name), err) // TODO: Use unreachable unchecked in Release?
 				}
 			}
 		}

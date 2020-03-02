@@ -37,10 +37,14 @@ impl PhysicalDevice {
 	/// ### Safety
 	///
 	/// The `instance` must be the parent of the `physical_device`.
-	pub unsafe fn new(
-		instance: crate::Vrc<Instance>, physical_device: ash::vk::PhysicalDevice
+	pub const unsafe fn new(
+		instance: crate::Vrc<Instance>,
+		physical_device: ash::vk::PhysicalDevice
 	) -> Self {
-		PhysicalDevice { instance, physical_device }
+		PhysicalDevice {
+			instance,
+			physical_device
+		}
 	}
 
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkEnumerateDeviceExtensionProperties.html>.
@@ -62,12 +66,19 @@ impl PhysicalDevice {
 
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetPhysicalDeviceFormatProperties.html>.
 	pub fn format_properties(&self, format: Format) -> FormatProperties {
-		unsafe { self.instance.get_physical_device_format_properties(self.physical_device, format) }
+		unsafe {
+			self.instance
+				.get_physical_device_format_properties(self.physical_device, format)
+		}
 	}
 
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetPhysicalDeviceImageFormatProperties.html>.
 	pub fn image_format_properties(
-		&self, format: Format, image_type: ImageType, tiling: ImageTiling, usage: ImageUsageFlags,
+		&self,
+		format: Format,
+		image_type: ImageType,
+		tiling: ImageTiling,
+		usage: ImageUsageFlags,
 		flags: ImageCreateFlags
 	) -> Result<ash::vk::ImageFormatProperties, enumerate::ImageFormatPropertiesError> {
 		let properties = unsafe {
@@ -86,13 +97,20 @@ impl PhysicalDevice {
 
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetPhysicalDeviceMemoryProperties.html>.
 	pub fn memory_properties(&self) -> enumerate::PhysicalDeviceMemoryProperties {
-		unsafe { self.instance.get_physical_device_memory_properties(self.physical_device).into() }
+		unsafe {
+			self.instance
+				.get_physical_device_memory_properties(self.physical_device)
+				.into()
+		}
 	}
 
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetPhysicalDeviceProperties.html>.
 	pub fn properties(&self) -> enumerate::PhysicalDeviceProperties {
 		unsafe {
-			self.instance.get_physical_device_properties(self.physical_device).try_into().unwrap()
+			self.instance
+				.get_physical_device_properties(self.physical_device)
+				.try_into()
+				.unwrap()
 		}
 	}
 
@@ -101,11 +119,13 @@ impl PhysicalDevice {
 		let mut queue_count: u32 = 0;
 
 		unsafe {
-			self.instance.fp_v1_0().get_physical_device_queue_family_properties(
-				self.physical_device,
-				&mut queue_count,
-				std::ptr::null_mut()
-			);
+			self.instance
+				.fp_v1_0()
+				.get_physical_device_queue_family_properties(
+					self.physical_device,
+					&mut queue_count,
+					std::ptr::null_mut()
+				);
 		}
 
 		std::num::NonZeroU32::new(queue_count as u32).unwrap()
@@ -113,25 +133,38 @@ impl PhysicalDevice {
 
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetPhysicalDeviceQueueFamilyProperties.html>.
 	pub fn queue_family_properties(&self) -> Vec<QueueFamilyProperties> {
-		unsafe { self.instance.get_physical_device_queue_family_properties(self.physical_device) }
+		unsafe {
+			self.instance
+				.get_physical_device_queue_family_properties(self.physical_device)
+		}
 	}
 
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetPhysicalDeviceFeatures.html>.
 	pub fn features(&self) -> PhysicalDeviceFeatures {
-		unsafe { self.instance.get_physical_device_features(self.physical_device) }
+		unsafe {
+			self.instance
+				.get_physical_device_features(self.physical_device)
+		}
 	}
 
-	pub fn instance(&self) -> &Vrc<Instance> { &self.instance }
+	pub const fn instance(&self) -> &Vrc<Instance> {
+		&self.instance
+	}
 }
 impl Deref for PhysicalDevice {
 	type Target = ash::vk::PhysicalDevice;
 
-	fn deref(&self) -> &Self::Target { &self.physical_device }
+	fn deref(&self) -> &Self::Target {
+		&self.physical_device
+	}
 }
 impl Debug for PhysicalDevice {
 	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
 		f.debug_struct("PhysicalDevice")
-			.field("physical_device", &crate::util::fmt::format_handle(self.physical_device))
+			.field(
+				"physical_device",
+				&crate::util::fmt::format_handle(self.physical_device)
+			)
 			.finish()
 	}
 }

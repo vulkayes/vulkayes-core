@@ -52,8 +52,15 @@ pub fn create_test_instance() -> Vrc<Instance> {
 			api_version: VkVersion::new(1, 2, 0),
 			..Default::default()
 		},
-		["VK_LAYER_LUNARG_standard_validation", "VK_LAYER_KHRONOS_validation"].iter().map(|&s| s),
-		["VK_EXT_debug_report", "VK_EXT_debug_utils"].iter().map(|&s| s),
+		[
+			"VK_LAYER_LUNARG_standard_validation",
+			"VK_LAYER_KHRONOS_validation"
+		]
+		.iter()
+		.map(|&s| s),
+		["VK_EXT_debug_report", "VK_EXT_debug_utils"]
+			.iter()
+			.map(|&s| s),
 		HostMemoryAllocator::Unspecified(),
 		instance::debug::DebugCallback::None()
 	)

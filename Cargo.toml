@@ -8,7 +8,7 @@ edition = "2018"
 default = []
 
 rust_host_allocator = []
-non_atomic_vrc = []
+no_atomics = []
 
 [dependencies]
 # core

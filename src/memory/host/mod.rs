@@ -44,5 +44,7 @@ impl Into<Option<AllocationCallbacks>> for HostMemoryAllocator {
 	}
 }
 impl Default for HostMemoryAllocator {
-	fn default() -> Self { HostMemoryAllocator::Unspecified() }
+	fn default() -> Self {
+		HostMemoryAllocator::Unspecified()
+	}
 }

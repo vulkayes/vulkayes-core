@@ -24,7 +24,12 @@ impl VkSmallString {
 	/// They array bytes must be valid unicode.
 	pub unsafe fn from_c_string_unchecked(array: [c_char; Self::MAX_STRING_SIZE]) -> Self {
 		VkSmallString {
-			len: array.iter().enumerate().find(|(_, &byte)| byte == 0).unwrap().0,
+			len: array
+				.iter()
+				.enumerate()
+				.find(|(_, &byte)| byte == 0)
+				.unwrap()
+				.0,
 			array
 		}
 	}
@@ -33,7 +38,12 @@ impl TryFrom<[c_char; Self::MAX_STRING_SIZE]> for VkSmallString {
 	type Error = Utf8Error;
 
 	fn try_from(array: [c_char; Self::MAX_STRING_SIZE]) -> Result<Self, Self::Error> {
-		let len = array.iter().enumerate().find(|(_, &byte)| byte == 0).unwrap().0;
+		let len = array
+			.iter()
+			.enumerate()
+			.find(|(_, &byte)| byte == 0)
+			.unwrap()
+			.0;
 
 		unsafe {
 			std::str::from_utf8(std::slice::from_raw_parts(array.as_ptr() as *const u8, len))?
@@ -55,8 +65,12 @@ impl Deref for VkSmallString {
 	}
 }
 impl Debug for VkSmallString {
-	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> { write!(f, "{}", self.deref()) }
+	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+		write!(f, "{}", self.deref())
+	}
 }
 impl Display for VkSmallString {
-	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> { write!(f, "{}", self.deref()) }
+	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+		write!(f, "{}", self.deref())
+	}
 }

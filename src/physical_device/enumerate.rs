@@ -75,7 +75,10 @@ impl From<ash::vk::PhysicalDeviceMemoryProperties> for PhysicalDeviceMemoryPrope
 			memory_heaps.set_len(value.memory_heap_count as usize);
 		}
 
-		PhysicalDeviceMemoryProperties { memory_types, memory_heaps }
+		PhysicalDeviceMemoryProperties {
+			memory_types,
+			memory_heaps
+		}
 	}
 }
 
@@ -116,7 +119,10 @@ impl Debug for PhysicalDeviceProperties {
 			.field("device_id", &format_args!("0x{:x}", self.device_id))
 			.field("device_type", &self.device_type)
 			.field("device_name", &self.device_name)
-			.field("pipeline_cache_uuid", &crate::util::fmt::format_uuid(self.pipeline_cache_uuid))
+			.field(
+				"pipeline_cache_uuid",
+				&crate::util::fmt::format_uuid(self.pipeline_cache_uuid)
+			)
 			.field("limits", &self.limits)
 			.field("sparse_properties", &self.sparse_properties)
 			.finish()

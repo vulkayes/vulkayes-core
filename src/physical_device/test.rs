@@ -5,7 +5,10 @@ fn list_physical_devices() {
 	const TEST_FORMAT: ash::vk::Format = ash::vk::Format::R8G8B8A8_SRGB;
 
 	let instance = crate::instance::test::create_test_instance();
-	for physical_device in instance.physical_devices().expect("Could not list physical devices") {
+	for physical_device in instance
+		.physical_devices()
+		.expect("Could not list physical devices")
+	{
 		let extensions_properties: Vec<_> =
 			physical_device.extensions_properties().unwrap().collect();
 		let format_properties = physical_device.format_properties(TEST_FORMAT);

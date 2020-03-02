@@ -59,8 +59,11 @@ pub struct Instance {
 impl Instance {
 	/// Creates a new instance from an existing entry.
 	pub fn new<'a>(
-		entry: Entry, application_info: ApplicationInfo, layers: impl IntoIterator<Item = &'a str>,
-		extensions: impl IntoIterator<Item = &'a str>, host_memory_allocator: HostMemoryAllocator,
+		entry: Entry,
+		application_info: ApplicationInfo,
+		layers: impl IntoIterator<Item = &'a str>,
+		extensions: impl IntoIterator<Item = &'a str>,
+		host_memory_allocator: HostMemoryAllocator,
 		debug_callback: debug::DebugCallback
 	) -> Result<Vrc<Self>, error::InstanceError> {
 		let application_name_c = CString::new(application_info.application_name)?;
@@ -73,11 +76,16 @@ impl Instance {
 			.engine_version(application_info.engine_version.0)
 			.api_version(application_info.api_version.0);
 
-		let cstr_layers = layers.into_iter().map(CString::new).collect::<Result<Vec<_>, _>>()?;
+		let cstr_layers = layers
+			.into_iter()
+			.map(CString::new)
+			.collect::<Result<Vec<_>, _>>()?;
 		let ptr_layers: Vec<*const c_char> = cstr_layers.iter().map(|cstr| cstr.as_ptr()).collect();
 
-		let cstr_extensions =
-			extensions.into_iter().map(CString::new).collect::<Result<Vec<_>, _>>()?;
+		let cstr_extensions = extensions
+			.into_iter()
+			.map(CString::new)
+			.collect::<Result<Vec<_>, _>>()?;
 		let ptr_extensions: Vec<*const c_char> =
 			cstr_extensions.iter().map(|cstr| cstr.as_ptr()).collect();
 
@@ -103,8 +111,10 @@ impl Instance {
 	///
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkInstanceCreateInfo.html>.
 	pub unsafe fn from_create_info(
-		entry: Entry, create_info: impl Deref<Target = ash::vk::InstanceCreateInfo>,
-		host_memory_allocator: HostMemoryAllocator, debug_callback: debug::DebugCallback
+		entry: Entry,
+		create_info: impl Deref<Target = ash::vk::InstanceCreateInfo>,
+		host_memory_allocator: HostMemoryAllocator,
+		debug_callback: debug::DebugCallback
 	) -> Result<Vrc<Self>, error::InstanceError> {
 		let allocation_callbacks: Option<AllocationCallbacks> = host_memory_allocator.into();
 
@@ -131,10 +141,17 @@ impl Instance {
 			}
 		};
 
-		Ok(Vrc::new(Instance { entry, instance, allocation_callbacks, debug }))
+		Ok(Vrc::new(Instance {
+			entry,
+			instance,
+			allocation_callbacks,
+			debug
+		}))
 	}
 
-	pub fn entry(&self) -> &Entry { &self.entry }
+	pub const fn entry(&self) -> &Entry {
+		&self.entry
+	}
 
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkEnumeratePhysicalDevices.html>.
 	pub fn physical_devices(
@@ -154,7 +171,9 @@ impl Instance {
 impl Deref for Instance {
 	type Target = ash::Instance;
 
-	fn deref(&self) -> &Self::Target { &self.instance }
+	fn deref(&self) -> &Self::Target {
+		&self.instance
+	}
 }
 impl Drop for Instance {
 	fn drop(&mut self) {
@@ -165,7 +184,8 @@ impl Drop for Instance {
 					debug.allocation_callbacks.as_ref()
 				);
 			}
-			self.instance.destroy_instance(self.allocation_callbacks.as_ref());
+			self.instance
+				.destroy_instance(self.allocation_callbacks.as_ref());
 		}
 	}
 }
@@ -173,7 +193,10 @@ impl Debug for Instance {
 	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
 		f.debug_struct("Instance")
 			.field("entry", &self.entry)
-			.field("instance", &crate::util::fmt::format_handle(self.instance.handle()))
+			.field(
+				"instance",
+				&crate::util::fmt::format_handle(self.instance.handle())
+			)
 			.field("allocation_callbacks", &self.allocation_callbacks)
 			.field("debug", &self.debug)
 			.finish()

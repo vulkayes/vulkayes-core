@@ -23,7 +23,12 @@ impl RustHostMemoryAllocator {
 	unsafe fn alloc(&mut self, layout: Layout) -> *mut u8 {
 		let ptr = std::alloc::alloc(layout);
 
-		log::trace!("Allocated {} bytes aligned to {} at {:p}", layout.size(), layout.align(), ptr);
+		log::trace!(
+			"Allocated {} bytes aligned to {} at {:p}",
+			layout.size(),
+			layout.align(),
+			ptr
+		);
 		self.ptr_map.insert(ptr, layout);
 
 		ptr
@@ -71,14 +76,19 @@ impl RustHostMemoryAllocator {
 		ALLOCATOR_INIT.call_once(|| unsafe {
 			ALLOCATOR
 				.as_mut_ptr()
-				.write(Mutex::new(RustHostMemoryAllocator { ptr_map: Default::default() }));
+				.write(Mutex::new(RustHostMemoryAllocator {
+					ptr_map: Default::default()
+				}));
 		});
 
 		unsafe { ALLOCATOR.as_ptr().as_ref().unwrap().lock().unwrap() }
 	}
 
 	pub(super) unsafe extern "system" fn rust_alloc(
-		_: *mut c_void, size: usize, alignment: usize, _: SystemAllocationScope
+		_: *mut c_void,
+		size: usize,
+		alignment: usize,
+		_: SystemAllocationScope
 	) -> *mut c_void {
 		let mut allocator = Self::lock_init_allocator();
 
@@ -86,7 +96,10 @@ impl RustHostMemoryAllocator {
 	}
 
 	pub(super) unsafe extern "system" fn rust_realloc(
-		_: *mut c_void, p_original: *mut c_void, size: usize, alignment: usize,
+		_: *mut c_void,
+		p_original: *mut c_void,
+		size: usize,
+		alignment: usize,
 		_: SystemAllocationScope
 	) -> *mut c_void {
 		let mut allocator = Self::lock_init_allocator();
@@ -104,7 +117,8 @@ impl RustHostMemoryAllocator {
 	}
 
 	pub(super) unsafe extern "system" fn rust_free(
-		_: *mut c_void, p_memory: *mut c_void
+		_: *mut c_void,
+		p_memory: *mut c_void
 	) -> c_void {
 		let mut allocator = Self::lock_init_allocator();
 
@@ -114,7 +128,9 @@ impl RustHostMemoryAllocator {
 	}
 
 	pub(super) unsafe extern "system" fn rust_internal_allocation(
-		p_user_data: *mut c_void, size: usize, allocation_type: InternalAllocationType,
+		p_user_data: *mut c_void,
+		size: usize,
+		allocation_type: InternalAllocationType,
 		allocation_scope: SystemAllocationScope
 	) -> c_void {
 		log::trace!(
@@ -129,7 +145,9 @@ impl RustHostMemoryAllocator {
 	}
 
 	pub(super) unsafe extern "system" fn rust_internal_free(
-		p_user_data: *mut c_void, size: usize, allocation_type: InternalAllocationType,
+		p_user_data: *mut c_void,
+		size: usize,
+		allocation_type: InternalAllocationType,
 		allocation_scope: SystemAllocationScope
 	) -> c_void {
 		log::trace!(

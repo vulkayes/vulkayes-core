@@ -31,6 +31,13 @@ pub struct QueueCreateInfo<P: AsRef<[f32]>> {
 	pub queue_priorities: P
 }
 
+/// Return type of `Device` constructors.
+#[derive(Debug)]
+pub struct DeviceData {
+	pub device: Vrc<Device>,
+	pub queues: Vec<Vrc<Queue>>
+}
+
 pub struct Device {
 	device: ash::Device,
 
@@ -40,10 +47,13 @@ pub struct Device {
 }
 impl Device {
 	pub fn new<'a, P: AsRef<[f32]> + Debug>(
-		physical_device: PhysicalDevice, queues: impl AsRef<[QueueCreateInfo<P>]>,
-		layers: impl IntoIterator<Item = &'a str>, extensions: impl IntoIterator<Item = &'a str>,
-		features: ash::vk::PhysicalDeviceFeatures, host_memory_allocator: HostMemoryAllocator
-	) -> Result<(Vrc<Self>, Vec<Vrc<Queue>>), error::DeviceError> {
+		physical_device: PhysicalDevice,
+		queues: impl AsRef<[QueueCreateInfo<P>]>,
+		layers: impl IntoIterator<Item = &'a str>,
+		extensions: impl IntoIterator<Item = &'a str>,
+		features: ash::vk::PhysicalDeviceFeatures,
+		host_memory_allocator: HostMemoryAllocator
+	) -> Result<DeviceData, error::DeviceError> {
 		let queues = queues.as_ref();
 
 		// create infos pointer are valid because they are kept alive by queues argument
@@ -58,11 +68,16 @@ impl Device {
 			})
 			.collect();
 
-		let cstr_layers = layers.into_iter().map(CString::new).collect::<Result<Vec<_>, _>>()?;
+		let cstr_layers = layers
+			.into_iter()
+			.map(CString::new)
+			.collect::<Result<Vec<_>, _>>()?;
 		let ptr_layers: Vec<*const c_char> = cstr_layers.iter().map(|cstr| cstr.as_ptr()).collect();
 
-		let cstr_extensions =
-			extensions.into_iter().map(CString::new).collect::<Result<Vec<_>, _>>()?;
+		let cstr_extensions = extensions
+			.into_iter()
+			.map(CString::new)
+			.collect::<Result<Vec<_>, _>>()?;
 		let ptr_extensions: Vec<*const c_char> =
 			cstr_extensions.iter().map(|cstr| cstr.as_ptr()).collect();
 
@@ -88,9 +103,10 @@ impl Device {
 	///
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkDeviceCreateInfo.html>.
 	pub unsafe fn from_create_info(
-		physical_device: PhysicalDevice, create_info: impl Deref<Target = DeviceCreateInfo>,
+		physical_device: PhysicalDevice,
+		create_info: impl Deref<Target = DeviceCreateInfo>,
 		host_memory_allocator: HostMemoryAllocator
-	) -> Result<(Vrc<Self>, Vec<Vrc<Queue>>), error::DeviceError> {
+	) -> Result<DeviceData, error::DeviceError> {
 		let allocation_callbacks: Option<AllocationCallbacks> = host_memory_allocator.into();
 
 		log::debug!(
@@ -105,14 +121,19 @@ impl Device {
 			allocation_callbacks.as_ref()
 		)?;
 
-		let elf = Vrc::new(Device { device, physical_device, allocation_callbacks });
-		let queues = elf.get_created_queues(create_info);
+		let device = Vrc::new(Device {
+			device,
+			physical_device,
+			allocation_callbacks
+		});
+		let queues = device.get_created_queues(create_info);
 
-		Ok((elf, queues))
+		Ok(DeviceData { device, queues })
 	}
 
 	unsafe fn get_created_queues(
-		self: &Vrc<Self>, create_info: impl Deref<Target = DeviceCreateInfo>
+		self: &Vrc<Self>,
+		create_info: impl Deref<Target = DeviceCreateInfo>
 	) -> Vec<Vrc<Queue>> {
 		let num = create_info.queue_create_info_count as usize;
 		let mut result = Vec::with_capacity(num);
@@ -133,29 +154,41 @@ impl Device {
 		result
 	}
 
-	pub fn physical_device(&self) -> &PhysicalDevice { &self.physical_device }
+	pub const fn physical_device(&self) -> &PhysicalDevice {
+		&self.physical_device
+	}
 
-	pub fn instance(&self) -> &Vrc<Instance> { self.physical_device.instance() }
+	pub const fn instance(&self) -> &Vrc<Instance> {
+		self.physical_device.instance()
+	}
 }
 impl Deref for Device {
 	type Target = ash::Device;
 
-	fn deref(&self) -> &Self::Target { &self.device }
+	fn deref(&self) -> &Self::Target {
+		&self.device
+	}
 }
 impl Drop for Device {
 	fn drop(&mut self) {
 		unsafe {
 			// Ensure all work is done
-			self.device.device_wait_idle().expect("Could not wait for device");
+			self.device
+				.device_wait_idle()
+				.expect("Could not wait for device");
 
-			self.device.destroy_device(self.allocation_callbacks.as_ref());
+			self.device
+				.destroy_device(self.allocation_callbacks.as_ref());
 		}
 	}
 }
 impl Debug for Device {
 	fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
 		f.debug_struct("Device")
-			.field("device", &crate::util::fmt::format_handle(self.device.handle()))
+			.field(
+				"device",
+				&crate::util::fmt::format_handle(self.device.handle())
+			)
 			.field("physical_device", &self.physical_device)
 			.field("allocation_callbacks", &self.allocation_callbacks)
 			.finish()

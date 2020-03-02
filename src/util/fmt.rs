@@ -17,7 +17,10 @@ pub fn format_handle<H: ash::vk::Handle>(handle: H) -> impl Debug + Display {
 		}
 	}
 
-	Inner { ty: H::TYPE, raw: handle.as_raw() }
+	Inner {
+		ty: H::TYPE,
+		raw: handle.as_raw()
+	}
 }
 
 #[repr(transparent)]
@@ -29,7 +32,9 @@ impl VkVersion {
 	}
 }
 impl Debug for VkVersion {
-	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> { <VkVersion as Display>::fmt(self, f) }
+	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+		<VkVersion as Display>::fmt(self, f)
+	}
 }
 impl Display for VkVersion {
 	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
@@ -43,7 +48,9 @@ impl Display for VkVersion {
 	}
 }
 impl From<u32> for VkVersion {
-	fn from(v: u32) -> Self { VkVersion(v) }
+	fn from(v: u32) -> Self {
+		VkVersion(v)
+	}
 }
 
 /// Formats `[u8; 16]` as canonical `xxxxxxxx-xxxx-Mxxx-Nxxx-xxxxxxxxxxxx`.

@@ -27,9 +27,18 @@ impl Queue {
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetDeviceQueue.html>.
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetDeviceQueue2.html>.
 	pub unsafe fn from_device(
-		device: Vrc<Device>, flags: DeviceQueueCreateFlags, queue_family_index: u32,
+		device: Vrc<Device>,
+		flags: DeviceQueueCreateFlags,
+		queue_family_index: u32,
 		queue_index: u32
 	) -> Self {
+		log::debug!(
+			"Creating queue {:#?} {:#?} {:#?} {:#?}",
+			device,
+			flags,
+			queue_family_index,
+			queue_index
+		);
 		let queue = if flags == DeviceQueueCreateFlags::empty() {
 			device.get_device_queue(queue_family_index, queue_index)
 		} else {
@@ -39,24 +48,39 @@ impl Queue {
 				.flags(flags)
 				.queue_family_index(queue_family_index)
 				.queue_index(queue_index);
-			device.fp_v1_1().get_device_queue2(device.handle(), info.deref(), mem.as_mut_ptr());
+			device
+				.fp_v1_1()
+				.get_device_queue2(device.handle(), info.deref(), mem.as_mut_ptr());
 
 			mem.assume_init()
 		};
 
-		Queue { device, queue, queue_family_index, queue_index }
+		Queue {
+			device,
+			queue,
+			queue_family_index,
+			queue_index
+		}
 	}
 
-	pub fn device(&self) -> &Vrc<Device> { &self.device }
+	pub const fn device(&self) -> &Vrc<Device> {
+		&self.device
+	}
 
-	pub fn queue_family_index(&self) -> u32 { self.queue_family_index }
+	pub const fn queue_family_index(&self) -> u32 {
+		self.queue_family_index
+	}
 
-	pub fn queue_index(&self) -> u32 { self.queue_index }
+	pub const fn queue_index(&self) -> u32 {
+		self.queue_index
+	}
 }
 impl Deref for Queue {
 	type Target = ash::vk::Queue;
 
-	fn deref(&self) -> &Self::Target { &self.queue }
+	fn deref(&self) -> &Self::Target {
+		&self.queue
+	}
 }
 impl Debug for Queue {
 	fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
