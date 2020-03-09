@@ -5,19 +5,18 @@ use std::{
 	ops::Deref,
 	fmt::{Debug, self}
 };
+use std::mem::ManuallyDrop;
 
 use crate::{
 	ash::vk,
 	device::Device,
 	memory::host::HostMemoryAllocator,
 	surface::Surface,
-	util::SharingMode,
 	Vrc
 };
 use crate::resource::image::Image;
-use std::mem::ManuallyDrop;
 use crate::resource::ImageSize;
-
+use crate::queue::sharing_mode::SharingMode;
 
 pub mod error;
 
@@ -96,34 +95,28 @@ pub struct Swapchain {
 	allocation_callbacks: Option<vk::AllocationCallbacks>
 }
 impl Swapchain {
-	pub fn new<A: AsRef<[u32]>>(
+	pub fn new(
 		device: Vrc<Device>,
 		surface: Surface,
 		image_info: SwapchainCreateImageInfo,
-		sharing_mode: SharingMode<A>,
+		sharing_mode: SharingMode<impl AsRef<[u32]>>,
 		pre_transform: vk::SurfaceTransformFlagsKHR,
 		composite_alpha: vk::CompositeAlphaFlagsKHR,
 		present_mode: vk::PresentModeKHR,
 		clipped: bool,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<SwapchainData, error::SwapchainError> {
-		// TODO: Check validity of some of these params?
-
 		let create_info = vk::SwapchainCreateInfoKHR::builder()
 			.surface(*surface)
 			.pre_transform(pre_transform)
 			.composite_alpha(composite_alpha)
 			.present_mode(present_mode)
-			.clipped(clipped);
+			.clipped(clipped)
+			.image_sharing_mode(sharing_mode.sharing_mode())
+			.queue_family_indices(sharing_mode.indices())
+			;
 
 		let create_info = image_info.add_to_create_info(create_info);
-
-		let create_info = match sharing_mode {
-			SharingMode::Exclusive => create_info.image_sharing_mode(vk::SharingMode::EXCLUSIVE),
-			SharingMode::Concurrent(ref indices) => create_info
-				.image_sharing_mode(vk::SharingMode::CONCURRENT)
-				.queue_family_indices(indices.as_ref())
-		};
 
 		unsafe {
 			Self::from_create_info(
@@ -135,10 +128,10 @@ impl Swapchain {
 		}
 	}
 
-	pub fn recreate<A: AsRef<[u32]>>(
+	pub fn recreate(
 		&self,
 		image_info: SwapchainCreateImageInfo,
-		sharing_mode: SharingMode<A>,
+		sharing_mode: SharingMode<impl AsRef<[u32]>>,
 		pre_transform: vk::SurfaceTransformFlagsKHR,
 		composite_alpha: vk::CompositeAlphaFlagsKHR,
 		present_mode: vk::PresentModeKHR,
@@ -151,16 +144,12 @@ impl Swapchain {
 			.composite_alpha(composite_alpha)
 			.present_mode(present_mode)
 			.clipped(clipped)
-			.old_swapchain(self.swapchain);
+			.old_swapchain(self.swapchain)
+			.image_sharing_mode(sharing_mode.sharing_mode())
+			.queue_family_indices(sharing_mode.indices())
+			;
 
 		let create_info = image_info.add_to_create_info(create_info);
-
-		let create_info = match sharing_mode {
-			SharingMode::Exclusive => create_info.image_sharing_mode(vk::SharingMode::EXCLUSIVE),
-			SharingMode::Concurrent(ref indices) => create_info
-				.image_sharing_mode(vk::SharingMode::CONCURRENT)
-				.queue_family_indices(indices.as_ref())
-		};
 
 		unsafe {
 			Self::from_create_info(
@@ -229,12 +218,6 @@ impl Swapchain {
 		})
 	}
 
-	// pub fn validate_parameters(
-	//
-	// ) -> Result<(), error::SwapchainError> {
-	// 	unimplemented!()
-	// }
-
 	pub fn device(&self) -> &Vrc<Device> {
 		&self.device
 	}
@@ -247,11 +230,9 @@ impl Swapchain {
 		&self.loader
 	}
 }
-impl Deref for Swapchain {
-	type Target = vk::SwapchainKHR;
-
-	fn deref(&self) -> &Self::Target {
-		&self.swapchain
+impl_common_handle_traits! {
+	impl Deref, PartialEq, Eq, Hash for Swapchain {
+		type Target = vk::SwapchainKHR { swapchain }
 	}
 }
 impl Drop for Swapchain {

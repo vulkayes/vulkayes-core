@@ -16,6 +16,7 @@ macro_rules! unsafe_enum_variants {
 			),+
 		} as pub $name: ident
 	) => {
+		$(#[$attribute])*
 		enum $inner_name {
 			$(
 				$variant $( ($( $variant_data ),+) )?
@@ -75,6 +76,85 @@ macro_rules! vk_result_error {
 					)+
 					_ => unreachable!("Cannot create {} from {}", stringify!($name), err) // TODO: Use unreachable unchecked in Release?
 				}
+			}
+		}
+		impl std::convert::TryInto<ash::vk::Result> for $name {
+			type Error = $name;
+			fn try_into(self) -> Result<ash::vk::Result, Self::Error> {
+				#[allow(unreachable_patterns)]
+				match self {
+					$(
+						$name::$vk_error => Ok(ash::vk::Result::$vk_error),
+					)+
+					_ => Err(self)
+				}
+			}
+		}
+	}
+}
+
+/// Implements `Deref`, `PartialEq`, `Eq` and `Hash` for a type based on its `Deref` implementation.
+///
+/// Since not all types deref directly into a handle, it is possible to provide a code fragment to get handle from deref target:
+/// ```
+/// impl_cmmon_handle_traits! {
+/// 	impl [A: Debug] Deref, PartialEq, Eq, Hash for MyType [A] {
+/// 		type Target = DerefTarget { field_on_self } // Derefs to `DerefTarget` by invoking `&self.field_on_self`
+///
+/// 		to_handle { .handle() } // Gets a handle from `DerefTarget` by invoking `self.field_on_self.handle()`
+/// 	}
+/// }
+/// ```
+///
+/// this expands to
+///
+/// ```
+/// impl<A: Debug> Deref for MyType<A> {
+/// 	type Target = DerefTarget;
+///
+/// 	fn deref(&self) -> &Self::Target {
+/// 		&self.field_on_self
+/// 	}
+/// }
+/// impl<A: Debug> PartialEq for MyType<A> {
+/// 	fn eq(&self, other: &Self) -> bool {
+/// 		self.field_on_self.handle() == other.field_on_self.handle()
+/// 	}
+/// }
+/// impl<A: Debug> Eq for MyType<A> { }
+/// impl<A: Debug> Hash for MyType<A> {
+/// 	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+/// 		self.field_on_self.handle().hash(state)
+/// 	}
+/// }
+/// ```
+#[macro_export]
+macro_rules! impl_common_handle_traits {
+	(
+		impl $([$($impl_gen: tt)*])? Deref, PartialEq, Eq, Hash for $tp: ty $([$($ty_gen: tt)*])? {
+			type Target = $target: ty { $($target_code: tt)+ }
+
+			$(
+				to_handle { $($to_handle_code: tt)+ }
+			)?
+		}
+	) => {
+		impl $(<$($impl_gen)*>)? Deref for $tp $(<$($ty_gen)*>)? {
+			type Target = $target;
+
+			fn deref(&self) -> &Self::Target {
+				&self.$($target_code)+
+			}
+		}
+		impl $(<$($impl_gen)*>)? PartialEq for $tp $(<$($ty_gen)*>)? {
+			fn eq(&self, other: &Self) -> bool {
+				self.$($target_code)+ $( $($to_handle_code)+ )? == other.$($target_code)+ $( $($to_handle_code)+ )?
+			}
+		}
+		impl $(<$($impl_gen)*>)? Eq for $tp $(<$($ty_gen)*>)? {}
+		impl $(<$($impl_gen)*>)? std::hash::Hash for $tp $(<$($ty_gen)*>)? {
+			fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+				self.$($target_code)+ $( $($to_handle_code)+ )? .hash(state)
 			}
 		}
 	}

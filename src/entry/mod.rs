@@ -7,6 +7,7 @@ use std::{
 };
 
 use ash::version::EntryV1_0;
+use crate::util::fmt::VkVersion;
 
 pub mod enumerate;
 #[cfg(test)]
@@ -49,6 +50,14 @@ impl Entry {
 			.enumerate_instance_extension_properties()?
 			.into_iter()
 			.map(|v| v.try_into().unwrap()))
+	}
+
+	pub fn instance_version(&self) -> VkVersion {
+		match self.entry.try_enumerate_instance_version() {
+			Ok(Some(v)) => VkVersion(v),
+			Ok(None) => VkVersion::new(1, 0, 0),
+			Err(err) => unreachable!("{}", err) // Should never happen as per Vulkan spec
+		}
 	}
 }
 impl Deref for Entry {

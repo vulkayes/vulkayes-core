@@ -49,11 +49,9 @@ impl Image {
 		&self.device
 	}
 }
-impl Deref for Image {
-	type Target = vk::Image;
-
-	fn deref(&self) -> &Self::Target {
-		&self.image
+impl_common_handle_traits! {
+	impl Deref, PartialEq, Eq, Hash for Image {
+		type Target = vk::Image { image }
 	}
 }
 impl Drop for Image {

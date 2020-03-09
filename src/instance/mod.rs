@@ -118,6 +118,11 @@ impl Instance {
 	) -> Result<Vrc<Self>, error::InstanceError> {
 		let allocation_callbacks: Option<AllocationCallbacks> = host_memory_allocator.into();
 
+		log::info!(
+			"Vulkan instance version {}",
+			entry.instance_version()
+		);
+
 		log::debug!(
 			"Creating instance with {:#?} {:#?}",
 			create_info.deref(),
@@ -156,8 +161,7 @@ impl Instance {
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkEnumeratePhysicalDevices.html>.
 	pub fn physical_devices(
 		self: &Vrc<Self>
-	) -> Result<impl ExactSizeIterator<Item = PhysicalDevice>, error::PhysicalDeviceEnumerationError>
-	{
+	) -> Result<impl ExactSizeIterator<Item = PhysicalDevice>, error::PhysicalDeviceEnumerationError> {
 		let elf = self.clone();
 		let enumerator = unsafe {
 			self.enumerate_physical_devices()?
@@ -168,11 +172,11 @@ impl Instance {
 		Ok(enumerator)
 	}
 }
-impl Deref for Instance {
-	type Target = ash::Instance;
+impl_common_handle_traits! {
+	impl Deref, PartialEq, Eq, Hash for Instance {
+		type Target = ash::Instance { instance }
 
-	fn deref(&self) -> &Self::Target {
-		&self.instance
+		to_handle { .handle() }
 	}
 }
 impl Drop for Instance {

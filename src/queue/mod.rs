@@ -5,12 +5,15 @@ use std::{
 
 use ash::{
 	version::{DeviceV1_0, DeviceV1_1},
-	vk::{DeviceQueueCreateFlags, DeviceQueueInfo2}
+	vk::{self, DeviceQueueCreateFlags, DeviceQueueInfo2}
 };
 
 use crate::{device::Device, Vrc};
 
-/// An internally synchronized device queue.
+pub mod sharing_mode;
+
+/// A device queue.
+// TODO: internally synchronized?
 pub struct Queue {
 	device: Vrc<Device>,
 	queue: ash::vk::Queue,
@@ -31,7 +34,7 @@ impl Queue {
 		flags: DeviceQueueCreateFlags,
 		queue_family_index: u32,
 		queue_index: u32
-	) -> Self {
+	) -> Vrc<Self> {
 		log::debug!(
 			"Creating queue {:#?} {:#?} {:#?} {:#?}",
 			device,
@@ -55,12 +58,14 @@ impl Queue {
 			mem.assume_init()
 		};
 
-		Queue {
-			device,
-			queue,
-			queue_family_index,
-			queue_index
-		}
+		Vrc::new(
+			Queue {
+				device,
+				queue,
+				queue_family_index,
+				queue_index
+			}
+		)
 	}
 
 	pub const fn device(&self) -> &Vrc<Device> {
@@ -75,11 +80,9 @@ impl Queue {
 		self.queue_index
 	}
 }
-impl Deref for Queue {
-	type Target = ash::vk::Queue;
-
-	fn deref(&self) -> &Self::Target {
-		&self.queue
+impl_common_handle_traits! {
+	impl Deref, PartialEq, Eq, Hash for Queue {
+		type Target = vk::Queue { queue }
 	}
 }
 impl Debug for Queue {

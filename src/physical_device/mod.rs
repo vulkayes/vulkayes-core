@@ -9,6 +9,7 @@ use std::{
 use ash::{
 	version::InstanceV1_0,
 	vk::{
+		self,
 		Format,
 		FormatProperties,
 		ImageCreateFlags,
@@ -151,11 +152,9 @@ impl PhysicalDevice {
 		&self.instance
 	}
 }
-impl Deref for PhysicalDevice {
-	type Target = ash::vk::PhysicalDevice;
-
-	fn deref(&self) -> &Self::Target {
-		&self.physical_device
+impl_common_handle_traits! {
+	impl Deref, PartialEq, Eq, Hash for PhysicalDevice {
+		type Target = vk::PhysicalDevice { physical_device }
 	}
 }
 impl Debug for PhysicalDevice {

@@ -4,6 +4,7 @@ use ash::vk::AllocationCallbacks;
 mod rust;
 
 unsafe_enum_variants! {
+	#[derive(Debug, Copy, Clone)]
 	enum HostMemoryAllocatorInner {
 		/// The Vulkan implementation-dependent allocator will be used.
 		pub Unspecified,

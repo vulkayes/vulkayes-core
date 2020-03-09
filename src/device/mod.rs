@@ -142,12 +142,12 @@ impl Device {
 			let info = &*create_info.p_queue_create_infos.offset(family);
 
 			for index in 0 .. info.queue_count {
-				result.push(Vrc::new(Queue::from_device(
+				result.push(Queue::from_device(
 					self.clone(),
 					info.flags,
 					info.queue_family_index,
 					index
-				)));
+				));
 			}
 		}
 
@@ -162,11 +162,11 @@ impl Device {
 		self.physical_device.instance()
 	}
 }
-impl Deref for Device {
-	type Target = ash::Device;
+impl_common_handle_traits! {
+	impl Deref, PartialEq, Eq, Hash for Device {
+		type Target = ash::Device { device }
 
-	fn deref(&self) -> &Self::Target {
-		&self.device
+		to_handle { .handle() }
 	}
 }
 impl Drop for Device {

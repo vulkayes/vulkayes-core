@@ -115,11 +115,9 @@ impl Surface {
 		&self.loader
 	}
 }
-impl Deref for Surface {
-	type Target = ash::vk::SurfaceKHR;
-
-	fn deref(&self) -> &Self::Target {
-		&self.surface
+impl_common_handle_traits! {
+	impl Deref, PartialEq, Eq, Hash for Surface {
+		type Target = vk::SurfaceKHR { surface }
 	}
 }
 impl Drop for Surface {
