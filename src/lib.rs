@@ -8,12 +8,6 @@ pub use ash;
 pub type FastHashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 pub type FastHashSet<V> = rustc_hash::FxHashSet<V>;
 
-#[cfg(not(feature = "no_atomics"))]
-pub type Vrc<T> = std::sync::Arc<T>;
-
-#[cfg(feature = "no_atomics")]
-pub type Vrc<T> = std::rc::Rc<T>;
-
 // Non zero constants to avoid common unsafe blocks.
 pub const NONZEROU32_ONE: std::num::NonZeroU32 = unsafe { std::num::NonZeroU32::new_unchecked(1) };
 
@@ -31,6 +25,9 @@ pub mod queue;
 pub mod resource;
 pub mod surface;
 pub mod swapchain;
+pub mod command;
+
+pub use util::sync::Vrc;
 
 #[cfg(test)]
 mod test {

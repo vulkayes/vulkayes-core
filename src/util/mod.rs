@@ -7,3 +7,4 @@ pub mod macros;
 
 pub mod fmt;
 pub mod string;
+pub mod sync;
