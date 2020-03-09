@@ -180,6 +180,14 @@ impl Swapchain {
 		let allocation_callbacks: Option<vk::AllocationCallbacks> = host_memory_allocator.into();
 
 		let c_info = create_info.deref();
+
+		log::trace!(
+			"Creating swapchain with {:#?} {:#?} {:#?} {:#?}",
+			device,
+			surface,
+			c_info,
+			allocation_callbacks
+		);
 		let swapchain =
 			loader.create_swapchain(c_info, allocation_callbacks.as_ref())?;
 

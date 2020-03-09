@@ -35,8 +35,8 @@ impl Queue {
 		queue_family_index: u32,
 		queue_index: u32
 	) -> Vrc<Self> {
-		log::debug!(
-			"Creating queue {:#?} {:#?} {:#?} {:#?}",
+		log::trace!(
+			"Creating queue with {:#?} {:#?} {:#?} {:#?}",
 			device,
 			flags,
 			queue_family_index,

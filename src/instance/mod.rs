@@ -66,6 +66,11 @@ impl Instance {
 		host_memory_allocator: HostMemoryAllocator,
 		debug_callback: debug::DebugCallback
 	) -> Result<Vrc<Self>, error::InstanceError> {
+		log::info!(
+			"Vulkan instance version {}",
+			entry.instance_version()
+		);
+
 		let application_name_c = CString::new(application_info.application_name)?;
 		let engine_name_c = CString::new(application_info.engine_name)?;
 
@@ -118,15 +123,12 @@ impl Instance {
 	) -> Result<Vrc<Self>, error::InstanceError> {
 		let allocation_callbacks: Option<AllocationCallbacks> = host_memory_allocator.into();
 
-		log::info!(
-			"Vulkan instance version {}",
-			entry.instance_version()
-		);
-
-		log::debug!(
-			"Creating instance with {:#?} {:#?}",
+		log::trace!(
+			"Creating instance with {:#?} {:#?} {:#?} {:#?}",
+			entry,
 			create_info.deref(),
-			allocation_callbacks
+			allocation_callbacks,
+			debug_callback
 		);
 		let instance = entry.create_instance(&create_info, allocation_callbacks.as_ref())?;
 
@@ -166,7 +168,7 @@ impl Instance {
 		let enumerator = unsafe {
 			self.enumerate_physical_devices()?
 				.into_iter()
-				.map(move |physical_device| PhysicalDevice::new(elf.clone(), physical_device))
+				.map(move |physical_device| PhysicalDevice::from_existing(elf.clone(), physical_device))
 		};
 
 		Ok(enumerator)

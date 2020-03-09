@@ -12,6 +12,7 @@ use ash::vk::{
 };
 
 unsafe_enum_variants! {
+	#[derive(Debug)]
 	enum DebugCallbackInner {
 		/// No debug callback will be registered.
 		pub None,

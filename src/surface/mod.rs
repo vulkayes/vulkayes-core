@@ -25,7 +25,7 @@ impl Surface {
 	///
 	/// `instance` must be a parent of `surface`.
 	/// `surface` must be a valid surface handle for the whole lifetime of this object.
-	pub unsafe fn new(
+	pub unsafe fn from_existing(
 		instance: Vrc<Instance>,
 		surface: ash::vk::SurfaceKHR,
 		allocation_callbacks: Option<vk::AllocationCallbacks>
@@ -33,8 +33,8 @@ impl Surface {
 		let loader =
 			ash::extensions::khr::Surface::new(instance.entry().deref(), instance.deref().deref());
 
-		log::debug!(
-			"Creating surface {:#?} {:#?} {:#?}",
+		log::trace!(
+			"Creating surface with {:#?} {:#?} {:#?}",
 			instance,
 			surface,
 			allocation_callbacks

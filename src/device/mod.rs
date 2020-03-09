@@ -2,14 +2,14 @@
 
 use std::{
 	ffi::CString,
-	fmt::{Debug, Formatter},
+	fmt::{Debug},
 	ops::Deref,
 	os::raw::c_char
 };
 
 use ash::{
 	version::{DeviceV1_0, InstanceV1_0},
-	vk::{AllocationCallbacks, DeviceCreateInfo, DeviceQueueCreateFlags, DeviceQueueCreateInfo}
+	vk::{AllocationCallbacks, DeviceCreateInfo, DeviceQueueCreateInfo}
 };
 
 use crate::{
@@ -27,7 +27,6 @@ pub mod test;
 #[derive(Debug, Clone, Copy)]
 pub struct QueueCreateInfo<P: AsRef<[f32]>> {
 	pub queue_family_index: u32,
-	pub flags: DeviceQueueCreateFlags,
 	pub queue_priorities: P
 }
 
@@ -61,7 +60,6 @@ impl Device {
 			.iter()
 			.map(|q| {
 				DeviceQueueCreateInfo::builder()
-					.flags(q.flags)
 					.queue_family_index(q.queue_family_index)
 					.queue_priorities(q.queue_priorities.as_ref())
 					.build()
@@ -109,7 +107,7 @@ impl Device {
 	) -> Result<DeviceData, error::DeviceError> {
 		let allocation_callbacks: Option<AllocationCallbacks> = host_memory_allocator.into();
 
-		log::debug!(
+		log::trace!(
 			"Creating device with {:#?} {:#?} {:#?}",
 			physical_device,
 			create_info.deref(),
@@ -183,7 +181,7 @@ impl Drop for Device {
 	}
 }
 impl Debug for Device {
-	fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		f.debug_struct("Device")
 			.field(
 				"device",
