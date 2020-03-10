@@ -12,8 +12,7 @@ pub struct Image {
 	image: vk::Image,
 
 	format: vk::Format,
-	size: super::ImageSize
-	// TODO: Allocation callbacks?
+	size: super::ImageSize // TODO: Allocation callbacks?
 }
 impl Image {
 	/// Crates a new `Image` from existing `VkImage`.

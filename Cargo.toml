@@ -5,7 +5,7 @@ authors = ["edward"]
 edition = "2018"
 
 [features]
-default = []
+default = ["single_thread"]
 
 # enables rust host memory allocator option
 rust_host_allocator = []
@@ -13,6 +13,11 @@ rust_host_allocator = []
 single_thread = []
 # use cryptographically secure HashMap and HashSet instead of performance-oriented non-secure one
 crypto_secure_hash = []
+
+## Uses `crate_render_pass2` from Vulkan 1.2 (requires Vulkan version of 1.2)
+#render_pass_2 = []
+## Adds a fallback that dynamically detects Vulkan version and falls back to 1.0 `create_render_pass` if needed
+#render_pass_2_fallback = ["render_pass_2"]
 
 [dependencies]
 # core

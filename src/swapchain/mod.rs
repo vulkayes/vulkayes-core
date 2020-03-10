@@ -223,6 +223,31 @@ impl Swapchain {
 		})
 	}
 
+	/// Presents on given queue.
+	///
+	/// ### Safety
+	///
+	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkQueuePresentKHR.html>
+	pub unsafe fn present(
+		&self,
+		queue: &crate::queue::Queue,
+		info: impl Deref<Target = vk::PresentInfoKHR>
+	) -> Result<error::PresentResult, error::PresentError> {
+		let queue_lock = queue.lock().expect("queue Vutex poisoned");
+
+		log::trace!(
+			"Presenting on queue {:#?} {:#?} {:#?}",
+			self,
+			queue_lock,
+			info.deref()
+		);
+
+		self.loader
+			.queue_present(*queue_lock, info.deref())
+			.map(Into::into)
+			.map_err(Into::into)
+	}
+
 	pub fn device(&self) -> &Vrc<Device> {
 		&self.device
 	}

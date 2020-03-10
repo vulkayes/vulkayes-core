@@ -159,3 +159,133 @@ macro_rules! impl_common_handle_traits {
 		}
 	}
 }
+
+/// Creates a `repr(C)` struct and a companion offsets struct which represents byte offsets of the fields.
+///
+/// ```
+/// offsetable_struct! {
+/// 	#[derive(Debug)]
+/// 		pub struct Name {
+/// 		pub a: f32,
+/// 		pub b: [f32; 4],
+/// 		pub c: u8
+/// 	} repr(C) as NameOffsets
+/// }
+/// ```
+///
+/// expands to
+///
+/// ```
+/// #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+/// pub struct NameOffsets {
+/// 	a: usize,
+/// 	b: usize,
+/// 	c: usize
+/// }
+///
+/// #[derive(Debug)]
+/// #[repr(C)]
+/// pub struct Name {
+/// 	pub a: f32,
+/// 	pub b: [f32; 4],
+/// 	pub c: u8
+/// }
+/// impl Name {
+/// 	#[allow(unused_variables)]
+/// 	pub const fn offsets() -> NameOffsets {
+/// 		let current_offset: usize = 0;
+///
+/// 		let a = {
+/// 			let x_minus_one = current_offset.wrapping_sub(1);
+/// 			let alignment = std::mem::align_of::<f32>();
+///
+/// 			x_minus_one.wrapping_add(alignment).wrapping_sub(x_minus_one % alignment)
+/// 		};
+/// 		let current_offset = a + std::mem::size_of::<f32>();
+///
+/// 		let b = {
+/// 			let x_minus_one = current_offset.wrapping_sub(1);
+/// 			let alignment = std::mem::align_of::<[f32; 4]>();
+///
+/// 			x_minus_one.wrapping_add(alignment).wrapping_sub(x_minus_one % alignment)
+/// 		};
+/// 		let current_offset = b + std::mem::size_of::<[f32; 4]>();
+///
+/// 		let c = {
+/// 			let x_minus_one = current_offset.wrapping_sub(1);
+/// 			let alignment = std::mem::align_of::<u8>();
+///
+/// 			x_minus_one.wrapping_add(alignment).wrapping_sub(x_minus_one % alignment)
+/// 		};
+/// 		let current_offset = c + std::mem::size_of::<u8>();
+///
+/// 		NameOffsets {
+/// 			a,
+/// 			b,
+/// 			c
+/// 		}
+/// 	}
+/// }
+/// ```
+#[macro_export]
+macro_rules! offsetable_struct {
+	(
+		$( #[$attribute: meta] )*
+		$struct_vis: vis struct $name: ident {
+			$(
+				$field_vis: vis $field: ident: $ftype: ty
+			),*
+		} repr(C) as $offsets_name: ident
+	) => {
+		#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+		$struct_vis struct $offsets_name {
+			$(
+				$field_vis $field: usize
+			),*
+		}
+
+		$( #[$attribute] )*
+		#[repr(C)]
+		$struct_vis struct $name {
+			$(
+				$field_vis $field: $ftype
+			),*
+		}
+		impl $name {
+			#[allow(unused_variables)]
+			pub const fn offsets() -> $offsets_name {
+				let current_offset: usize = 0;
+
+				$(
+					// ```
+					// f_d(x) =
+					//     0, if x mod d = 0
+					//     d - x mod d, otherwise
+					// ```
+					// simplifies to `x - 1 + d - (x - 1) mod d`
+					// assuming `d = 2^N`, can also be written in code like: `(x - 1 + d) & !(d - 1)`
+					//
+					// Similar code to `std::alloc::Layout::padding_needed_for`
+					let $field = {
+						let x_minus_one = current_offset.wrapping_sub(1);
+						let alignment = std::mem::align_of::<$ftype>();
+
+						x_minus_one.wrapping_add(alignment).wrapping_sub(x_minus_one % alignment)
+					};
+					// let $field = {
+					// 	let alignment_minus_one = std::mem::align_of::<$ftype>().wrapping_sub(1);
+					//
+					// 	current_offset.wrapping_add(alignment_minus_one) & !alignment_minus_one
+					// };
+					let current_offset = current_offset + std::mem::size_of::<$ftype>();
+				)*
+
+				$offsets_name {
+					$(
+						$field
+					),*
+				}
+			}
+		}
+	}
+}

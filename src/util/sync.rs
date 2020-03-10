@@ -9,19 +9,23 @@ mod inner {
 
 #[cfg(feature = "single_thread")]
 mod inner {
+	use std::cell::{BorrowMutError, RefCell, RefMut};
+
 	pub type Vrc<T> = std::rc::Rc<T>;
 
-	/// Type is interface compatible with `Mutex` to be used in single-threaded context.
+	/// Type that is interface-compatible with `Mutex` to be used in single-threaded context.
+	///
+	/// This type is treated as "poisoned" when it is attempted to lock it twice.
 	#[derive(Debug)]
 	#[repr(transparent)]
-	pub struct Vutex<T>(T);
+	pub struct Vutex<T>(RefCell<T>);
 	impl<T> Vutex<T> {
-		pub fn new(value: T) -> Self {
-			Vutex(value)
+		pub const fn new(value: T) -> Self {
+			Vutex(RefCell::new(value))
 		}
 
-		pub fn lock(&self) -> Result<&T, std::convert::Infallible> {
-			Ok(&self.0)
+		pub fn lock(&self) -> Result<RefMut<T>, BorrowMutError> {
+			self.0.try_borrow_mut()
 		}
 	}
 }

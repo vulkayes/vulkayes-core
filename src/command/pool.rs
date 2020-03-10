@@ -56,7 +56,7 @@ impl CommandPool {
 		level: vk::CommandBufferLevel,
 		count: std::num::NonZeroU32
 	) -> Result<Vec<vk::CommandBuffer>, super::buffer::CommandBufferError> {
-		let lock = self.pool.lock().expect("mutex poisoned");
+		let lock = self.pool.lock().expect("vutex poisoned");
 
 		let alloc_info = vk::CommandBufferAllocateInfo::builder()
 			.command_pool(*lock)
@@ -65,22 +65,22 @@ impl CommandPool {
 
 		log::trace!(
 			"Allocating command buffers with {:#?} {:#?}",
-			self,
+			crate::util::fmt::format_handle(*lock),
 			alloc_info.deref()
 		);
 
 		self.queue
 			.device()
 			.allocate_command_buffers(alloc_info.deref())
-			.map_err(|e| e.into())
+			.map_err(Into::into)
 	}
 
 	pub unsafe fn free_command_buffers(&self, buffers: impl AsRef<[vk::CommandBuffer]>) {
-		let lock = self.pool.lock().expect("mutex poisoned");
+		let lock = self.pool.lock().expect("vutex poisoned");
 
 		log::trace!(
 			"Freeing command buffers with {:#?} {:#?}",
-			self,
+			crate::util::fmt::format_handle(*lock),
 			buffers.as_ref()
 		);
 
@@ -101,12 +101,12 @@ impl_common_handle_traits! {
 	impl Deref, PartialEq, Eq, Hash for CommandPool {
 		type Target = Vutex<ash::vk::CommandPool> { pool }
 
-		to_handle { .lock().expect("mutex poisoned").deref() }
+		to_handle { .lock().expect("vutex poisoned").deref() }
 	}
 }
 impl Drop for CommandPool {
 	fn drop(&mut self) {
-		let lock = self.pool.lock().expect("mutex poisoned");
+		let lock = self.pool.lock().expect("vutex poisoned");
 
 		unsafe {
 			self.queue
