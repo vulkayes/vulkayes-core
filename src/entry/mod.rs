@@ -7,6 +7,7 @@ use std::{
 };
 
 use ash::version::EntryV1_0;
+
 use crate::util::fmt::VkVersion;
 
 pub mod enumerate;

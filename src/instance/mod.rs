@@ -66,10 +66,7 @@ impl Instance {
 		host_memory_allocator: HostMemoryAllocator,
 		debug_callback: debug::DebugCallback
 	) -> Result<Vrc<Self>, error::InstanceError> {
-		log::info!(
-			"Vulkan instance version {}",
-			entry.instance_version()
-		);
+		log::info!("Vulkan instance version {}", entry.instance_version());
 
 		let application_name_c = CString::new(application_info.application_name)?;
 		let engine_name_c = CString::new(application_info.engine_name)?;
@@ -163,12 +160,15 @@ impl Instance {
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkEnumeratePhysicalDevices.html>.
 	pub fn physical_devices(
 		self: &Vrc<Self>
-	) -> Result<impl ExactSizeIterator<Item = PhysicalDevice>, error::PhysicalDeviceEnumerationError> {
+	) -> Result<impl ExactSizeIterator<Item = PhysicalDevice>, error::PhysicalDeviceEnumerationError>
+	{
 		let elf = self.clone();
 		let enumerator = unsafe {
 			self.enumerate_physical_devices()?
 				.into_iter()
-				.map(move |physical_device| PhysicalDevice::from_existing(elf.clone(), physical_device))
+				.map(move |physical_device| {
+					PhysicalDevice::from_existing(elf.clone(), physical_device)
+				})
 		};
 
 		Ok(enumerator)

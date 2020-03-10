@@ -1,11 +1,6 @@
 //! A device represents an instance of connection to a physical device.
 
-use std::{
-	ffi::CString,
-	fmt::{Debug},
-	ops::Deref,
-	os::raw::c_char
-};
+use std::{ffi::CString, fmt::Debug, ops::Deref, os::raw::c_char};
 
 use ash::{
 	version::{DeviceV1_0, InstanceV1_0},

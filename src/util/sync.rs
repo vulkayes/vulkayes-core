@@ -1,3 +1,4 @@
+pub use inner::*;
 
 #[cfg(not(feature = "single_thread"))]
 mod inner {
@@ -20,11 +21,7 @@ mod inner {
 		}
 
 		pub fn lock(&self) -> Result<&T, std::convert::Infallible> {
-			Ok(
-				&self.0
-			)
+			Ok(&self.0)
 		}
 	}
 }
-
-pub use inner::*;

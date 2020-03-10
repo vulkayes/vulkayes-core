@@ -12,11 +12,10 @@ static mut ALLOCATOR: MaybeUninit<Mutex<RustHostMemoryAllocator>> = MaybeUninit:
 static ALLOCATOR_INIT: Once = Once::new();
 
 pub(super) struct RustHostMemoryAllocator {
-	ptr_map: crate::FastHashMap<*mut u8, std::alloc::Layout>
+	ptr_map: crate::util::hash::VHashMap<*mut u8, std::alloc::Layout>
 }
-
+// This is safe because we are only hashing the `*mut u8`, not dereferencing it.
 unsafe impl Send for RustHostMemoryAllocator {}
-
 unsafe impl Sync for RustHostMemoryAllocator {}
 
 impl RustHostMemoryAllocator {

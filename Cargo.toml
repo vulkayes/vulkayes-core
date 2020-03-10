@@ -7,8 +7,12 @@ edition = "2018"
 [features]
 default = []
 
+# enables rust host memory allocator option
 rust_host_allocator = []
+# replaces use of Arc<T> and Mutex<T> with Rc<T> and T
 single_thread = []
+# use cryptographically secure HashMap and HashSet instead of performance-oriented non-secure one
+crypto_secure_hash = []
 
 [dependencies]
 # core

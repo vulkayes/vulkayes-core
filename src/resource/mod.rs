@@ -30,10 +30,7 @@ pub struct ImageSize {
 	array_layers: NonZeroU32
 }
 impl ImageSize {
-	pub const fn new_1d(
-		width: NonZeroU32,
-		array_layers: NonZeroU32
-	) -> Self {
+	pub const fn new_1d(width: NonZeroU32, array_layers: NonZeroU32) -> Self {
 		ImageSize {
 			image_type: vk::ImageType::TYPE_1D,
 			width,
@@ -43,11 +40,7 @@ impl ImageSize {
 		}
 	}
 
-	pub const fn new_2d(
-		width: NonZeroU32,
-		height: NonZeroU32,
-		array_layers: NonZeroU32
-	) -> Self {
+	pub const fn new_2d(width: NonZeroU32, height: NonZeroU32, array_layers: NonZeroU32) -> Self {
 		ImageSize {
 			image_type: vk::ImageType::TYPE_2D,
 			width,
@@ -57,11 +50,7 @@ impl ImageSize {
 		}
 	}
 
-	pub const fn new_3d(
-		width: NonZeroU32,
-		height: NonZeroU32,
-		depth: NonZeroU32
-	) -> Self {
+	pub const fn new_3d(width: NonZeroU32, height: NonZeroU32, depth: NonZeroU32) -> Self {
 		ImageSize {
 			image_type: vk::ImageType::TYPE_2D,
 			width,
@@ -108,7 +97,7 @@ impl Into<vk::Extent2D> for ImageSize {
 	fn into(self) -> vk::Extent2D {
 		vk::Extent2D {
 			width: self.width.get(),
-			height: self.height.get(),
+			height: self.height.get()
 		}
 	}
 }

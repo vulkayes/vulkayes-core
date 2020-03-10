@@ -1,22 +1,21 @@
 //! Swapchain is a set of image buffers which handles presentation and tearing.
 
 use std::{
+	fmt::{self, Debug},
+	mem::ManuallyDrop,
 	num::NonZeroU32,
-	ops::Deref,
-	fmt::{Debug, self}
+	ops::Deref
 };
-use std::mem::ManuallyDrop;
 
 use crate::{
 	ash::vk,
 	device::Device,
 	memory::host::HostMemoryAllocator,
+	queue::sharing_mode::SharingMode,
+	resource::{image::Image, ImageSize},
 	surface::Surface,
 	Vrc
 };
-use crate::resource::image::Image;
-use crate::resource::ImageSize;
-use crate::queue::sharing_mode::SharingMode;
 
 pub mod error;
 
@@ -113,8 +112,7 @@ impl Swapchain {
 			.present_mode(present_mode)
 			.clipped(clipped)
 			.image_sharing_mode(sharing_mode.sharing_mode())
-			.queue_family_indices(sharing_mode.indices())
-			;
+			.queue_family_indices(sharing_mode.indices());
 
 		let create_info = image_info.add_to_create_info(create_info);
 
@@ -146,8 +144,7 @@ impl Swapchain {
 			.clipped(clipped)
 			.old_swapchain(self.swapchain)
 			.image_sharing_mode(sharing_mode.sharing_mode())
-			.queue_family_indices(sharing_mode.indices())
-			;
+			.queue_family_indices(sharing_mode.indices());
 
 		let create_info = image_info.add_to_create_info(create_info);
 
@@ -188,8 +185,7 @@ impl Swapchain {
 			c_info,
 			allocation_callbacks
 		);
-		let swapchain =
-			loader.create_swapchain(c_info, allocation_callbacks.as_ref())?;
+		let swapchain = loader.create_swapchain(c_info, allocation_callbacks.as_ref())?;
 
 		let me = Vrc::new(Swapchain {
 			surface,
@@ -200,23 +196,24 @@ impl Swapchain {
 			allocation_callbacks
 		});
 
-		let images: Vec<_> = me.loader.get_swapchain_images(swapchain)?
-			.into_iter().map(|image| {
-				Vrc::new(
-					SwapchainImage::new(
-						me.clone(),
-						Image::from_existing(
-							device.clone(),
-							image,
-							c_info.image_format,
-							ImageSize::new_2d(
-								NonZeroU32::new_unchecked(c_info.image_extent.width),
-								NonZeroU32::new_unchecked(c_info.image_extent.height),
-								NonZeroU32::new_unchecked(c_info.image_array_layers)
-							)
+		let images: Vec<_> = me
+			.loader
+			.get_swapchain_images(swapchain)?
+			.into_iter()
+			.map(|image| {
+				Vrc::new(SwapchainImage::new(
+					me.clone(),
+					Image::from_existing(
+						device.clone(),
+						image,
+						c_info.image_format,
+						ImageSize::new_2d(
+							NonZeroU32::new_unchecked(c_info.image_extent.width),
+							NonZeroU32::new_unchecked(c_info.image_extent.height),
+							NonZeroU32::new_unchecked(c_info.image_array_layers)
 						)
 					)
-				)
+				))
 			})
 			.collect();
 

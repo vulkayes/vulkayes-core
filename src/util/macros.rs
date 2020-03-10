@@ -121,7 +121,7 @@ macro_rules! vk_result_error {
 /// 		self.field_on_self.handle() == other.field_on_self.handle()
 /// 	}
 /// }
-/// impl<A: Debug> Eq for MyType<A> { }
+/// impl<A: Debug> Eq for MyType<A> {}
 /// impl<A: Debug> Hash for MyType<A> {
 /// 	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
 /// 		self.field_on_self.handle().hash(state)

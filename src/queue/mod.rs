@@ -58,14 +58,12 @@ impl Queue {
 			mem.assume_init()
 		};
 
-		Vrc::new(
-			Queue {
-				device,
-				queue,
-				queue_family_index,
-				queue_index
-			}
-		)
+		Vrc::new(Queue {
+			device,
+			queue,
+			queue_family_index,
+			queue_index
+		})
 	}
 
 	pub const fn device(&self) -> &Vrc<Device> {

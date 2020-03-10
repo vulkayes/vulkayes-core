@@ -1,14 +1,25 @@
 //! This crate provides core components for the vulkayes project.
+//!
+//! ## Crate features:
+//!
+//! ### `rust_host_allocator`
+//!
+//! Adds `Rust()` constructor to `HostMemoryAllocator` that uses Rusts `std::alloc` methods.
+//!
+//! ### `single_thread`
+//!
+//! Replaces uses of `Arc<T>` and `Mutex<T>` (dubbed as `Vrc` and `Vutex` across the crate) with `Rc<T>` and plain `T`.
+//!
+//! ### `crypto_secure_hash`
+//!
+//! Uses `std::collections::{HashMap, HashSet}` instead of `rustc_hash::{FxHashMap, FxHashSet}` (dubbed as `VHashMap` and `VHashSet`)  across the crate.
 
 // Export `ash` because all other component will use it.
 pub use ash;
 
-// Export these fast hash-collections for other components to use.
-// I found these to be fastest of { hashbrown, stdlib, fnv, fx } with a local benchmark, hopefully that's true for mostly everyone.
-pub type FastHashMap<K, V> = rustc_hash::FxHashMap<K, V>;
-pub type FastHashSet<V> = rustc_hash::FxHashSet<V>;
+pub use util::sync::Vrc;
 
-// Non zero constants to avoid common unsafe blocks.
+/// Non zero `1u32` constant to avoid unnecessary unsafe blocks in constant contexts.
 pub const NONZEROU32_ONE: std::num::NonZeroU32 = unsafe { std::num::NonZeroU32::new_unchecked(1) };
 
 // Macros used inside and outside of the crate.
@@ -17,6 +28,7 @@ pub mod util;
 
 pub mod memory;
 
+pub mod command;
 pub mod device;
 pub mod entry;
 pub mod instance;
@@ -25,9 +37,6 @@ pub mod queue;
 pub mod resource;
 pub mod surface;
 pub mod swapchain;
-pub mod command;
-
-pub use util::sync::Vrc;
 
 #[cfg(test)]
 mod test {

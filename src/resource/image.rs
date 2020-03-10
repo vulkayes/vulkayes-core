@@ -1,19 +1,18 @@
-use std::ops::Deref;
-use std::fmt::{Debug, self};
+use std::{
+	fmt::{self, Debug},
+	ops::Deref
+};
 
-use ash::vk;
-use ash::version::DeviceV1_0;
+use ash::{version::DeviceV1_0, vk};
 
-use crate::Vrc;
-use crate::device::Device;
+use crate::{device::Device, Vrc};
 
 pub struct Image {
 	device: Vrc<Device>,
 	image: vk::Image,
 
 	format: vk::Format,
-	size: super::ImageSize,
-
+	size: super::ImageSize
 	// TODO: Allocation callbacks?
 }
 impl Image {

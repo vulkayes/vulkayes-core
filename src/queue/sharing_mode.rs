@@ -1,4 +1,5 @@
 use thiserror::Error;
+
 use crate::queue::Queue;
 
 #[derive(Debug, Clone)]
@@ -17,16 +18,17 @@ impl<A: AsRef<[u32]>> SharingMode<A> {
 		}
 
 		let duplicate = ref_queues.iter().enumerate().any(|(index, first)| {
-			ref_queues.iter().skip(index + 1).any(|second| first == second)
+			ref_queues
+				.iter()
+				.skip(index + 1)
+				.any(|second| first == second)
 		});
 
 		if duplicate {
 			return Err(SharingModeError::NotUnique)
 		}
 
-		Ok(
-			SharingMode(queues)
-		)
+		Ok(SharingMode(queues))
 	}
 
 	pub fn sharing_mode(&self) -> ash::vk::SharingMode {

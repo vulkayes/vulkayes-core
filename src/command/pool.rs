@@ -1,13 +1,8 @@
-use std::ops::Deref;
-use std::fmt::Debug;
+use std::{fmt::Debug, ops::Deref};
 
-use ash::vk;
-use ash::version::DeviceV1_0;
+use ash::{version::DeviceV1_0, vk};
 
-use crate::Vrc;
-use crate::util::sync::Vutex;
-use crate::queue::Queue;
-use crate::memory::host::HostMemoryAllocator;
+use crate::{memory::host::HostMemoryAllocator, queue::Queue, util::sync::Vutex, Vrc};
 
 /// Internally synchronized command pool.
 pub struct CommandPool {
@@ -17,8 +12,6 @@ pub struct CommandPool {
 	allocation_callbacks: Option<vk::AllocationCallbacks>
 }
 impl CommandPool {
-	///
-	///
 	/// Note: `PROTECTED` flag value is currently ignored.
 	pub fn new(
 		queue: Vrc<Queue>,
@@ -31,13 +24,7 @@ impl CommandPool {
 			.flags(flags)
 			.queue_family_index(queue.queue_family_index());
 
-		unsafe {
-			Self::from_create_info(
-				queue,
-				create_info,
-				host_memory_allocator
-			)
-		}
+		unsafe { Self::from_create_info(queue, create_info, host_memory_allocator) }
 	}
 
 	pub unsafe fn from_create_info(
@@ -53,20 +40,15 @@ impl CommandPool {
 			create_info.deref(),
 			allocation_callbacks
 		);
-		let pool = queue.device().create_command_pool(
-			create_info.deref(),
-			allocation_callbacks.as_ref()
-		)?;
+		let pool = queue
+			.device()
+			.create_command_pool(create_info.deref(), allocation_callbacks.as_ref())?;
 
-		Ok(
-			Vrc::new(
-				CommandPool {
-					queue,
-					pool: Vutex::new(pool),
-					allocation_callbacks
-				}
-			)
-		)
+		Ok(Vrc::new(CommandPool {
+			queue,
+			pool: Vutex::new(pool),
+			allocation_callbacks
+		}))
 	}
 
 	pub unsafe fn allocate_command_buffers(
@@ -79,8 +61,7 @@ impl CommandPool {
 		let alloc_info = vk::CommandBufferAllocateInfo::builder()
 			.command_pool(*lock)
 			.level(level)
-			.command_buffer_count(count.get())
-		;
+			.command_buffer_count(count.get());
 
 		log::trace!(
 			"Allocating command buffers with {:#?} {:#?}",
@@ -88,15 +69,13 @@ impl CommandPool {
 			alloc_info.deref()
 		);
 
-		self.queue.device().allocate_command_buffers(
-			alloc_info.deref()
-		).map_err(|e| e.into())
+		self.queue
+			.device()
+			.allocate_command_buffers(alloc_info.deref())
+			.map_err(|e| e.into())
 	}
 
-	pub unsafe fn free_command_buffers(
-		&self,
-		buffers: impl AsRef<[vk::CommandBuffer]>
-	) {
+	pub unsafe fn free_command_buffers(&self, buffers: impl AsRef<[vk::CommandBuffer]>) {
 		let lock = self.pool.lock().expect("mutex poisoned");
 
 		log::trace!(
@@ -105,10 +84,9 @@ impl CommandPool {
 			buffers.as_ref()
 		);
 
-		self.queue.device().free_command_buffers(
-			*lock,
-			buffers.as_ref()
-		)
+		self.queue
+			.device()
+			.free_command_buffers(*lock, buffers.as_ref())
 	}
 
 	pub fn queue(&self) -> &Vrc<Queue> {
@@ -131,7 +109,9 @@ impl Drop for CommandPool {
 		let lock = self.pool.lock().expect("mutex poisoned");
 
 		unsafe {
-			self.queue.device().destroy_command_pool(*lock, self.allocation_callbacks.as_ref())
+			self.queue
+				.device()
+				.destroy_command_pool(*lock, self.allocation_callbacks.as_ref())
 		}
 	}
 }
@@ -149,8 +129,8 @@ vk_result_error! {
 	#[derive(Debug)]
 	pub enum CommandPoolError {
 		vk {
-        	ERROR_OUT_OF_HOST_MEMORY,
-        	ERROR_OUT_OF_DEVICE_MEMORY
+			ERROR_OUT_OF_HOST_MEMORY,
+			ERROR_OUT_OF_DEVICE_MEMORY
 		}
 	}
 }
