@@ -108,11 +108,11 @@ impl Surface {
 		Ok(formats)
 	}
 
-	pub fn instance(&self) -> &Vrc<Instance> {
+	pub const fn instance(&self) -> &Vrc<Instance> {
 		&self.instance
 	}
 
-	pub fn loader(&self) -> &ash::extensions::khr::Surface {
+	pub const fn loader(&self) -> &ash::extensions::khr::Surface {
 		&self.loader
 	}
 }

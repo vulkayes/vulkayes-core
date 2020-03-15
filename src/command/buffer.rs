@@ -31,10 +31,11 @@ impl CommandBuffer {
 		Ok(buffers)
 	}
 
-	pub fn pool(&self) -> &Vrc<CommandPool> {
+	pub const fn pool(&self) -> &Vrc<CommandPool> {
 		&self.pool
 	}
 
+	// TODO: Cannot be const because Deref
 	pub fn device(&self) -> &Vrc<Device> {
 		&self.pool.device()
 	}

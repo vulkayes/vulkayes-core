@@ -38,8 +38,8 @@ impl CommandPool {
 		create_info: impl Deref<Target = vk::CommandPoolCreateInfo>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, CommandPoolError> {
-		log::debug!(
-			"Creating command pool with {:#?} {:#?} {:#?}",
+		log_trace_common!(
+			"Creating command pool:",
 			queue,
 			create_info.deref(),
 			host_memory_allocator
@@ -105,11 +105,11 @@ impl CommandPool {
 			.free_command_buffers(*lock, buffers.as_ref())
 	}
 
-	pub fn queue_family_index(&self) -> u32 {
+	pub const fn queue_family_index(&self) -> u32 {
 		self.queue_family_index
 	}
 
-	pub fn device(&self) -> &Vrc<Device> {
+	pub const fn device(&self) -> &Vrc<Device> {
 		&self.device
 	}
 }

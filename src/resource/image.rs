@@ -42,15 +42,15 @@ impl Image {
 		}
 	}
 
-	pub fn size(&self) -> super::ImageSize {
+	pub const fn size(&self) -> super::ImageSize {
 		self.size
 	}
 
-	pub fn format(&self) -> vk::Format {
+	pub const fn format(&self) -> vk::Format {
 		self.format
 	}
 
-	pub fn device(&self) -> &Vrc<Device> {
+	pub const fn device(&self) -> &Vrc<Device> {
 		&self.device
 	}
 }

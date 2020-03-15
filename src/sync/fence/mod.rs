@@ -139,7 +139,7 @@ impl Fence {
 
 	// TODO: Specialcase `wait_any` and `wait_all` for exactly two fences for now?
 
-	pub fn device(&self) -> &Vrc<Device> {
+	pub const fn device(&self) -> &Vrc<Device> {
 		&self.device
 	}
 }

@@ -39,7 +39,7 @@ impl SwapchainImage {
 		}
 	}
 
-	pub fn swapchain(&self) -> &Vrc<Swapchain> {
+	pub const fn swapchain(&self) -> &Vrc<Swapchain> {
 		&self.swapchain
 	}
 }
@@ -259,15 +259,15 @@ impl Swapchain {
 			.map_err(Into::into)
 	}
 
-	pub fn device(&self) -> &Vrc<Device> {
+	pub const fn device(&self) -> &Vrc<Device> {
 		&self.device
 	}
 
-	pub fn surface(&self) -> &Vrc<Surface> {
+	pub const fn surface(&self) -> &Vrc<Surface> {
 		&self.surface
 	}
 
-	pub fn loader(&self) -> &ash::extensions::khr::Swapchain {
+	pub const fn loader(&self) -> &ash::extensions::khr::Swapchain {
 		&self.loader
 	}
 }

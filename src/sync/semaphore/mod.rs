@@ -84,7 +84,7 @@ impl Semaphore {
 		)
 	}
 
-	pub fn device(&self) -> &Vrc<Device> {
+	pub const fn device(&self) -> &Vrc<Device> {
 		&self.device
 	}
 }

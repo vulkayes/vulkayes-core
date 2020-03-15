@@ -41,6 +41,7 @@ impl<A: AsRef<[u32]>> SharingMode<A> {
 		}
 	}
 
+	// TODO: Cannot be const because of generic A
 	pub fn indices(&self) -> &[u32] {
 		self.0.as_ref()
 	}
