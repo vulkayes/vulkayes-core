@@ -12,6 +12,12 @@ vk_result_error! {
 		}
 
 		#[error("Device layer and/or extension strings could not be converted into CStr")]
-		NulError(#[from] std::ffi::NulError)
+		NulError(#[from] std::ffi::NulError),
+
+		#[error("Queue create info array must contain at least one element")]
+		QueuesEmpty,
+
+		#[error("Queue create info `queue_priorities` array must contain at least one element")]
+		QueuePrioritiesEmpty
 	}
 }

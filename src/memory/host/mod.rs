@@ -17,6 +17,13 @@ unsafe_enum_variants! {
 	} as pub HostMemoryAllocator
 }
 impl HostMemoryAllocator {
+	pub fn as_ref(&self) -> Option<&AllocationCallbacks> {
+		match self.0 {
+			HostMemoryAllocatorInner::Unspecified => None,
+			HostMemoryAllocatorInner::Custom(ref callbacks) => Some(callbacks)
+		}
+	}
+
 	/// Rust GlobalAllocator will be used.
 	#[cfg(feature = "rust_host_allocator")]
 	#[allow(non_snake_case)]
@@ -49,3 +56,6 @@ impl Default for HostMemoryAllocator {
 		HostMemoryAllocator::Unspecified()
 	}
 }
+
+unsafe impl Send for HostMemoryAllocator {}
+unsafe impl Sync for HostMemoryAllocator {}

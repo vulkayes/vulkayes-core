@@ -2,19 +2,22 @@ use std::{fmt::Debug, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
+use crate::device::Device;
 use crate::{memory::host::HostMemoryAllocator, queue::Queue, util::sync::Vutex, Vrc};
 
 /// Internally synchronized command pool.
 pub struct CommandPool {
-	queue: Vrc<Queue>,
+	device: Vrc<Device>,
+	queue_family_index: u32,
+
 	pool: Vutex<vk::CommandPool>,
 
-	allocation_callbacks: Option<vk::AllocationCallbacks>
+	host_memory_allocator: HostMemoryAllocator
 }
 impl CommandPool {
 	/// Note: `PROTECTED` flag value is currently ignored.
 	pub fn new(
-		queue: Vrc<Queue>,
+		queue: &Vrc<Queue>,
 		flags: vk::CommandPoolCreateFlags,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, CommandPoolError> {
@@ -27,31 +30,37 @@ impl CommandPool {
 		unsafe { Self::from_create_info(queue, create_info, host_memory_allocator) }
 	}
 
+	/// ### Safety
+	///
+	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCreateCommandPool.html>
 	pub unsafe fn from_create_info(
-		queue: Vrc<Queue>,
+		queue: &Vrc<Queue>,
 		create_info: impl Deref<Target = vk::CommandPoolCreateInfo>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, CommandPoolError> {
-		let allocation_callbacks: Option<vk::AllocationCallbacks> = host_memory_allocator.into();
-
 		log::debug!(
 			"Creating command pool with {:#?} {:#?} {:#?}",
 			queue,
 			create_info.deref(),
-			allocation_callbacks
+			host_memory_allocator
 		);
 		let pool = queue
 			.device()
-			.create_command_pool(create_info.deref(), allocation_callbacks.as_ref())?;
+			.create_command_pool(create_info.deref(), host_memory_allocator.as_ref())?;
 
 		Ok(Vrc::new(CommandPool {
-			queue,
+			device: queue.device().clone(),
+			queue_family_index: queue.queue_family_index(),
+
 			pool: Vutex::new(pool),
-			allocation_callbacks
+			host_memory_allocator
 		}))
 	}
 
-	pub unsafe fn allocate_command_buffers(
+	/// ### Panic
+	///
+	/// This function will panic if the pool `Vutex` is poisoned.
+	pub fn allocate_command_buffers(
 		&self,
 		level: vk::CommandBufferLevel,
 		count: std::num::NonZeroU32
@@ -69,12 +78,20 @@ impl CommandPool {
 			alloc_info.deref()
 		);
 
-		self.queue
-			.device()
-			.allocate_command_buffers(alloc_info.deref())
-			.map_err(Into::into)
+		unsafe {
+			self.device
+				.allocate_command_buffers(alloc_info.deref())
+				.map_err(Into::into)
+		}
 	}
 
+	/// ### Safety
+	///
+	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkFreeCommandBuffers.html>
+	///
+	/// ### Panic
+	///
+	/// This function will panic if the pool `Vutex` is poisoned.
 	pub unsafe fn free_command_buffers(&self, buffers: impl AsRef<[vk::CommandBuffer]>) {
 		let lock = self.pool.lock().expect("vutex poisoned");
 
@@ -84,17 +101,16 @@ impl CommandPool {
 			buffers.as_ref()
 		);
 
-		self.queue
-			.device()
+		self.device
 			.free_command_buffers(*lock, buffers.as_ref())
 	}
 
-	pub fn queue(&self) -> &Vrc<Queue> {
-		&self.queue
+	pub fn queue_family_index(&self) -> u32 {
+		self.queue_family_index
 	}
 
-	pub fn device(&self) -> &Vrc<crate::device::Device> {
-		self.queue.device()
+	pub fn device(&self) -> &Vrc<Device> {
+		&self.device
 	}
 }
 impl_common_handle_traits! {
@@ -109,18 +125,17 @@ impl Drop for CommandPool {
 		let lock = self.pool.lock().expect("vutex poisoned");
 
 		unsafe {
-			self.queue
-				.device()
-				.destroy_command_pool(*lock, self.allocation_callbacks.as_ref())
+			self.device.destroy_command_pool(*lock, self.host_memory_allocator.as_ref())
 		}
 	}
 }
 impl Debug for CommandPool {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		f.debug_struct("CommandPool")
-			.field("queue", &self.queue)
+			.field("device", &self.device)
+			.field("queue_family_index", &self.queue_family_index)
 			.field("pool", &self.pool)
-			.field("allocation_callbacks", &self.allocation_callbacks)
+			.field("host_memory_allocator", &self.host_memory_allocator)
 			.finish()
 	}
 }

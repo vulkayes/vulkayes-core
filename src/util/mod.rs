@@ -1,7 +1,5 @@
 //! Utilities and macros.
 
-pub use string::VkSmallString;
-
 #[macro_use]
 pub mod macros;
 

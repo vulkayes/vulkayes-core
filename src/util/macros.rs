@@ -165,10 +165,10 @@ macro_rules! impl_common_handle_traits {
 /// ```
 /// offsetable_struct! {
 /// 	#[derive(Debug)]
-/// 		pub struct Name {
+/// 	pub struct Name {
 /// 		pub a: f32,
 /// 		pub b: [f32; 4],
-/// 		pub c: u8
+/// 		c: u8
 /// 	} repr(C) as NameOffsets
 /// }
 /// ```
@@ -178,8 +178,8 @@ macro_rules! impl_common_handle_traits {
 /// ```
 /// #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 /// pub struct NameOffsets {
-/// 	a: usize,
-/// 	b: usize,
+/// 	pub a: usize,
+/// 	pub b: usize,
 /// 	c: usize
 /// }
 ///
@@ -188,7 +188,7 @@ macro_rules! impl_common_handle_traits {
 /// pub struct Name {
 /// 	pub a: f32,
 /// 	pub b: [f32; 4],
-/// 	pub c: u8
+/// 	c: u8
 /// }
 /// impl Name {
 /// 	#[allow(unused_variables)]
@@ -252,6 +252,9 @@ macro_rules! offsetable_struct {
 			),*
 		}
 		impl $name {
+			/// Returns a struct describing offsets of each field from the start of the struct.
+			///
+			/// This is mainly useful for things like vertex data
 			#[allow(unused_variables)]
 			pub const fn offsets() -> $offsets_name {
 				let current_offset: usize = 0;

@@ -14,7 +14,8 @@ use crate::{
 	queue::sharing_mode::SharingMode,
 	resource::{image::Image, ImageSize},
 	surface::Surface,
-	Vrc
+	Vrc,
+	util::sync::Vutex
 };
 
 pub mod error;
@@ -89,9 +90,10 @@ pub struct Swapchain {
 
 	device: Vrc<Device>,
 	loader: ash::extensions::khr::Swapchain,
-	swapchain: vk::SwapchainKHR,
+	swapchain: Vutex<vk::SwapchainKHR>,
+	retired: bool,
 
-	allocation_callbacks: Option<vk::AllocationCallbacks>
+	host_memory_allocator: HostMemoryAllocator
 }
 impl Swapchain {
 	pub fn new(
@@ -114,6 +116,11 @@ impl Swapchain {
 			.image_sharing_mode(sharing_mode.sharing_mode())
 			.queue_family_indices(sharing_mode.indices());
 
+		if cfg!(feature = "runtime_implicit_validations") {
+			if image_info.image_usage.is_empty() {
+				return Err(error::SwapchainError::ImageUsageEmpty)
+			}
+		}
 		let create_info = image_info.add_to_create_info(create_info);
 
 		unsafe {
@@ -136,13 +143,18 @@ impl Swapchain {
 		clipped: bool,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<SwapchainData, error::SwapchainError> {
+		let lock = self.swapchain.lock().expect("vutex poisoned");
+		if self.retired {
+			return Err(error::SwapchainError::SwapchainRetired);
+		}
+
 		let create_info = vk::SwapchainCreateInfoKHR::builder()
 			.surface(**self.surface)
 			.pre_transform(pre_transform)
 			.composite_alpha(composite_alpha)
 			.present_mode(present_mode)
 			.clipped(clipped)
-			.old_swapchain(self.swapchain)
+			.old_swapchain(*lock)
 			.image_sharing_mode(sharing_mode.sharing_mode())
 			.queue_family_indices(sharing_mode.indices());
 
@@ -174,8 +186,6 @@ impl Swapchain {
 			device.deref().deref()
 		);
 
-		let allocation_callbacks: Option<vk::AllocationCallbacks> = host_memory_allocator.into();
-
 		let c_info = create_info.deref();
 
 		log::trace!(
@@ -183,22 +193,23 @@ impl Swapchain {
 			device,
 			surface,
 			c_info,
-			allocation_callbacks
+			host_memory_allocator
 		);
-		let swapchain = loader.create_swapchain(c_info, allocation_callbacks.as_ref())?;
+		let swapchain = loader.create_swapchain(c_info, host_memory_allocator.as_ref())?;
 
 		let me = Vrc::new(Swapchain {
 			surface,
 			device: device.clone(),
 			loader,
-			swapchain,
+			swapchain: Vutex::new(swapchain),
+			retired: false,
 
-			allocation_callbacks
+			host_memory_allocator
 		});
 
 		let images: Vec<_> = me
 			.loader
-			.get_swapchain_images(swapchain)?
+			.get_swapchain_images(swapchain)? // This is still okay since we haven't given anyone else access to the `swapchain` or `me` object, no synchronization problem
 			.into_iter()
 			.map(|image| {
 				Vrc::new(SwapchainImage::new(
@@ -262,14 +273,18 @@ impl Swapchain {
 }
 impl_common_handle_traits! {
 	impl Deref, PartialEq, Eq, Hash for Swapchain {
-		type Target = vk::SwapchainKHR { swapchain }
+		type Target = Vutex<vk::SwapchainKHR> { swapchain }
+
+		to_handle { .lock().expect("vutex poisoned").deref() }
 	}
 }
 impl Drop for Swapchain {
 	fn drop(&mut self) {
+		let lock = self.swapchain.lock().expect("vutex poisoned");
+
 		unsafe {
 			self.loader
-				.destroy_swapchain(self.swapchain, self.allocation_callbacks.as_ref());
+				.destroy_swapchain(*lock, self.host_memory_allocator.as_ref());
 		}
 	}
 }
@@ -281,9 +296,9 @@ impl Debug for Swapchain {
 			.field("loader", &"<ash::extensions::khr::Swapchain>")
 			.field(
 				"swapchain",
-				&crate::util::fmt::format_handle(self.swapchain)
+				&self.swapchain
 			)
-			.field("allocation_callbacks", &self.allocation_callbacks)
+			.field("host_memory_allocator", &self.host_memory_allocator)
 			.finish()
 	}
 }

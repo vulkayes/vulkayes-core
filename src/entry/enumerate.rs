@@ -3,7 +3,7 @@ use std::{
 	fmt::{Display, Error, Formatter}
 };
 
-use crate::util::{fmt::VkVersion, VkSmallString};
+use crate::util::{fmt::VkVersion, string::VkSmallString};
 
 vk_result_error! {
 	#[derive(Debug)]

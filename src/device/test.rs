@@ -14,7 +14,6 @@ fn create_device() {
 
 	let queue_create_infos = [QueueCreateInfo {
 		queue_family_index: 0,
-		flags: Default::default(),
 		queue_priorities: [1.0]
 	}];
 
@@ -53,7 +52,6 @@ pub fn create_test_device(
 		physical_device,
 		[QueueCreateInfo {
 			queue_family_index: 0,
-			flags: Default::default(),
 			queue_priorities: [1.0]
 		}],
 		[

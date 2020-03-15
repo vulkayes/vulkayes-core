@@ -11,7 +11,10 @@ vk_result_error! {
 		}
 
 		#[error("Swapchain is retired and can no longer be used")]
-		SwapchainRetired
+		SwapchainRetired,
+
+		#[error("Image usage must not be empty")]
+		ImageUsageEmpty,
 	}
 }
 

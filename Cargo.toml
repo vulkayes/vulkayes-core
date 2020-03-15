@@ -5,14 +5,16 @@ authors = ["edward"]
 edition = "2018"
 
 [features]
-default = ["single_thread"]
+default = ["runtime_implicit_validations"]
 
 # enables rust host memory allocator option
 rust_host_allocator = []
-# replaces use of Arc<T> and Mutex<T> with Rc<T> and T
+# replaces use of Arc<T> and Mutex<T> with Rc<T> and RefCell<T>
 single_thread = []
 # use cryptographically secure HashMap and HashSet instead of performance-oriented non-secure one
 crypto_secure_hash = []
+# Validate implicit validations according to the Vulkan spec at runtime if they can't be validated statically
+runtime_implicit_validations = []
 
 ## Uses `crate_render_pass2` from Vulkan 1.2 (requires Vulkan version of 1.2)
 #render_pass_2 = []
@@ -26,6 +28,7 @@ ash = { git = "https://github.com/MaikKlein/ash", rev = "98def0a4e3c5f962f0cd500
 
 # utility
 arrayvec = "0.5"
+seq-macro = { git = "https://github.com/ametisf/seq-macro/" }
 
 # performance
 rustc-hash = "1"

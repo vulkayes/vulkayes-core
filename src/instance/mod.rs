@@ -9,8 +9,7 @@ use std::{
 
 use ash::{
 	extensions::ext::DebugReport,
-	version::{EntryV1_0, InstanceV1_0},
-	vk::AllocationCallbacks
+	version::{EntryV1_0, InstanceV1_0}
 };
 
 use crate::{
@@ -38,21 +37,21 @@ pub struct ApplicationInfo<'a> {
 struct InstanceDebug {
 	loader: DebugReport,
 	callback: ash::vk::DebugReportCallbackEXT,
-	allocation_callbacks: Option<AllocationCallbacks>
+	host_memory_allocator: HostMemoryAllocator
 }
 impl Debug for InstanceDebug {
 	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
 		f.debug_struct("InstanceDebug")
 			.field("loader", &"<ash::_::DebugReport>")
 			.field("callback", &self.callback)
-			.field("allocation_callbacks", &self.allocation_callbacks)
+			.field("host_memory_allocator", &self.host_memory_allocator)
 			.finish()
 	}
 }
 pub struct Instance {
 	entry: Entry,
 	instance: ash::Instance,
-	allocation_callbacks: Option<AllocationCallbacks>,
+	host_memory_allocator: HostMemoryAllocator,
 
 	debug: Option<InstanceDebug>
 }
@@ -118,16 +117,14 @@ impl Instance {
 		host_memory_allocator: HostMemoryAllocator,
 		debug_callback: debug::DebugCallback
 	) -> Result<Vrc<Self>, error::InstanceError> {
-		let allocation_callbacks: Option<AllocationCallbacks> = host_memory_allocator.into();
-
 		log::trace!(
 			"Creating instance with {:#?} {:#?} {:#?} {:#?}",
 			entry,
 			create_info.deref(),
-			allocation_callbacks,
+			host_memory_allocator,
 			debug_callback
 		);
-		let instance = entry.create_instance(&create_info, allocation_callbacks.as_ref())?;
+		let instance = entry.create_instance(&create_info, host_memory_allocator.as_ref())?;
 
 		// TODO: debug messenger, validation features, validation flags?
 
@@ -140,7 +137,7 @@ impl Instance {
 				Some(InstanceDebug {
 					loader,
 					callback,
-					allocation_callbacks: None // TODO: Allow callbacks
+					host_memory_allocator: HostMemoryAllocator::Unspecified() // TODO: Allow callbacks
 				})
 			}
 		};
@@ -148,7 +145,7 @@ impl Instance {
 		Ok(Vrc::new(Instance {
 			entry,
 			instance,
-			allocation_callbacks,
+			host_memory_allocator,
 			debug
 		}))
 	}
@@ -187,11 +184,11 @@ impl Drop for Instance {
 			if let Some(debug) = self.debug.as_mut() {
 				debug.loader.destroy_debug_report_callback(
 					debug.callback,
-					debug.allocation_callbacks.as_ref()
+					debug.host_memory_allocator.as_ref()
 				);
 			}
 			self.instance
-				.destroy_instance(self.allocation_callbacks.as_ref());
+				.destroy_instance(self.host_memory_allocator.as_ref());
 		}
 	}
 }
@@ -203,7 +200,7 @@ impl Debug for Instance {
 				"instance",
 				&crate::util::fmt::format_handle(self.instance.handle())
 			)
-			.field("allocation_callbacks", &self.allocation_callbacks)
+			.field("host_memory_allocator", &self.host_memory_allocator)
 			.field("debug", &self.debug)
 			.finish()
 	}

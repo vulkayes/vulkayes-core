@@ -3,10 +3,12 @@ use std::{fmt::Debug, ops::Deref};
 use ash::vk;
 
 use crate::{command::pool::CommandPool, Vrc};
+use crate::util::sync::Vutex;
+use crate::device::Device;
 
 pub struct CommandBuffer {
 	pool: Vrc<CommandPool>,
-	command_buffer: vk::CommandBuffer
+	command_buffer: Vutex<vk::CommandBuffer>
 }
 impl CommandBuffer {
 	pub fn new(
@@ -14,34 +16,49 @@ impl CommandBuffer {
 		level: vk::CommandBufferLevel,
 		count: std::num::NonZeroU32
 	) -> Result<Vec<Vrc<Self>>, CommandBufferError> {
-		let raw = unsafe { pool.allocate_command_buffers(level, count)? };
+		let raw = pool.allocate_command_buffers(level, count)?;
 
 		let buffers: Vec<_> = raw
 			.into_iter()
 			.map(|command_buffer| {
 				Vrc::new(CommandBuffer {
 					pool: pool.clone(),
-					command_buffer
+					command_buffer: Vutex::new(command_buffer)
 				})
 			})
 			.collect();
 
 		Ok(buffers)
 	}
+
+	pub fn pool(&self) -> &Vrc<CommandPool> {
+		&self.pool
+	}
+
+	pub fn device(&self) -> &Vrc<Device> {
+		&self.pool.device()
+	}
 }
 impl_common_handle_traits! {
 	impl Deref, PartialEq, Eq, Hash for CommandBuffer {
-		type Target = ash::vk::CommandBuffer { command_buffer }
+		type Target = Vutex<ash::vk::CommandBuffer> { command_buffer }
+
+		to_handle { .lock().expect("vutex poisoned").deref() }
 	}
 }
 impl Drop for CommandBuffer {
 	fn drop(&mut self) {
-		unsafe { self.pool.free_command_buffers([self.command_buffer]) }
+		let lock = self.command_buffer.lock().expect("vutex poisoned");
+
+		unsafe { self.pool.free_command_buffers([*lock]) }
 	}
 }
 impl Debug for CommandBuffer {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		f.debug_struct("CommandBuffer").finish()
+		f.debug_struct("CommandBuffer")
+			.field("pool", &self.pool)
+			.field("command_buffer", &self.command_buffer)
+			.finish()
 	}
 }
 

@@ -8,14 +8,22 @@
 //!
 //! ### `single_thread`
 //!
-//! Replaces uses of `Arc<T>` and `Mutex<T>` (dubbed as `Vrc` and `Vutex` across the crate) with `Rc<T>` and plain `T`.
+//! Replaces uses of `Arc<T>` and `Mutex<T>` (dubbed as `Vrc` and `Vutex` across the crate) with `Rc<T>` and `RefCell<T>` (wrapped to have compatible API).
 //!
 //! ### `crypto_secure_hash`
 //!
 //! Uses `std::collections::{HashMap, HashSet}` instead of `rustc_hash::{FxHashMap, FxHashSet}` (dubbed as `VHashMap` and `VHashSet`)  across the crate.
+//!
+//! ### `runtime_implicit_validations`
+//!
+//! Some implicit validations cannot be checked statically. This feature enables runtime checks of those validations.
+//! Note that in some circumstances, such as Instance creation and extension name checking, the validation is part of the input
+//! argument transformation and turning it off would not bring any advantages.
 
 // Export `ash` because all other component will use it.
 pub use ash;
+// Export `seq_macro` because `lock_and_deref` macro from `queue` requires it.
+pub use seq_macro;
 
 pub use util::sync::Vrc;
 
@@ -37,6 +45,7 @@ pub mod queue;
 pub mod resource;
 pub mod surface;
 pub mod swapchain;
+pub mod sync;
 
 #[cfg(test)]
 mod test {

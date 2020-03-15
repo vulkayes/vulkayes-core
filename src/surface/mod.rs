@@ -8,6 +8,7 @@ use std::{
 use ash::vk;
 
 use crate::{instance::Instance, physical_device::PhysicalDevice, Vrc};
+use crate::memory::host::HostMemoryAllocator;
 
 pub mod error;
 
@@ -16,7 +17,7 @@ pub struct Surface {
 	loader: ash::extensions::khr::Surface,
 	surface: ash::vk::SurfaceKHR,
 
-	allocation_callbacks: Option<vk::AllocationCallbacks>
+	host_memory_allocator: HostMemoryAllocator
 }
 impl Surface {
 	/// Creates a new surface from an existing `ash::vk::SurfaceKHR`.
@@ -28,7 +29,7 @@ impl Surface {
 	pub unsafe fn from_existing(
 		instance: Vrc<Instance>,
 		surface: ash::vk::SurfaceKHR,
-		allocation_callbacks: Option<vk::AllocationCallbacks>
+		host_memory_allocator: HostMemoryAllocator
 	) -> Self {
 		let loader =
 			ash::extensions::khr::Surface::new(instance.entry().deref(), instance.deref().deref());
@@ -37,13 +38,13 @@ impl Surface {
 			"Creating surface with {:#?} {:#?} {:#?}",
 			instance,
 			surface,
-			allocation_callbacks
+			host_memory_allocator
 		);
 		Surface {
 			instance,
 			loader,
 			surface,
-			allocation_callbacks
+			host_memory_allocator
 		}
 	}
 
@@ -124,7 +125,7 @@ impl Drop for Surface {
 	fn drop(&mut self) {
 		unsafe {
 			self.loader
-				.destroy_surface(self.surface, self.allocation_callbacks.as_ref());
+				.destroy_surface(self.surface, self.host_memory_allocator.as_ref());
 		}
 	}
 }
@@ -134,7 +135,7 @@ impl Debug for Surface {
 			.field("instance", &self.instance)
 			.field("loader", &"<ash::extensions::khr::Surface>")
 			.field("surface", &crate::util::fmt::format_handle(self.surface))
-			.field("allocation_callbacks", &self.allocation_callbacks)
+			.field("host_memory_allocator", &self.host_memory_allocator)
 			.finish()
 	}
 }

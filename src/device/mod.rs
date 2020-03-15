@@ -4,7 +4,7 @@ use std::{ffi::CString, fmt::Debug, ops::Deref, os::raw::c_char};
 
 use ash::{
 	version::{DeviceV1_0, InstanceV1_0},
-	vk::{AllocationCallbacks, DeviceCreateInfo, DeviceQueueCreateInfo}
+	vk::{DeviceCreateInfo, DeviceQueueCreateInfo}
 };
 
 use crate::{
@@ -37,7 +37,7 @@ pub struct Device {
 
 	physical_device: PhysicalDevice,
 
-	allocation_callbacks: Option<AllocationCallbacks>
+	host_memory_allocator: HostMemoryAllocator
 }
 impl Device {
 	pub fn new<'a, P: AsRef<[f32]> + Debug>(
@@ -49,6 +49,15 @@ impl Device {
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<DeviceData, error::DeviceError> {
 		let queues = queues.as_ref();
+
+		if cfg!(feature = "runtime_implicit_validations") {
+			if queues.len() == 0 {
+				return Err(error::DeviceError::QueuesEmpty)
+			}
+			if queues.iter().any(|c| c.queue_priorities.as_ref().len() == 0) {
+				return Err(error::DeviceError::QueuePrioritiesEmpty)
+			}
+		}
 
 		// create infos pointer are valid because they are kept alive by queues argument
 		let queue_create_infos: Vec<_> = queues
@@ -100,24 +109,22 @@ impl Device {
 		create_info: impl Deref<Target = DeviceCreateInfo>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<DeviceData, error::DeviceError> {
-		let allocation_callbacks: Option<AllocationCallbacks> = host_memory_allocator.into();
-
 		log::trace!(
 			"Creating device with {:#?} {:#?} {:#?}",
 			physical_device,
 			create_info.deref(),
-			allocation_callbacks
+			host_memory_allocator
 		);
 		let device = physical_device.instance().create_device(
 			*physical_device,
 			&create_info,
-			allocation_callbacks.as_ref()
+			host_memory_allocator.as_ref()
 		)?;
 
 		let device = Vrc::new(Device {
 			device,
 			physical_device,
-			allocation_callbacks
+			host_memory_allocator
 		});
 		let queues = device.get_created_queues(create_info);
 
@@ -171,7 +178,7 @@ impl Drop for Device {
 				.expect("Could not wait for device");
 
 			self.device
-				.destroy_device(self.allocation_callbacks.as_ref());
+				.destroy_device(self.host_memory_allocator.as_ref());
 		}
 	}
 }
@@ -183,7 +190,7 @@ impl Debug for Device {
 				&crate::util::fmt::format_handle(self.device.handle())
 			)
 			.field("physical_device", &self.physical_device)
-			.field("allocation_callbacks", &self.allocation_callbacks)
+			.field("host_memory_allocator", &self.host_memory_allocator)
 			.finish()
 	}
 }
