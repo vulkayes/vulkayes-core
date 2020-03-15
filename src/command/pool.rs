@@ -2,8 +2,13 @@ use std::{fmt::Debug, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::device::Device;
-use crate::{memory::host::HostMemoryAllocator, queue::Queue, util::sync::Vutex, Vrc};
+use crate::{
+	device::Device,
+	memory::host::HostMemoryAllocator,
+	queue::Queue,
+	util::sync::Vutex,
+	Vrc
+};
 
 /// Internally synchronized command pool.
 pub struct CommandPool {
@@ -34,7 +39,7 @@ impl CommandPool {
 	///
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCreateCommandPool.html>
 	pub unsafe fn from_create_info(
-		queue: &Vrc<Queue>,
+		queue: &Queue,
 		create_info: impl Deref<Target = vk::CommandPoolCreateInfo>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, CommandPoolError> {
@@ -101,8 +106,7 @@ impl CommandPool {
 			buffers.as_ref()
 		);
 
-		self.device
-			.free_command_buffers(*lock, buffers.as_ref())
+		self.device.free_command_buffers(*lock, buffers.as_ref())
 	}
 
 	pub const fn queue_family_index(&self) -> u32 {
@@ -125,7 +129,8 @@ impl Drop for CommandPool {
 		let lock = self.pool.lock().expect("vutex poisoned");
 
 		unsafe {
-			self.device.destroy_command_pool(*lock, self.host_memory_allocator.as_ref())
+			self.device
+				.destroy_command_pool(*lock, self.host_memory_allocator.as_ref())
 		}
 	}
 }

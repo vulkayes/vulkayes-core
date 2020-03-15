@@ -7,8 +7,12 @@ use std::{
 
 use ash::vk;
 
-use crate::{instance::Instance, physical_device::PhysicalDevice, Vrc};
-use crate::memory::host::HostMemoryAllocator;
+use crate::{
+	instance::Instance,
+	memory::host::HostMemoryAllocator,
+	physical_device::PhysicalDevice,
+	Vrc
+};
 
 pub mod error;
 

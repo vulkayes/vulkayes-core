@@ -2,9 +2,7 @@ use std::{fmt::Debug, ops::Deref};
 
 use ash::vk;
 
-use crate::{command::pool::CommandPool, Vrc};
-use crate::util::sync::Vutex;
-use crate::device::Device;
+use crate::{command::pool::CommandPool, util::sync::Vutex, Vrc};
 
 pub struct CommandBuffer {
 	pool: Vrc<CommandPool>,
@@ -33,11 +31,6 @@ impl CommandBuffer {
 
 	pub const fn pool(&self) -> &Vrc<CommandPool> {
 		&self.pool
-	}
-
-	// TODO: Cannot be const because Deref
-	pub fn device(&self) -> &Vrc<Device> {
-		&self.pool.device()
 	}
 }
 impl_common_handle_traits! {

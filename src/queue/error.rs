@@ -31,3 +31,49 @@ vk_result_error! {
 		}
 	}
 }
+
+vk_result_error! {
+	#[derive(Debug)]
+	pub enum QueuePresentError {
+		vk {
+			ERROR_OUT_OF_HOST_MEMORY,
+			ERROR_OUT_OF_DEVICE_MEMORY,
+			ERROR_DEVICE_LOST,
+			ERROR_OUT_OF_DATE_KHR,
+			ERROR_SURFACE_LOST_KHR,
+			ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT
+		}
+
+		#[error("Swapchains element must contain at least one element")]
+		SwapchainsEmpty,
+
+		#[error("Swapchains and wait semaphores must come from the same instance")]
+		SwapchainsSempahoredInstanceMismatch
+	}
+}
+#[derive(Debug)]
+#[allow(non_camel_case_types)]
+pub enum QueuePresentResultValue {
+	SUCCESS,
+	SUBOPTIMAL_KHR
+}
+impl From<bool> for QueuePresentResultValue {
+	fn from(value: bool) -> Self {
+		if value {
+			QueuePresentResultValue::SUBOPTIMAL_KHR
+		} else {
+			QueuePresentResultValue::SUCCESS
+		}
+	}
+}
+pub type QueuePresentResult = Result<QueuePresentResultValue, QueuePresentError>;
+#[derive(Debug)]
+pub enum QueuePresentMultipleResult<A: AsRef<[QueuePresentResult]>> {
+	Single(QueuePresentResult),
+	Multiple(A)
+}
+impl<A: AsRef<[QueuePresentResult]>> From<QueuePresentResult> for QueuePresentMultipleResult<A> {
+	fn from(value: QueuePresentResult) -> Self {
+		QueuePresentMultipleResult::Single(value)
+	}
+}

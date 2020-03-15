@@ -292,3 +292,67 @@ macro_rules! offsetable_struct {
 		}
 	}
 }
+
+/// Creates two fixed-size arrays. The first one holds locks and the second one holds deref of those locks.
+///
+/// Usage:
+/// ```
+/// lock_and_deref!(let foo[2]{.lock().unwrap()} => foo_locks: [LockGuard<Foo>; 2] => foo_derefs;)
+/// ```
+/// expands to
+/// ```
+/// let foo_locks: [LockGuard<Foo>; 2] = [foo[0].lock().unwrap(), foo[1].lock().unwrap()];
+/// let foo_derefs = [*foo_locks[0], *foo_locks[1]];
+/// ```
+///
+/// This macro uses a `proc-macro-hack` version of the `seq-macro` crate to generate the array indices.
+#[macro_export]
+macro_rules! lock_and_deref {
+	(
+		let $ex: ident[$count: literal] {$($lock_code: tt)+} => $locks: ident $(: $l_type: ty)? => $derefs: ident;
+	) => {
+		#[allow(unused_variables)]
+		let $locks $(: $l_type)? = $crate::seq_macro::seq_expr!(
+			N in 0 .. $count {
+				[
+					#( $ex[N] $($lock_code)+, )*
+				]
+			}
+		);
+		#[allow(unused_variables)]
+		let $derefs = $crate::seq_macro::seq_expr!(
+			N in 0 .. $count {
+				[
+					#( *$locks[N], )*
+				]
+			}
+		);
+	}
+}
+
+macro_rules! lock_and_deref_closure {
+	(
+		$(
+			let $ex: ident[$count: literal] {$($lock_code: tt)+} => |$locks: ident $(: $l_type: ty)?, $derefs: ident|
+		)+
+		{ $($closure_body: tt)* }
+	) => {
+		{
+			$(
+				let ($locks, $derefs) = $crate::seq_macro::seq_expr!(
+					N in 0 .. $count {
+						{
+							let locks = [ #( $ex[N] $($lock_code)+, )* ];
+							let derefs = [ #( *locks[N], )* ];
+
+							(locks, derefs)
+						}
+					}
+				);
+			)+
+
+			let closure = |$( $locks: [_; $count], $derefs: [_; $count] ),+| { $($closure_body)* };
+			closure($( $locks, $derefs ),+)
+		}
+	}
+}

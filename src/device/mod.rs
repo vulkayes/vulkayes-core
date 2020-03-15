@@ -54,7 +54,10 @@ impl Device {
 			if queues.len() == 0 {
 				return Err(error::DeviceError::QueuesEmpty)
 			}
-			if queues.iter().any(|c| c.queue_priorities.as_ref().len() == 0) {
+			if queues
+				.iter()
+				.any(|c| c.queue_priorities.as_ref().len() == 0)
+			{
 				return Err(error::DeviceError::QueuePrioritiesEmpty)
 			}
 		}

@@ -137,7 +137,7 @@ impl Instance {
 				Some(InstanceDebug {
 					loader,
 					callback,
-					host_memory_allocator: HostMemoryAllocator::Unspecified() // TODO: Allow callbacks
+					host_memory_allocator: HostMemoryAllocator::Unspecified() /* TODO: Allow callbacks */
 				})
 			}
 		};

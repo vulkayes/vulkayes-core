@@ -1,13 +1,11 @@
-use std::fmt::{self, Debug};
-use std::ops::Deref;
+use std::{
+	fmt::{self, Debug},
+	ops::Deref
+};
 
-use ash::vk;
-use ash::version::DeviceV1_0;
+use ash::{version::DeviceV1_0, vk};
 
-use crate::device::Device;
-use crate::Vrc;
-use crate::util::sync::Vutex;
-use crate::memory::host::HostMemoryAllocator;
+use crate::{device::Device, memory::host::HostMemoryAllocator, util::sync::Vutex, Vrc};
 
 pub mod error;
 
@@ -43,13 +41,15 @@ impl Semaphore {
 		device: Vrc<Device>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<BinarySemaphore, error::SemaphoreError> {
-		let mut type_create_info = vk::SemaphoreTypeCreateInfo::builder().semaphore_type(vk::SemaphoreType::BINARY);
+		let mut type_create_info =
+			vk::SemaphoreTypeCreateInfo::builder().semaphore_type(vk::SemaphoreType::BINARY);
 
-		let create_info = vk::SemaphoreCreateInfo::builder()
-			.push_next(&mut type_create_info);
+		let create_info = vk::SemaphoreCreateInfo::builder().push_next(&mut type_create_info);
 
 		unsafe {
-			Self::from_create_info(device, create_info, host_memory_allocator).map_err(Into::into).map(|s| BinarySemaphore::new(s))
+			Self::from_create_info(device, create_info, host_memory_allocator)
+				.map_err(Into::into)
+				.map(|s| BinarySemaphore::new(s))
 		}
 	}
 
@@ -67,21 +67,15 @@ impl Semaphore {
 			create_info.deref(),
 			host_memory_allocator
 		);
-		let semaphore = device.create_semaphore(
-			create_info.deref(),
-			host_memory_allocator.as_ref()
-		)?;
+		let semaphore =
+			device.create_semaphore(create_info.deref(), host_memory_allocator.as_ref())?;
 
-		Ok(
-			Vrc::new(
-				Semaphore {
-					device,
-					semaphore: Vutex::new(semaphore),
+		Ok(Vrc::new(Semaphore {
+			device,
+			semaphore: Vutex::new(semaphore),
 
-					host_memory_allocator
-				}
-			)
-		)
+			host_memory_allocator
+		}))
 	}
 
 	pub const fn device(&self) -> &Vrc<Device> {
@@ -100,10 +94,8 @@ impl Drop for Semaphore {
 		let lock = self.semaphore.lock().expect("vutex poisoned");
 
 		unsafe {
-			self.device.destroy_semaphore(
-				*lock,
-				self.host_memory_allocator.as_ref()
-			)
+			self.device
+				.destroy_semaphore(*lock, self.host_memory_allocator.as_ref())
 		}
 	}
 }

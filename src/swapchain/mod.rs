@@ -11,11 +11,11 @@ use crate::{
 	ash::vk,
 	device::Device,
 	memory::host::HostMemoryAllocator,
-	queue::sharing_mode::SharingMode,
+	queue::{sharing_mode::SharingMode, Queue},
 	resource::{image::Image, ImageSize},
 	surface::Surface,
-	Vrc,
-	util::sync::Vutex
+	util::sync::Vutex,
+	Vrc
 };
 
 pub mod error;
@@ -24,7 +24,9 @@ pub mod error;
 pub struct SwapchainImage {
 	swapchain: Vrc<Swapchain>,
 	// Image must not be dropped because it is managed by the Vulkan implementation.
-	image: ManuallyDrop<Image>
+	image: ManuallyDrop<Image>,
+	/// Swapchain image index
+	index: u32
 }
 impl SwapchainImage {
 	/// Crates a new swapchain image.
@@ -32,15 +34,21 @@ impl SwapchainImage {
 	/// ### Safety
 	///
 	/// `image` must be an image crated from `swapchain` using `.get_swapchain_images`.
-	pub unsafe fn new(swapchain: Vrc<Swapchain>, image: Image) -> Self {
+	/// `index` must be the index of the image as returned by the `.get_swapchain_images`.
+	pub unsafe fn new(swapchain: Vrc<Swapchain>, image: Image, index: u32) -> Self {
 		SwapchainImage {
 			swapchain,
-			image: ManuallyDrop::new(image)
+			image: ManuallyDrop::new(image),
+			index
 		}
 	}
 
 	pub const fn swapchain(&self) -> &Vrc<Swapchain> {
 		&self.swapchain
+	}
+
+	pub const fn index(&self) -> u32 {
+		self.index
 	}
 }
 impl Deref for SwapchainImage {
@@ -145,7 +153,7 @@ impl Swapchain {
 	) -> Result<SwapchainData, error::SwapchainError> {
 		let lock = self.swapchain.lock().expect("vutex poisoned");
 		if self.retired {
-			return Err(error::SwapchainError::SwapchainRetired);
+			return Err(error::SwapchainError::SwapchainRetired)
 		}
 
 		let create_info = vk::SwapchainCreateInfoKHR::builder()
@@ -210,8 +218,8 @@ impl Swapchain {
 		let images: Vec<_> = me
 			.loader
 			.get_swapchain_images(swapchain)? // This is still okay since we haven't given anyone else access to the `swapchain` or `me` object, no synchronization problem
-			.into_iter()
-			.map(|image| {
+			.into_iter().enumerate()
+			.map(|(index, image)| {
 				Vrc::new(SwapchainImage::new(
 					me.clone(),
 					Image::from_existing(
@@ -223,7 +231,8 @@ impl Swapchain {
 							NonZeroU32::new_unchecked(c_info.image_extent.height),
 							NonZeroU32::new_unchecked(c_info.image_array_layers)
 						)
-					)
+					),
+					index as u32
 				))
 			})
 			.collect();
@@ -241,17 +250,12 @@ impl Swapchain {
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkQueuePresentKHR.html>
 	pub unsafe fn present(
 		&self,
-		queue: &crate::queue::Queue,
+		queue: &Queue,
 		info: impl Deref<Target = vk::PresentInfoKHR>
-	) -> Result<error::PresentResult, error::PresentError> {
+	) -> crate::queue::error::QueuePresentResult {
 		let queue_lock = queue.lock().expect("queue Vutex poisoned");
 
-		log_trace_common!(
-			"Presenting on queue:",
-			self,
-			queue_lock,
-			info.deref()
-		);
+		log_trace_common!("Presenting on queue:", self, queue_lock, info.deref());
 
 		self.loader
 			.queue_present(*queue_lock, info.deref())
@@ -294,10 +298,7 @@ impl Debug for Swapchain {
 			.field("surface", &self.surface)
 			.field("device", &self.device)
 			.field("loader", &"<ash::extensions::khr::Swapchain>")
-			.field(
-				"swapchain",
-				&self.swapchain
-			)
+			.field("swapchain", &self.swapchain)
 			.field("host_memory_allocator", &self.host_memory_allocator)
 			.finish()
 	}
