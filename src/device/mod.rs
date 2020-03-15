@@ -109,8 +109,8 @@ impl Device {
 		create_info: impl Deref<Target = DeviceCreateInfo>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<DeviceData, error::DeviceError> {
-		log::trace!(
-			"Creating device with {:#?} {:#?} {:#?}",
+		log_trace_common!(
+			"Creating device:",
 			physical_device,
 			create_info.deref(),
 			host_memory_allocator

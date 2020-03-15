@@ -3,6 +3,7 @@
 #[macro_use]
 pub mod macros;
 
+#[macro_use]
 pub mod fmt;
 pub mod hash;
 pub mod string;

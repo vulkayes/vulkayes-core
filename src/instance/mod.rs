@@ -117,8 +117,8 @@ impl Instance {
 		host_memory_allocator: HostMemoryAllocator,
 		debug_callback: debug::DebugCallback
 	) -> Result<Vrc<Self>, error::InstanceError> {
-		log::trace!(
-			"Creating instance with {:#?} {:#?} {:#?} {:#?}",
+		log_trace_common!(
+			"Creating instance:",
 			entry,
 			create_info.deref(),
 			host_memory_allocator,

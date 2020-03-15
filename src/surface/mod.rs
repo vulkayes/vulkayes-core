@@ -34,8 +34,8 @@ impl Surface {
 		let loader =
 			ash::extensions::khr::Surface::new(instance.entry().deref(), instance.deref().deref());
 
-		log::trace!(
-			"Creating surface with {:#?} {:#?} {:#?}",
+		log_trace_common!(
+			"Creating surface:",
 			instance,
 			surface,
 			host_memory_allocator

@@ -61,8 +61,8 @@ impl Semaphore {
 		create_info: impl Deref<Target = vk::SemaphoreCreateInfo>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::SemaphoreError> {
-		log::trace!(
-			"Creating semaphore {:#?} {:#?} {:#?}",
+		log_trace_common!(
+			"Creating semaphore:",
 			device,
 			create_info.deref(),
 			host_memory_allocator

@@ -179,8 +179,8 @@ impl Queue {
 		queue_family_index: u32,
 		queue_index: u32
 	) -> Vrc<Self> {
-		log::trace!(
-			"Creating queue with {:#?} {:#?} {:#?} {:#?}",
+		log_trace_common!(
+			"Creating queue:",
 			device,
 			flags,
 			queue_family_index,
@@ -240,8 +240,8 @@ impl Queue {
 	) -> Result<(), error::QueueSubmitError> {
 		let lock = self.queue.lock().expect("vutex poisoned");
 
-		log::trace!(
-			"Submitting on queue {:#?} {:#?} {:#?}",
+		log_trace_common!(
+			"Submitting on queue:",
 			crate::util::fmt::format_handle(*lock),
 			infos.as_ref(),
 			fence.as_deref()

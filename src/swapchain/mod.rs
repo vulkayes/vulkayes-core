@@ -188,8 +188,8 @@ impl Swapchain {
 
 		let c_info = create_info.deref();
 
-		log::trace!(
-			"Creating swapchain with {:#?} {:#?} {:#?} {:#?}",
+		log_trace_common!(
+			"Creating swapchain:",
 			device,
 			surface,
 			c_info,
@@ -246,8 +246,8 @@ impl Swapchain {
 	) -> Result<error::PresentResult, error::PresentError> {
 		let queue_lock = queue.lock().expect("queue Vutex poisoned");
 
-		log::trace!(
-			"Presenting on queue {:#?} {:#?} {:#?}",
+		log_trace_common!(
+			"Presenting on queue:",
 			self,
 			queue_lock,
 			info.deref()

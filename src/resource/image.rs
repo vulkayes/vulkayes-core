@@ -27,8 +27,8 @@ impl Image {
 		format: vk::Format,
 		size: super::ImageSize
 	) -> Self {
-		log::trace!(
-			"Creating Image from existing handle {:#?} {:#?} {:#?} {:#?}",
+		log_trace_common!(
+			"Creating Image from existing handle:",
 			device,
 			crate::util::fmt::format_handle(image),
 			format,

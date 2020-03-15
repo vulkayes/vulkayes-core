@@ -72,8 +72,8 @@ impl CommandPool {
 			.level(level)
 			.command_buffer_count(count.get());
 
-		log::trace!(
-			"Allocating command buffers with {:#?} {:#?}",
+		log_trace_common!(
+			"Allocating command buffers:",
 			crate::util::fmt::format_handle(*lock),
 			alloc_info.deref()
 		);
@@ -95,8 +95,8 @@ impl CommandPool {
 	pub unsafe fn free_command_buffers(&self, buffers: impl AsRef<[vk::CommandBuffer]>) {
 		let lock = self.pool.lock().expect("vutex poisoned");
 
-		log::trace!(
-			"Freeing command buffers with {:#?} {:#?}",
+		log_trace_common!(
+			"Freeing command buffers:",
 			crate::util::fmt::format_handle(*lock),
 			buffers.as_ref()
 		);

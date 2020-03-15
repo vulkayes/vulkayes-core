@@ -64,8 +64,8 @@ impl Fence {
 		create_info: impl Deref<Target = vk::FenceCreateInfo>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::FenceError> {
-		log::trace!(
-			"Creating fence {:#?} {:#?} {:#?}",
+		log_trace_common!(
+			"Creating fence:",
 			device,
 			create_info.deref(),
 			host_memory_allocator

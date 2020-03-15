@@ -42,8 +42,8 @@ impl PhysicalDevice {
 		instance: crate::Vrc<Instance>,
 		physical_device: ash::vk::PhysicalDevice
 	) -> Self {
-		log::trace!(
-			"Creating PhysicalDevice from existing handle {:#?} {:#?}",
+		log_trace_common!(
+			"Creating PhysicalDevice from existing handle:",
 			instance,
 			crate::util::fmt::format_handle(physical_device)
 		);

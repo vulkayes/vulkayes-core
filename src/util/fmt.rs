@@ -1,5 +1,26 @@
 use std::fmt::{Debug, Display, Error, Formatter};
 
+macro_rules! log_trace_common {
+	(
+		$title: literal,
+		$(
+			$log_item: expr
+		),*
+	) => {
+		log::trace!(
+			concat!(
+				$title,
+				$(
+					concat!(" ", stringify!($log_item), " = ", "{:?}")
+				),*
+			),
+			$(
+				$log_item
+			),*
+		)
+	}
+}
+
 /// Formats Vulkan handle as `<ObjectType $raw>`.
 pub fn format_handle<H: ash::vk::Handle>(handle: H) -> impl Debug + Display {
 	struct Inner {
