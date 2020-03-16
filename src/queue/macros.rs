@@ -1,4 +1,4 @@
-/// This macro is intended to substitute for const generics when transforming input arguments to the `queue.submit` function.
+/// This macro is intended to substitute for const generics when transforming input arguments to the [Queue::submit](queue/struct.Queue.html#method.submit) function.
 ///
 /// Usage:
 /// ```
@@ -9,12 +9,12 @@
 /// 		stages: [vk::PipelineStageFlags; _],
 /// 		buffers: [&CommandBuffer; 1],
 /// 		signals: [&Semaphore; 1],
-/// 		fence
+/// 		fence: Option<&Fence>
 /// 	) -> Result<(), QueueSubmitError>;
 /// }
 /// ```
 ///
-/// this expands to something like the [queue.submit_one](queue/struct.Queue.html#method.submit_one)
+/// this expands to something like the [Queue::submit_one](queue/struct.Queue.html#method.submit_one)
 #[macro_export]
 macro_rules! const_queue_submit {
 	(
@@ -25,7 +25,7 @@ macro_rules! const_queue_submit {
 			stages: [vk::PipelineStageFlags; _],
 			$buffers: ident: [&CommandBuffer; $count_buffers: literal],
 			$signals: ident: [&Semaphore; $count_signals: literal],
-			fence
+			fence: Option<&Fence>
 		) -> Result<(), QueueSubmitError>;
 	) => {
 		$(#[$attribute])*
@@ -72,7 +72,7 @@ macro_rules! const_queue_submit {
 				}
 			}
 
-			lock_and_deref_closure!(
+			$crate::lock_and_deref_closure!(
 				let $waits[$count_waits]{.lock().expect("vutex poisoned")} => |$waits: [VutexGuard<vk::Semaphore>; $count_waits], w|
 				let $buffers[$count_buffers]{.lock().expect("vutex poisoned")} => |$buffers: [VutexGuard<vk::CommandBuffer>; $count_buffers], b|
 				let $signals[$count_signals]{.lock().expect("vutex poisoned")} => |$signals: [VutexGuard<vk::Semaphore>; $count_signals], s|
@@ -97,6 +97,21 @@ macro_rules! const_queue_submit {
 	}
 }
 
+/// This macro is intended to substitute for const generics when transforming input arguments to the [Swapchain::present](swapchain/struct.Swapchain.html#method.present) function.
+///
+/// Usage:
+/// ```
+/// const_queue_present!(
+/// 	pub fn present_one(
+/// 		&queue,
+/// 		waits: [&Semaphore; 1],
+/// 		images: [&SwapchainImage; 1],
+/// 		result_for_all: bool
+/// 	) -> QueuePresentMultipleResult<[QueuePresentResult; _]>;
+/// )
+/// ```
+///
+/// this expands to something like the [Queue::present_one](queue/struct.Queue.html#method.present_one)
 #[macro_export]
 macro_rules! const_queue_present {
 	(
@@ -114,7 +129,7 @@ macro_rules! const_queue_present {
 		pub fn $name(
 			queue: &$crate::queue::Queue,
 			$waits: [&$crate::sync::semaphore::Semaphore; $count_waits],
-			$images: [&$crate::swapchain::SwapchainImage; $count_images],
+			$images: [&$crate::swapchain::image::SwapchainImage; $count_images],
 			result_for_all: bool
 		) -> $crate::queue::error::QueuePresentMultipleResult<[$crate::queue::error::QueuePresentResult; $count_images]> {
 			use $crate::queue::error::{QueuePresentMultipleResult, QueuePresentResult, QueuePresentResultValue, QueuePresentError};
@@ -147,7 +162,7 @@ macro_rules! const_queue_present {
 				}
 			);
 
-			lock_and_deref_closure!(
+			$crate::lock_and_deref_closure!(
 				let $waits[$count_waits]{.lock().expect("vutex poisoned")} => |$waits: [VutexGuard<vk::Semaphore>; $count_waits], w|
 				let $images[$count_images]{.swapchain().lock().expect("vutex poisoned")} => |$images: [VutexGuard<vk::SwapchainKHR>; $count_images], s|
 				{

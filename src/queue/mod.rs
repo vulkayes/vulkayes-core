@@ -27,7 +27,7 @@ pub struct Queue {
 }
 impl Queue {
 	const_queue_submit! {
-		/// Example submit function generated using the `const_queue_submit` macro.
+		/// Example submit function generated using the [const_queue_submit!](../macro.const_queue_submit.html) macro.
 		///
 		/// At some point in the distant future this function will become const generic and the macro will be an implementation detail.
 		pub fn submit_one(
@@ -36,12 +36,12 @@ impl Queue {
 			stages: [vk::PipelineStageFlags; _],
 			buffers: [&CommandBuffer; 1],
 			signals: [&Semaphore; 1],
-			fence
+			fence: Option<&Fence>
 		) -> Result<(), QueueSubmitError>;
 	}
 
 	const_queue_present! {
-		/// Example submit function generated using the `const_queue_present` macro.
+		/// Example present function generated using the [const_queue_present!](../macro.const_queue_present.html) macro.
 		///
 		/// At some point in the distant future this function will become const generic and the macro will be an implementation detail.
 		pub fn present_one(

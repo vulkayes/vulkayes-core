@@ -297,39 +297,37 @@ macro_rules! offsetable_struct {
 ///
 /// Usage:
 /// ```
-/// lock_and_deref!(let foo[2]{.lock().unwrap()} => foo_locks: [LockGuard<Foo>; 2] => foo_derefs;)
+/// lock_and_deref_closure!(
+/// 	let foo[2]{.lock().unwrap()} => |foo_locks, foo_derefs|
+/// 	let bar[0]{.lock().unwrap()} => |bar_locks: [LockGuard<Bar>; 0], bar_derefs|
+/// 	{
+/// 		println!("{:?} {:?}", foo_derefs, bar_derefs);
+/// 	}
+/// )
 /// ```
 /// expands to
 /// ```
-/// let foo_locks: [LockGuard<Foo>; 2] = [foo[0].lock().unwrap(), foo[1].lock().unwrap()];
-/// let foo_derefs = [*foo_locks[0], *foo_locks[1]];
+/// {
+/// 	let (foo_locks, foo_derefs) = {
+/// 		let locks = [foo[0].lock().unwrap(), foo[1].lock().unwrap()];
+/// 		let derefs = [*locks[0], *locks[1]];
+///
+/// 		(locks, derefs)
+/// 	};
+/// 	let (bar_locks, bar_derefs) = {
+/// 		let locks = [];
+/// 		let derefs = [];
+///
+/// 		(locks, derefs)
+/// 	};
+///
+/// 	let closure = |foo_locks: [_; 2], foo_derefs: [_; 2], bar_locks: [_; 0], bar_derefs: [_; 0]| { println!("{:?} {:?}", foo_derefs, bar_derefs); };
+/// 	closure(foo_locks, foo_derefs, bar_locks, bar_derefs)
+/// }
 /// ```
 ///
 /// This macro uses a `proc-macro-hack` version of the `seq-macro` crate to generate the array indices.
 #[macro_export]
-macro_rules! lock_and_deref {
-	(
-		let $ex: ident[$count: literal] {$($lock_code: tt)+} => $locks: ident $(: $l_type: ty)? => $derefs: ident;
-	) => {
-		#[allow(unused_variables)]
-		let $locks $(: $l_type)? = $crate::seq_macro::seq_expr!(
-			N in 0 .. $count {
-				[
-					#( $ex[N] $($lock_code)+, )*
-				]
-			}
-		);
-		#[allow(unused_variables)]
-		let $derefs = $crate::seq_macro::seq_expr!(
-			N in 0 .. $count {
-				[
-					#( *$locks[N], )*
-				]
-			}
-		);
-	}
-}
-
 macro_rules! lock_and_deref_closure {
 	(
 		$(
@@ -342,7 +340,7 @@ macro_rules! lock_and_deref_closure {
 				let ($locks, $derefs) = $crate::seq_macro::seq_expr!(
 					N in 0 .. $count {
 						{
-							let locks = [ #( $ex[N] $($lock_code)+, )* ];
+							let locks $(: $l_type)? = [ #( $ex[N] $($lock_code)+, )* ];
 							let derefs = [ #( *locks[N], )* ];
 
 							(locks, derefs)

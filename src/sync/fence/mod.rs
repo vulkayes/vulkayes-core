@@ -9,30 +9,6 @@ use crate::{device::Device, memory::host::HostMemoryAllocator, util::sync::Vutex
 
 pub mod error;
 
-#[derive(Debug, Copy, Clone)]
-pub enum WaitTimeout {
-	/// Don't wait, return immediately
-	None,
-	/// Specify a timeout in nanosecond
-	Timeout(u64),
-	/// Wait forever
-	Forever
-}
-impl Into<u64> for WaitTimeout {
-	fn into(self) -> u64 {
-		match self {
-			WaitTimeout::None => 0,
-			WaitTimeout::Timeout(t) => t,
-			WaitTimeout::Forever => std::u64::MAX
-		}
-	}
-}
-impl Default for WaitTimeout {
-	fn default() -> Self {
-		WaitTimeout::Forever
-	}
-}
-
 pub struct Fence {
 	device: Vrc<Device>,
 	fence: Vutex<vk::Fence>,
@@ -97,7 +73,7 @@ impl Fence {
 	/// Waits for `self` with an optional timeout.
 	///
 	/// Returns `false` if the timeout expires before the fence is signaled.
-	pub fn wait(&self, timeout: WaitTimeout) -> Result<bool, error::FenceError> {
+	pub fn wait(&self, timeout: crate::util::WaitTimeout) -> Result<bool, error::FenceError> {
 		let lock = self.fence.lock().expect("vutex poisoned");
 
 		// Unfortunately this is an ash API design bug that it doesn't return bool from wait_for_fences

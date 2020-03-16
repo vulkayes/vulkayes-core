@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use crate::queue::Queue;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct SharingMode<A: AsRef<[u32]> = [u32; 1]>(A);
 impl SharingMode<[u32; 1]> {
 	pub const fn one(queue: u32) -> Self {

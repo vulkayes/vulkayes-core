@@ -2,7 +2,6 @@
 
 use std::{
 	fmt::{self, Debug},
-	mem::ManuallyDrop,
 	num::NonZeroU32,
 	ops::Deref
 };
@@ -14,48 +13,50 @@ use crate::{
 	queue::{sharing_mode::SharingMode, Queue},
 	resource::{image::Image, ImageSize},
 	surface::Surface,
-	util::sync::Vutex,
+	sync::{fence::Fence, semaphore::BinarySemaphore},
+	util::sync::{AtomicVool, Vutex},
 	Vrc
 };
 
 pub mod error;
+pub mod image;
 
 #[derive(Debug)]
-pub struct SwapchainImage {
-	swapchain: Vrc<Swapchain>,
-	// Image must not be dropped because it is managed by the Vulkan implementation.
-	image: ManuallyDrop<Image>,
-	/// Swapchain image index
-	index: u32
+pub enum AcquireSynchronization<'a> {
+	Semaphore(&'a BinarySemaphore),
+	Fence(&'a Fence),
+	Both(&'a BinarySemaphore, &'a Fence)
 }
-impl SwapchainImage {
-	/// Crates a new swapchain image.
-	///
-	/// ### Safety
-	///
-	/// `image` must be an image crated from `swapchain` using `.get_swapchain_images`.
-	/// `index` must be the index of the image as returned by the `.get_swapchain_images`.
-	pub unsafe fn new(swapchain: Vrc<Swapchain>, image: Image, index: u32) -> Self {
-		SwapchainImage {
-			swapchain,
-			image: ManuallyDrop::new(image),
-			index
+impl<'a> AcquireSynchronization<'a> {
+	pub fn fence(&self) -> Option<&Fence> {
+		match self {
+			AcquireSynchronization::Semaphore(_) => None,
+			AcquireSynchronization::Fence(f) => Some(f),
+			AcquireSynchronization::Both(_, f) => Some(f)
 		}
 	}
 
-	pub const fn swapchain(&self) -> &Vrc<Swapchain> {
-		&self.swapchain
-	}
-
-	pub const fn index(&self) -> u32 {
-		self.index
+	pub fn semaphore(&self) -> Option<&BinarySemaphore> {
+		match self {
+			AcquireSynchronization::Semaphore(s) => Some(s),
+			AcquireSynchronization::Fence(_) => None,
+			AcquireSynchronization::Both(s, _) => Some(s)
+		}
 	}
 }
-impl Deref for SwapchainImage {
-	type Target = Image;
-
-	fn deref(&self) -> &Self::Target {
-		&self.image
+impl<'a> From<&'a Fence> for AcquireSynchronization<'a> {
+	fn from(value: &'a Fence) -> Self {
+		AcquireSynchronization::Fence(value)
+	}
+}
+impl<'a> From<&'a BinarySemaphore> for AcquireSynchronization<'a> {
+	fn from(value: &'a BinarySemaphore) -> Self {
+		AcquireSynchronization::Semaphore(value)
+	}
+}
+impl<'a> From<(&'a BinarySemaphore, &'a Fence)> for AcquireSynchronization<'a> {
+	fn from(value: (&'a BinarySemaphore, &'a Fence)) -> Self {
+		AcquireSynchronization::Both(value.0, value.1)
 	}
 }
 
@@ -63,34 +64,17 @@ impl Deref for SwapchainImage {
 #[derive(Debug)]
 pub struct SwapchainData {
 	pub swapchain: Vrc<Swapchain>,
-	pub images: Vec<Vrc<SwapchainImage>>
+	pub images: Vec<Vrc<image::SwapchainImage>>
 }
 
-#[derive(Debug)]
-pub struct SwapchainCreateImageInfo {
-	pub min_image_count: NonZeroU32,
-	pub image_format: vk::Format,
-	pub image_color_space: vk::ColorSpaceKHR,
-	pub image_extent: [NonZeroU32; 2],
-	pub image_array_layers: NonZeroU32,
-	pub image_usage: vk::ImageUsageFlags
-}
-impl SwapchainCreateImageInfo {
-	pub fn add_to_create_info<'a>(
-		&'a self,
-		builder: vk::SwapchainCreateInfoKHRBuilder<'a>
-	) -> vk::SwapchainCreateInfoKHRBuilder<'a> {
-		builder
-			.min_image_count(self.min_image_count.get())
-			.image_format(self.image_format)
-			.image_color_space(self.image_color_space)
-			.image_extent(vk::Extent2D {
-				width: self.image_extent[0].get(),
-				height: self.image_extent[1].get()
-			})
-			.image_array_layers(self.image_array_layers.get())
-			.image_usage(self.image_usage)
-	}
+#[derive(Debug, Copy, Clone)]
+pub struct SwapchainCreateInfo<A: AsRef<[u32]>> {
+	pub image_info: image::SwapchainCreateImageInfo,
+	pub sharing_mode: SharingMode<A>,
+	pub pre_transform: vk::SurfaceTransformFlagsKHR,
+	pub composite_alpha: vk::CompositeAlphaFlagsKHR,
+	pub present_mode: vk::PresentModeKHR,
+	pub clipped: bool
 }
 
 pub struct Swapchain {
@@ -99,7 +83,7 @@ pub struct Swapchain {
 	device: Vrc<Device>,
 	loader: ash::extensions::khr::Swapchain,
 	swapchain: Vutex<vk::SwapchainKHR>,
-	retired: bool,
+	retired: AtomicVool,
 
 	host_memory_allocator: HostMemoryAllocator
 }
@@ -107,72 +91,59 @@ impl Swapchain {
 	pub fn new(
 		device: Vrc<Device>,
 		surface: Surface,
-		image_info: SwapchainCreateImageInfo,
-		sharing_mode: SharingMode<impl AsRef<[u32]>>,
-		pre_transform: vk::SurfaceTransformFlagsKHR,
-		composite_alpha: vk::CompositeAlphaFlagsKHR,
-		present_mode: vk::PresentModeKHR,
-		clipped: bool,
+		create_info: SwapchainCreateInfo<impl AsRef<[u32]>>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<SwapchainData, error::SwapchainError> {
-		let create_info = vk::SwapchainCreateInfoKHR::builder()
-			.surface(*surface)
-			.pre_transform(pre_transform)
-			.composite_alpha(composite_alpha)
-			.present_mode(present_mode)
-			.clipped(clipped)
-			.image_sharing_mode(sharing_mode.sharing_mode())
-			.queue_family_indices(sharing_mode.indices());
-
 		if cfg!(feature = "runtime_implicit_validations") {
-			if image_info.image_usage.is_empty() {
+			if create_info.image_info.image_usage.is_empty() {
 				return Err(error::SwapchainError::ImageUsageEmpty)
 			}
 		}
-		let create_info = image_info.add_to_create_info(create_info);
 
-		unsafe {
-			Self::from_create_info(
-				device,
-				Vrc::new(surface),
-				create_info,
-				host_memory_allocator
-			)
-		}
+		let c_info = vk::SwapchainCreateInfoKHR::builder()
+			.surface(*surface)
+			.pre_transform(create_info.pre_transform)
+			.composite_alpha(create_info.composite_alpha)
+			.present_mode(create_info.present_mode)
+			.clipped(create_info.clipped)
+			.image_sharing_mode(create_info.sharing_mode.sharing_mode())
+			.queue_family_indices(create_info.sharing_mode.indices());
+
+		let c_info = create_info.image_info.add_to_create_info(c_info);
+
+		unsafe { Self::from_create_info(device, Vrc::new(surface), c_info, host_memory_allocator) }
 	}
 
 	pub fn recreate(
 		&self,
-		image_info: SwapchainCreateImageInfo,
-		sharing_mode: SharingMode<impl AsRef<[u32]>>,
-		pre_transform: vk::SurfaceTransformFlagsKHR,
-		composite_alpha: vk::CompositeAlphaFlagsKHR,
-		present_mode: vk::PresentModeKHR,
-		clipped: bool,
+		create_info: SwapchainCreateInfo<impl AsRef<[u32]>>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<SwapchainData, error::SwapchainError> {
 		let lock = self.swapchain.lock().expect("vutex poisoned");
-		if self.retired {
+		// Safe because of the vutex above
+		if self.retired.load(std::sync::atomic::Ordering::Relaxed) {
 			return Err(error::SwapchainError::SwapchainRetired)
 		}
+		self.retired
+			.store(true, std::sync::atomic::Ordering::Relaxed);
 
-		let create_info = vk::SwapchainCreateInfoKHR::builder()
+		let c_info = vk::SwapchainCreateInfoKHR::builder()
 			.surface(**self.surface)
-			.pre_transform(pre_transform)
-			.composite_alpha(composite_alpha)
-			.present_mode(present_mode)
-			.clipped(clipped)
+			.pre_transform(create_info.pre_transform)
+			.composite_alpha(create_info.composite_alpha)
+			.present_mode(create_info.present_mode)
+			.clipped(create_info.clipped)
 			.old_swapchain(*lock)
-			.image_sharing_mode(sharing_mode.sharing_mode())
-			.queue_family_indices(sharing_mode.indices());
+			.image_sharing_mode(create_info.sharing_mode.sharing_mode())
+			.queue_family_indices(create_info.sharing_mode.indices());
 
-		let create_info = image_info.add_to_create_info(create_info);
+		let c_info = create_info.image_info.add_to_create_info(c_info);
 
 		unsafe {
 			Self::from_create_info(
 				self.device.clone(),
 				self.surface.clone(),
-				create_info,
+				c_info,
 				host_memory_allocator
 			)
 		}
@@ -210,7 +181,7 @@ impl Swapchain {
 			device: device.clone(),
 			loader,
 			swapchain: Vutex::new(swapchain),
-			retired: false,
+			retired: AtomicVool::new(false),
 
 			host_memory_allocator
 		});
@@ -220,7 +191,7 @@ impl Swapchain {
 			.get_swapchain_images(swapchain)? // This is still okay since we haven't given anyone else access to the `swapchain` or `me` object, no synchronization problem
 			.into_iter().enumerate()
 			.map(|(index, image)| {
-				Vrc::new(SwapchainImage::new(
+				Vrc::new(image::SwapchainImage::new(
 					me.clone(),
 					Image::from_existing(
 						device.clone(),
@@ -263,6 +234,51 @@ impl Swapchain {
 			.map_err(Into::into)
 	}
 
+	pub fn acquire_next(
+		&self,
+		timeout: crate::util::WaitTimeout,
+		synchronization: AcquireSynchronization
+	) -> error::AcquireResult {
+		if cfg!(feature = "runtime_implicit_validations") {
+			if let Some(semaphore) = synchronization.semaphore() {
+				if semaphore.device() != self.device() {
+					return Err(error::AcquireError::SemaphoreSwapchainDeviceMismatch)
+				}
+			}
+			if let Some(fence) = synchronization.fence() {
+				if fence.device() != self.device() {
+					return Err(error::AcquireError::FenceSwapchainDeviceMismatch)
+				}
+			}
+		}
+
+		let semaphore_lock = synchronization
+			.semaphore()
+			.map(|f| f.lock().expect("vutex poisoned"));
+		let fence_lock = synchronization
+			.fence()
+			.map(|f| f.lock().expect("vutex poisoned"));
+		let lock = self.swapchain.lock().expect("vutex poisoned");
+
+		let result = unsafe {
+			self.loader.acquire_next_image(
+				*lock,
+				timeout.into(),
+				semaphore_lock
+					.as_deref()
+					.copied()
+					.unwrap_or(vk::Semaphore::null()),
+				fence_lock.as_deref().copied().unwrap_or(vk::Fence::null())
+			)
+		};
+
+		match result {
+			Ok((index, false)) => Ok(error::AcquireResultValue::SUCCESS(index)),
+			Ok((index, true)) => Ok(error::AcquireResultValue::SUBOPTIMAL_KHR(index)),
+			Err(e) => Err(e.into())
+		}
+	}
+
 	pub const fn device(&self) -> &Vrc<Device> {
 		&self.device
 	}
@@ -273,6 +289,10 @@ impl Swapchain {
 
 	pub const fn loader(&self) -> &ash::extensions::khr::Swapchain {
 		&self.loader
+	}
+
+	pub fn retired(&self) -> bool {
+		self.retired.load(std::sync::atomic::Ordering::Relaxed)
 	}
 }
 impl_common_handle_traits! {
