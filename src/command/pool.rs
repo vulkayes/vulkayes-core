@@ -65,6 +65,41 @@ impl CommandPool {
 	/// ### Panic
 	///
 	/// This function will panic if the pool `Vutex` is poisoned.
+	/// This function will panic under Vulkan 1.0.
+	#[cfg(feature = "Vulkan1_1")]
+	pub fn trim(&self) {
+		use ash::version::DeviceV1_1;
+
+		let lock = self.pool.lock().expect("vutex poisoned");
+
+		unsafe {
+			self.device
+				.trim_command_pool(*lock, vk::CommandPoolTrimFlags::empty())
+		}
+	}
+
+	/// ### Panic
+	///
+	/// This function will panic if the pool `Vutex` is poisoned.
+	pub fn reset(&self, return_resources: bool) -> Result<(), CommandPoolError> {
+		let lock = self.pool.lock().expect("vutex poisoned");
+
+		let flags = if return_resources {
+			vk::CommandPoolResetFlags::RELEASE_RESOURCES
+		} else {
+			vk::CommandPoolResetFlags::empty()
+		};
+
+		unsafe {
+			self.device
+				.reset_command_pool(*lock, flags)
+				.map_err(Into::into)
+		}
+	}
+
+	/// ### Panic
+	///
+	/// This function will panic if the pool `Vutex` is poisoned.
 	pub fn allocate_command_buffers(
 		&self,
 		level: vk::CommandBufferLevel,

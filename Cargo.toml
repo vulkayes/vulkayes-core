@@ -5,7 +5,7 @@ authors = ["edward"]
 edition = "2018"
 
 [features]
-default = ["runtime_implicit_validations"]
+default = ["runtime_implicit_validations", "vulkan1_2"]
 
 # enables rust host memory allocator option
 rust_host_allocator = []
@@ -15,6 +15,9 @@ single_thread = []
 crypto_secure_hash = []
 # Validate implicit validations according to the Vulkan spec at runtime if they can't be validated statically
 runtime_implicit_validations = []
+
+vulkan1_1 = []
+vulkan1_2 = ["vulkan1_1"]
 
 ## Uses `crate_render_pass2` from Vulkan 1.2 (requires Vulkan version of 1.2)
 #render_pass_2 = []

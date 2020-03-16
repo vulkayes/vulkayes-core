@@ -50,15 +50,19 @@ pub mod sync;
 #[cfg(test)]
 mod test {
 	pub fn setup_testing_logger() {
-		let logger = edwardium_logger::Logger::new(
-			[edwardium_logger::targets::stderr::StderrTarget::new(
-				log::Level::Trace
-			)],
-			std::time::Instant::now()
-		);
-		match logger.init_boxed() {
-			Ok(_) => (),
-			Err(_) => ()
-		} // Purposely ignore the result as only the first test will set the logger successfully.
+		static LOGGER_INITIALIZED: std::sync::atomic::AtomicBool =
+			std::sync::atomic::AtomicBool::new(false);
+
+		if LOGGER_INITIALIZED.compare_and_swap(false, true, std::sync::atomic::Ordering::SeqCst)
+			== false
+		{
+			let logger = edwardium_logger::Logger::new(
+				[edwardium_logger::targets::stderr::StderrTarget::new(
+					log::Level::Trace
+				)],
+				std::time::Instant::now()
+			);
+			logger.init_boxed().expect("Could not initialize logger");
+		}
 	}
 }
