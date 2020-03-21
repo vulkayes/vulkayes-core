@@ -1,14 +1,17 @@
 [package]
 name = "vulkayes-core"
 version = "0.1.0"
-authors = ["edward"]
+authors = ["TheEdward162 <TheEdward162@gmail.com>"]
 edition = "2018"
 
 [features]
-default = ["runtime_implicit_validations", "vulkan1_2"]
+default = ["runtime_implicit_validations", "vulkan1_2", "simple_device_allocator"]
 
 # enables rust host memory allocator option
 rust_host_allocator = []
+# enables very simple device memory allocator
+simple_device_allocator = []
+
 # replaces use of Arc<T> and Mutex<T> with Rc<T> and RefCell<T>
 single_thread = []
 # use cryptographically secure HashMap and HashSet instead of performance-oriented non-secure one

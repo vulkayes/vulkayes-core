@@ -6,6 +6,10 @@
 //!
 //! Adds `Rust()` constructor to `HostMemoryAllocator` that uses Rusts `std::alloc` methods.
 //!
+//! ### `simple_device_allocator`
+//!
+//! Adds a simple memory allocator `SimpleDeviceMemoryAllocator`. It should not be used in production applications.
+//!
 //! ### `single_thread`
 //!
 //! Replaces uses of `Arc<T>` and `Mutex<T>` (dubbed as `Vrc` and `Vutex` across the crate) with `Rc<T>` and `RefCell<T>` (wrapped to have compatible API).

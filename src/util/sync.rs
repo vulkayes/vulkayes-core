@@ -1,4 +1,8 @@
+//! This module contains type aliases and wrappers to make switching `single_thread` feature seamless.
+
 pub use inner::*;
+
+// IDEA: Consider adding Vrc<T> = ManuallyDrop<T> as an unsafe alternative
 
 #[cfg(not(feature = "single_thread"))]
 mod inner {

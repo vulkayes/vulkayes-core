@@ -7,20 +7,20 @@ unsafe_enum_variants! {
 	#[derive(Debug, Copy, Clone)]
 	enum HostMemoryAllocatorInner {
 		/// The Vulkan implementation-dependent allocator will be used.
-		pub Unspecified,
+		pub Unspecified => { None },
 		/// A custom allocator will be used.
 		///
 		/// ## Safety
 		///
 		/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#VkAllocationCallbacks>.
-		{unsafe} pub Custom(AllocationCallbacks)
-	} as pub HostMemoryAllocator
+		{unsafe} pub Custom { callbacks: AllocationCallbacks } => { Some(callbacks) }
+	} as pub HostMemoryAllocator impl Into<Option<AllocationCallbacks>>
 }
 impl HostMemoryAllocator {
 	pub fn as_ref(&self) -> Option<&AllocationCallbacks> {
 		match self.0 {
 			HostMemoryAllocatorInner::Unspecified => None,
-			HostMemoryAllocatorInner::Custom(ref callbacks) => Some(callbacks)
+			HostMemoryAllocatorInner::Custom { ref callbacks } => Some(callbacks)
 		}
 	}
 
@@ -40,14 +40,6 @@ impl HostMemoryAllocator {
 					.pfn_internal_free(Some(rust::RustHostMemoryAllocator::rust_internal_free))
 					.build()
 			)
-		}
-	}
-}
-impl Into<Option<AllocationCallbacks>> for HostMemoryAllocator {
-	fn into(self) -> Option<AllocationCallbacks> {
-		match self.0 {
-			HostMemoryAllocatorInner::Unspecified => None,
-			HostMemoryAllocatorInner::Custom(callbacks) => Some(callbacks)
 		}
 	}
 }

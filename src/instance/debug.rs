@@ -15,26 +15,19 @@ unsafe_enum_variants! {
 	#[derive(Debug)]
 	enum DebugCallbackInner {
 		/// No debug callback will be registered.
-		pub None,
+		pub None => { None },
 		/// A default debug callback provided by Vulkayes will be registered.
-		pub Default,
-		/// A custom debug callback will be registered.
-		{unsafe} pub Custom(DebugReportCallbackCreateInfoEXT)
-	} as pub DebugCallback
-}
-impl Into<Option<DebugReportCallbackCreateInfoEXT>> for DebugCallback {
-	fn into(self) -> Option<DebugReportCallbackCreateInfoEXT> {
-		match self.0 {
-			DebugCallbackInner::None => None,
-			DebugCallbackInner::Default => Some(
+		pub Default => {
+			Some(
 				DebugReportCallbackCreateInfoEXT::builder()
 					.flags(DebugReportFlagsEXT::all())
 					.pfn_callback(Some(default_debug_callback))
 					.build()
-			),
-			DebugCallbackInner::Custom(info) => Some(info)
-		}
-	}
+			)
+		},
+		/// A custom debug callback will be registered.
+		{unsafe} pub Custom { info: DebugReportCallbackCreateInfoEXT } => { Some(info) }
+	} as pub DebugCallback impl Into<Option<DebugReportCallbackCreateInfoEXT>>
 }
 impl Default for DebugCallback {
 	fn default() -> Self {

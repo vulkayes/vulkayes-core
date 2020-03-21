@@ -11,7 +11,7 @@ use crate::{
 	device::Device,
 	memory::host::HostMemoryAllocator,
 	queue::{sharing_mode::SharingMode, Queue},
-	resource::{image::Image, ImageSize},
+	resource::image::{size::ImageSize, Image},
 	surface::Surface,
 	sync::{fence::Fence, semaphore::BinarySemaphore},
 	util::sync::{AtomicVool, Vutex},
@@ -196,12 +196,14 @@ impl Swapchain {
 					Image::from_existing(
 						device.clone(),
 						image,
+						None,
 						c_info.image_format,
 						ImageSize::new_2d(
 							NonZeroU32::new_unchecked(c_info.image_extent.width),
 							NonZeroU32::new_unchecked(c_info.image_extent.height),
 							NonZeroU32::new_unchecked(c_info.image_array_layers)
-						)
+						).into(),
+						HostMemoryAllocator::Unspecified()
 					),
 					index as u32
 				))

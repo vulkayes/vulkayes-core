@@ -4,7 +4,65 @@
 /// This is useful for making certain enum variants "unsafe" by only allowing their construction using
 /// an unsafe function. Variants also may be private.
 ///
-/// Structure enum variants are not supported.
+/// Since a common usecase across this crate for this macro are typesafe parameter combinations, there
+/// is also a version with `Into` implementation.
+///
+/// Tuple enum variants are not supported.
+///
+/// Usage:
+/// ```
+/// unsafe_enum_variants! {
+/// 	#[derive(Debug)]
+/// 	enum UnsafeEnumInner {
+/// 		/// Private
+/// 		Foo => { 0 },
+/// 		/// Public
+/// 		pub Bar => { 1 },
+/// 		/// Unsafe
+/// 		{unsafe} pub Qux { num: u32 } => { num }
+/// 	} as pub UnsafeEnum impl Into<u32>
+/// }
+/// ```
+///
+/// expands to:
+/// ```
+/// #[derive(Debug)]
+/// enum UnsafeEnumInner {
+/// 	Foo,
+/// 	Bar,
+/// 	Qux {
+/// 		num: u32
+/// 	}
+/// }
+/// #[derive(Debug)]
+/// pub struct UnsafeEnum(UnsafeEnumInner);
+/// impl UnsafeEnum {
+/// 	#[doc = r###"Private"###]
+/// 	#[allow(non_snake_case)]
+/// 	const fn Foo() -> Self {
+/// 		UnsafeEnum(UnsafeEnumInner::Foo)
+/// 	}
+/// 	#[doc = r###"Public"###]
+/// 	#[allow(non_snake_case)]
+/// 	pub const fn Bar() -> Self {
+/// 		UnsafeEnum(UnsafeEnumInner::Bar)
+/// 	}
+/// 	#[doc = r###"Unsafe"###]
+/// 	#[allow(non_snake_case)]
+/// 	pub const unsafe fn Qux(num: u32) -> Self {
+/// 		UnsafeEnum(UnsafeEnumInner::Qux { num })
+/// 	}
+/// }
+/// impl Into<u32> for UnsafeEnum {
+/// 	fn into(self) -> u32 {
+/// 		match self.0 {
+/// 			UnsafeEnumInner::Foo => { 0 },
+/// 			UnsafeEnumInner::Bar => { 1 },
+/// 			UnsafeEnumInner::Qux { num } => { num }
+/// 		}
+/// 	}
+/// }
+/// ```
 #[macro_export]
 macro_rules! unsafe_enum_variants {
 	(
@@ -12,14 +70,49 @@ macro_rules! unsafe_enum_variants {
 		enum $inner_name: ident {
 			$(
 				$(#[$variant_attribute: meta])*
-				$({$safety: tt})? $v: vis $variant: ident $( ($( $variant_data: ident ),+) )?
+				$({$safety: tt})? $v: vis $variant: ident $({
+					 $($variant_name: ident: $variant_type: ty),+
+				})? => { $($into_code: tt)+ }
+			),+
+		} as pub $name: ident impl Into<$into_type: ty>
+	) => {
+		unsafe_enum_variants!(
+			$(#[$attribute])*
+			enum $inner_name {
+				$(
+					$(#[$variant_attribute])*
+					$({$safety})? $v $variant $({ $($variant_name: $variant_type),+ })?
+				),+
+			} as pub $name
+		);
+		impl Into<$into_type> for $name {
+			fn into(self) -> $into_type {
+				match self.0 {
+					$(
+						$inner_name::$variant $({ $($variant_name),+ })? => { $($into_code)+ }
+					),+
+				}
+			}
+		}
+	};
+
+	(
+		$(#[$attribute: meta])*
+		enum $inner_name: ident {
+			$(
+				$(#[$variant_attribute: meta])*
+				$({$safety: tt})? $v: vis $variant: ident $({
+					 $($variant_name: ident: $variant_type: ty),+
+				})?
 			),+
 		} as pub $name: ident
 	) => {
 		$(#[$attribute])*
 		enum $inner_name {
 			$(
-				$variant $( ($( $variant_data ),+) )?
+				$variant $({
+					 $($variant_name: $variant_type),+
+				})?
 			),+
 		}
 		$(#[$attribute])*
@@ -28,22 +121,67 @@ macro_rules! unsafe_enum_variants {
 			$(
 				$(#[$variant_attribute])*
 				#[allow(non_snake_case)]
-				$v const $($safety)? fn $variant($( $( $variant_data: $variant_data ),+ )?) -> Self {
+				$v const $($safety)? fn $variant($( $( $variant_name: $variant_type ),+ )?) -> Self {
 					$name(
-						$inner_name::$variant $( ($( $variant_data ),+) )?
+						$inner_name::$variant $({ $($variant_name),+ })?
 					)
 				}
 			)*
 		}
-	}
+	};
 }
 
 /// Generates a public enum that derives `thiserror::Error` with `VkResult` variants and their `From` impls.
+///
+/// Usage:
+/// ```
+/// vk_result_error! {
+/// 	#[derive(Debug)]
+/// 	pub enum ImageError [A] where [A: Trait] {
+/// 		vk {
+/// 			ERROR_OUT_OF_HOST_MEMORY,
+/// 			ERROR_OUT_OF_DEVICE_MEMORY
+/// 		}
+///
+/// 		#[error("Description")]
+/// 		Other(#[from] A)
+/// 	}
+/// }
+/// ```
+///
+/// expands to:
+/// ```
+/// #[allow(unused_imports)]
+/// use thiserror::*;
+///
+/// #[derive(Debug)]
+/// #[derive(Error)]
+/// pub enum ImageError<A: Trait> {
+/// 	#[error("{}", ash::vk::Result::ERROR_OUT_OF_HOST_MEMORY)]
+/// 	#[allow(non_camel_case_types)]
+/// 	ERROR_OUT_OF_HOST_MEMORY,
+/// 	#[error("{}", ash::vk::Result::ERROR_OUT_OF_DEVICE_MEMORY)]
+/// 	#[allow(non_camel_case_types)]
+/// 	ERROR_OUT_OF_DEVICE_MEMORY,
+///
+/// 	#[error("Description")]
+/// 	Other(#[from] A)
+/// }
+/// impl<A: Trait> From<ash::vk::Result> for ImageError<A> {
+/// 	fn from(err: ash::vk::Result) -> Self {
+/// 		match err {
+/// 			ash::vk::Result::ERROR_OUT_OF_HOST_MEMORY => ImageError::ERROR_OUT_OF_HOST_MEMORY,
+/// 			ash::vk::Result::ERROR_OUT_OF_DEVICE_MEMORY => ImageError::ERROR_OUT_OF_DEVICE_MEMORY,
+/// 			_ => unreachable!("Cannot create {} from {}", stringify!(ImageError), err)
+/// 		}
+/// 	}
+/// }
+/// ```
 #[macro_export]
 macro_rules! vk_result_error {
 	(
 		$( #[$attribute: meta] )*
-		pub enum $name: ident {
+		pub enum $name: ident $([ $($generic_params: tt)+ ] where [ $($generic_bounds: tt)+ ])? {
 			vk {
 				$(
 					$( #[$variant_attribute: meta] )*
@@ -58,7 +196,7 @@ macro_rules! vk_result_error {
 
 		$( #[$attribute] )*
 		#[derive(Error)]
-		pub enum $name {
+		pub enum $name $(< $($generic_bounds)+ >)? {
 			$(
 				$( #[$variant_attribute] )*
 				#[error("{}", ash::vk::Result::$vk_error)]
@@ -68,25 +206,13 @@ macro_rules! vk_result_error {
 
 			$( $other )*
 		}
-		impl From<ash::vk::Result> for $name {
+		impl $(< $($generic_bounds)+ >)? From<ash::vk::Result> for $name $(< $($generic_params)+ >)?  {
 			fn from(err: ash::vk::Result) -> Self {
 				match err {
 					$(
 						ash::vk::Result::$vk_error => $name::$vk_error,
 					)+
-					_ => unreachable!("Cannot create {} from {}", stringify!($name), err) // TODO: Use unreachable unchecked in Release?
-				}
-			}
-		}
-		impl std::convert::TryInto<ash::vk::Result> for $name {
-			type Error = $name;
-			fn try_into(self) -> Result<ash::vk::Result, Self::Error> {
-				#[allow(unreachable_patterns)]
-				match self {
-					$(
-						$name::$vk_error => Ok(ash::vk::Result::$vk_error),
-					)+
-					_ => Err(self)
+					_ => unreachable!("Cannot create {} from {}", stringify!($name), err)
 				}
 			}
 		}
@@ -98,7 +224,7 @@ macro_rules! vk_result_error {
 /// Since not all types deref directly into a handle, it is possible to provide a code fragment to get handle from deref target:
 /// ```
 /// impl_cmmon_handle_traits! {
-/// 	impl [A: Debug] Deref, PartialEq, Eq, Hash for MyType [A] {
+/// 	impl [A: Debug] Deref, PartialEq, Eq, Hash for MyType<A> {
 /// 		type Target = DerefTarget { field_on_self } // Derefs to `DerefTarget` by invoking `&self.field_on_self`
 ///
 /// 		to_handle { .handle() } // Gets a handle from `DerefTarget` by invoking `self.field_on_self.handle()`
@@ -106,8 +232,7 @@ macro_rules! vk_result_error {
 /// }
 /// ```
 ///
-/// this expands to
-///
+/// expands to:
 /// ```
 /// impl<A: Debug> Deref for MyType<A> {
 /// 	type Target = DerefTarget;
@@ -131,7 +256,7 @@ macro_rules! vk_result_error {
 #[macro_export]
 macro_rules! impl_common_handle_traits {
 	(
-		impl $([$($impl_gen: tt)*])? Deref, PartialEq, Eq, Hash for $tp: ty $([$($ty_gen: tt)*])? {
+		impl $([ $($impl_gen: tt)+ ])? Deref, PartialEq, Eq, Hash for $tp: ty {
 			type Target = $target: ty { $($target_code: tt)+ }
 
 			$(
@@ -139,20 +264,20 @@ macro_rules! impl_common_handle_traits {
 			)?
 		}
 	) => {
-		impl $(<$($impl_gen)*>)? Deref for $tp $(<$($ty_gen)*>)? {
+		impl $(< $($impl_gen)+ >)? Deref for $tp {
 			type Target = $target;
 
 			fn deref(&self) -> &Self::Target {
 				&self.$($target_code)+
 			}
 		}
-		impl $(<$($impl_gen)*>)? PartialEq for $tp $(<$($ty_gen)*>)? {
+		impl $(< $($impl_gen)+ >)? PartialEq for $tp {
 			fn eq(&self, other: &Self) -> bool {
 				self.$($target_code)+ $( $($to_handle_code)+ )? == other.$($target_code)+ $( $($to_handle_code)+ )?
 			}
 		}
-		impl $(<$($impl_gen)*>)? Eq for $tp $(<$($ty_gen)*>)? {}
-		impl $(<$($impl_gen)*>)? std::hash::Hash for $tp $(<$($ty_gen)*>)? {
+		impl $(< $($impl_gen)+ >)? Eq for $tp {}
+		impl $(< $($impl_gen)+ >)? std::hash::Hash for $tp {
 			fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
 				self.$($target_code)+ $( $($to_handle_code)+ )? .hash(state)
 			}
@@ -173,8 +298,7 @@ macro_rules! impl_common_handle_traits {
 /// }
 /// ```
 ///
-/// expands to
-///
+/// expands to:
 /// ```
 /// #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 /// pub struct NameOffsets {
@@ -295,6 +419,8 @@ macro_rules! offsetable_struct {
 
 /// Creates two fixed-size arrays. The first one holds locks and the second one holds deref of those locks.
 ///
+/// This macro uses a `proc-macro-hack` version of the `seq-macro` crate to generate the array indices.
+///
 /// Usage:
 /// ```
 /// lock_and_deref_closure!(
@@ -305,7 +431,8 @@ macro_rules! offsetable_struct {
 /// 	}
 /// )
 /// ```
-/// expands to
+///
+/// expands to:
 /// ```
 /// {
 /// 	let (foo_locks, foo_derefs) = {
@@ -325,8 +452,6 @@ macro_rules! offsetable_struct {
 /// 	closure(foo_locks, foo_derefs, bar_locks, bar_derefs)
 /// }
 /// ```
-///
-/// This macro uses a `proc-macro-hack` version of the `seq-macro` crate to generate the array indices.
 #[macro_export]
 macro_rules! lock_and_deref_closure {
 	(
