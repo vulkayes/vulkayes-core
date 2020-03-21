@@ -6,8 +6,8 @@ use crate::{device::Device, Vrc};
 
 pub mod never;
 
-// #[cfg(feature = "simple_device_allocator")]
-// pub mod simple_allocator;
+#[cfg(feature = "naive_device_allocator")]
+pub mod naive;
 
 /// Trait for memory allocations done with memory allocators.
 ///
@@ -35,10 +35,15 @@ pub unsafe trait DeviceMemoryAllocation:
 ///
 /// * `allocate` must return type implementing `DeviceMemoryAllocation` that can be bound to the `vk::Image` passed in.
 pub unsafe trait ImageMemoryAllocator: std::fmt::Debug {
+	type AllocationRequirements: std::fmt::Debug;
 	type Allocation: DeviceMemoryAllocation;
 	type Error: std::error::Error;
 
-	fn allocate(&mut self, image: vk::Image) -> Result<Self::Allocation, Self::Error>;
+	fn allocate(
+		&mut self,
+		image: vk::Image,
+		requirements: Self::AllocationRequirements
+	) -> Result<Self::Allocation, Self::Error>;
 }
 /// Trait for buffer memory allocators.
 ///
@@ -46,8 +51,13 @@ pub unsafe trait ImageMemoryAllocator: std::fmt::Debug {
 ///
 /// * `allocate` must return type implementing `DeviceMemoryAllocation` that can be bound to the `vk::Buffer` passed in.
 pub unsafe trait BufferMemoryAllocator: std::fmt::Debug {
+	type AllocationRequirements: std::fmt::Debug;
 	type Allocation: DeviceMemoryAllocation;
 	type Error: std::error::Error;
 
-	fn allocate(&mut self, buffer: vk::Buffer) -> Result<Self::Allocation, Self::Error>;
+	fn allocate(
+		&mut self,
+		buffer: vk::Buffer,
+		requirements: Self::AllocationRequirements
+	) -> Result<Self::Allocation, Self::Error>;
 }

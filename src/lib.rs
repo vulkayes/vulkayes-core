@@ -6,9 +6,10 @@
 //!
 //! Adds `Rust()` constructor to `HostMemoryAllocator` that uses Rusts `std::alloc` methods.
 //!
-//! ### `simple_device_allocator`
+//! ### `naive_device_allocator`
 //!
-//! Adds a simple memory allocator `SimpleDeviceMemoryAllocator`. It should not be used in production applications.
+//! Adds a simple memory allocator `NaiveDeviceMemoryAllocator` that allocates memory for each resource separately.
+//! It should not be used in production applications.
 //!
 //! ### `single_thread`
 //!

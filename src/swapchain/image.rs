@@ -2,7 +2,14 @@ use std::{mem::ManuallyDrop, num::NonZeroU32, ops::Deref};
 
 use ash::vk;
 
-use crate::{memory::device::never::NeverMemoryAllocation, resource::image::Image, Vrc};
+use crate::{
+	memory::device::never::NeverMemoryAllocation,
+	resource::image::{
+		size::{ImageSize, ImageSize2D},
+		Image
+	},
+	Vrc
+};
 
 use super::Swapchain;
 
@@ -11,8 +18,7 @@ pub struct SwapchainCreateImageInfo {
 	pub min_image_count: NonZeroU32,
 	pub image_format: vk::Format,
 	pub image_color_space: vk::ColorSpaceKHR,
-	pub image_extent: [NonZeroU32; 2],
-	pub image_array_layers: NonZeroU32,
+	pub image_size: ImageSize2D,
 	pub image_usage: vk::ImageUsageFlags
 }
 impl SwapchainCreateImageInfo {
@@ -24,11 +30,8 @@ impl SwapchainCreateImageInfo {
 			.min_image_count(self.min_image_count.get())
 			.image_format(self.image_format)
 			.image_color_space(self.image_color_space)
-			.image_extent(vk::Extent2D {
-				width: self.image_extent[0].get(),
-				height: self.image_extent[1].get()
-			})
-			.image_array_layers(self.image_array_layers.get())
+			.image_extent(ImageSize::from(self.image_size).into())
+			.image_array_layers(ImageSize::from(self.image_size).array_layers().get())
 			.image_usage(self.image_usage)
 	}
 }
@@ -46,8 +49,8 @@ impl SwapchainImage {
 	///
 	/// ### Safety
 	///
-	/// `image` must be an image crated from `swapchain` using `.get_swapchain_images`.
-	/// `index` must be the index of the image as returned by the `.get_swapchain_images`.
+	/// * `image` must be an image crated from `swapchain` using `.get_swapchain_images`.
+	/// * `index` must be the index of the image as returned by the `.get_swapchain_images`.
 	pub unsafe fn new(
 		swapchain: Vrc<Swapchain>,
 		image: Image<NeverMemoryAllocation>,

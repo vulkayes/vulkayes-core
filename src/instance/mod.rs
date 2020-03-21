@@ -180,6 +180,8 @@ impl_common_handle_traits! {
 }
 impl Drop for Instance {
 	fn drop(&mut self) {
+		log_trace_common!("Dropping", self);
+
 		unsafe {
 			if let Some(debug) = self.debug.as_mut() {
 				debug.loader.destroy_debug_report_callback(

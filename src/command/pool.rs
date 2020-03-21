@@ -162,6 +162,7 @@ impl_common_handle_traits! {
 impl Drop for CommandPool {
 	fn drop(&mut self) {
 		let lock = self.pool.lock().expect("vutex poisoned");
+		log_trace_common!("Dropping", self, lock);
 
 		unsafe {
 			self.device

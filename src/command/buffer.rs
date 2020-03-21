@@ -43,6 +43,7 @@ impl_common_handle_traits! {
 impl Drop for CommandBuffer {
 	fn drop(&mut self) {
 		let lock = self.command_buffer.lock().expect("vutex poisoned");
+		log_trace_common!("Dropping", self, lock);
 
 		unsafe { self.pool.free_command_buffers([*lock]) }
 	}

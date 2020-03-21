@@ -110,6 +110,7 @@ impl_common_handle_traits! {
 impl Drop for Fence {
 	fn drop(&mut self) {
 		let lock = self.fence.lock().expect("vutex poisoned");
+		log_trace_common!("Dropping", self, lock);
 
 		unsafe {
 			self.device

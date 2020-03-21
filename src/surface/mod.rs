@@ -127,6 +127,8 @@ impl_common_handle_traits! {
 }
 impl Drop for Surface {
 	fn drop(&mut self) {
+		log_trace_common!("Dropping", self);
+
 		unsafe {
 			self.loader
 				.destroy_surface(self.surface, self.host_memory_allocator.as_ref());

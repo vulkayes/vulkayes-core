@@ -14,21 +14,31 @@ use super::{BufferMemoryAllocator, DeviceMemoryAllocation, ImageMemoryAllocator}
 pub enum NeverDeviceAllocator {}
 unsafe impl ImageMemoryAllocator for NeverDeviceAllocator {
 	type Allocation = NeverMemoryAllocation;
+	type AllocationRequirements = ();
 	type Error = std::convert::Infallible;
 
 	// TODO: Replace with never `!` type when stable
 
-	fn allocate(&mut self, _: vk::Image) -> Result<Self::Allocation, Self::Error> {
+	fn allocate(
+		&mut self,
+		_: vk::Image,
+		_: Self::AllocationRequirements
+	) -> Result<Self::Allocation, Self::Error> {
 		unreachable!()
 	}
 }
 unsafe impl BufferMemoryAllocator for NeverDeviceAllocator {
 	type Allocation = NeverMemoryAllocation;
+	type AllocationRequirements = ();
 	type Error = std::convert::Infallible;
 
 	// TODO: Replace with never `!` type when stable
 
-	fn allocate(&mut self, _: vk::Buffer) -> Result<Self::Allocation, Self::Error> {
+	fn allocate(
+		&mut self,
+		_: vk::Buffer,
+		_: Self::AllocationRequirements
+	) -> Result<Self::Allocation, Self::Error> {
 		unreachable!()
 	}
 }

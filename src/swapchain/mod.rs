@@ -254,13 +254,13 @@ impl Swapchain {
 			}
 		}
 
+		let lock = self.swapchain.lock().expect("vutex poisoned");
 		let semaphore_lock = synchronization
 			.semaphore()
 			.map(|f| f.lock().expect("vutex poisoned"));
 		let fence_lock = synchronization
 			.fence()
 			.map(|f| f.lock().expect("vutex poisoned"));
-		let lock = self.swapchain.lock().expect("vutex poisoned");
 
 		let result = unsafe {
 			self.loader.acquire_next_image(
@@ -307,6 +307,7 @@ impl_common_handle_traits! {
 impl Drop for Swapchain {
 	fn drop(&mut self) {
 		let lock = self.swapchain.lock().expect("vutex poisoned");
+		log_trace_common!("Dropping", self, lock);
 
 		unsafe {
 			self.loader

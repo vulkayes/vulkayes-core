@@ -174,6 +174,8 @@ impl_common_handle_traits! {
 }
 impl Drop for Device {
 	fn drop(&mut self) {
+		log_trace_common!("Dropping", self);
+
 		unsafe {
 			// Ensure all work is done
 			self.device

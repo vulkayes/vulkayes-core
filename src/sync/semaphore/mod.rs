@@ -92,6 +92,7 @@ impl_common_handle_traits! {
 impl Drop for Semaphore {
 	fn drop(&mut self) {
 		let lock = self.semaphore.lock().expect("vutex poisoned");
+		log_trace_common!("Dropping", self, lock);
 
 		unsafe {
 			self.device

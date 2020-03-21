@@ -38,7 +38,7 @@ impl<Mem: DeviceMemoryAllocation> Image<Mem> {
 		tiling_and_layout: params::ImageTilingAndLayout,
 		usage: vk::ImageUsageFlags,
 		sharing_mode: SharingMode<impl AsRef<[u32]>>,
-		allocator: Option<&mut A>,
+		allocator: Option<(&mut A, A::AllocationRequirements)>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::ImageError<A::Error>> {
 		if cfg!(feature = "runtime_implicit_validations") {
@@ -83,7 +83,7 @@ impl<Mem: DeviceMemoryAllocation> Image<Mem> {
 	pub unsafe fn from_create_info<A: ImageMemoryAllocator<Allocation = Mem>>(
 		device: Vrc<Device>,
 		create_info: impl Deref<Target = vk::ImageCreateInfo>,
-		allocator: Option<&mut A>,
+		allocator: Option<(&mut A, A::AllocationRequirements)>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::ImageError<A::Error>> {
 		log_trace_common!(
@@ -97,21 +97,23 @@ impl<Mem: DeviceMemoryAllocation> Image<Mem> {
 		let c_info = create_info.deref();
 		let image = device.create_image(c_info, host_memory_allocator.as_ref())?;
 
-		let memory = allocator
-			.map(|alloc| alloc.allocate(image))
-			.transpose()
-			.map_err(|err| error::ImageError::AllocationError(err))?;
-		if cfg!(feature = "runtime_implicit_validations") {
-			if let Some(ref memory) = memory {
-				if memory.device() != &device {
-					return Err(error::ImageError::MemoryDeviceMismatch)
-				}
-			}
-		}
+		let memory = match allocator {
+			Some((allocator, requirements)) => {
+				let memory = allocator
+					.allocate(image, requirements)
+					.map_err(error::ImageError::AllocationError)?;
 
-		if let Some(ref memory) = memory {
-			device.bind_image_memory(image, *memory.deref(), memory.bind_offset())?;
-		}
+				if cfg!(feature = "runtime_implicit_validations") {
+					if memory.device() != &device {
+						return Err(error::ImageError::MemoryDeviceMismatch)
+					}
+				}
+
+				device.bind_image_memory(image, *memory.deref(), memory.bind_offset())?;
+				Some(memory)
+			}
+			None => None
+		};
 
 		let width = NonZeroU32::new(c_info.extent.width).expect("width must be non zero");
 		let height = NonZeroU32::new(c_info.extent.width).expect("height must be non zero");
@@ -194,6 +196,8 @@ impl_common_handle_traits! {
 }
 impl<M: DeviceMemoryAllocation> Drop for Image<M> {
 	fn drop(&mut self) {
+		log_trace_common!("Dropping Image", self);
+
 		unsafe {
 			self.device
 				.destroy_image(self.image, self.host_memory_allocator.as_ref());
