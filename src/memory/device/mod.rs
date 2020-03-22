@@ -20,7 +20,7 @@ pub mod naive;
 /// * `bind_offset` must return a valid offset to bind image to.
 /// * The implementing type must `Deref` to valid `vk::DeviceMemory` handle.
 pub unsafe trait DeviceMemoryAllocation:
-	Deref<Target = vk::DeviceMemory> + std::fmt::Debug
+	Deref<Target = vk::DeviceMemory> + std::fmt::Debug + crate::util::sync::VSendSync + 'static
 {
 	/// Returns device from which the memory was allocated.
 	fn device(&self) -> &Vrc<Device>;
@@ -40,7 +40,7 @@ pub unsafe trait ImageMemoryAllocator: std::fmt::Debug {
 	type Error: std::error::Error;
 
 	fn allocate(
-		&mut self,
+		&self,
 		image: vk::Image,
 		requirements: Self::AllocationRequirements
 	) -> Result<Self::Allocation, Self::Error>;
@@ -56,7 +56,7 @@ pub unsafe trait BufferMemoryAllocator: std::fmt::Debug {
 	type Error: std::error::Error;
 
 	fn allocate(
-		&mut self,
+		&self,
 		buffer: vk::Buffer,
 		requirements: Self::AllocationRequirements
 	) -> Result<Self::Allocation, Self::Error>;

@@ -20,7 +20,7 @@ unsafe impl ImageMemoryAllocator for NeverDeviceAllocator {
 	// TODO: Replace with never `!` type when stable
 
 	fn allocate(
-		&mut self,
+		&self,
 		_: vk::Image,
 		_: Self::AllocationRequirements
 	) -> Result<Self::Allocation, Self::Error> {
@@ -35,7 +35,7 @@ unsafe impl BufferMemoryAllocator for NeverDeviceAllocator {
 	// TODO: Replace with never `!` type when stable
 
 	fn allocate(
-		&mut self,
+		&self,
 		_: vk::Buffer,
 		_: Self::AllocationRequirements
 	) -> Result<Self::Allocation, Self::Error> {

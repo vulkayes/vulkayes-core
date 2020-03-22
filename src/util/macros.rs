@@ -264,7 +264,7 @@ macro_rules! impl_common_handle_traits {
 			)?
 		}
 	) => {
-		impl $(< $($impl_gen)+ >)? Deref for $tp {
+		impl $(< $($impl_gen)+ >)? std::ops::Deref for $tp {
 			type Target = $target;
 
 			fn deref(&self) -> &Self::Target {

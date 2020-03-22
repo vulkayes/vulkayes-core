@@ -9,9 +9,12 @@ use std::{
 use crate::{
 	ash::vk,
 	device::Device,
-	memory::host::HostMemoryAllocator,
+	memory::{device::never::NeverMemoryAllocation, host::HostMemoryAllocator},
 	queue::{sharing_mode::SharingMode, Queue},
-	resource::image::{size::ImageSize, Image},
+	resource::image::{
+		params::{ImageSize, MipmapLevels},
+		Image
+	},
 	surface::Surface,
 	sync::{fence::Fence, semaphore::BinarySemaphore},
 	util::sync::{AtomicVool, Vutex},
@@ -196,12 +199,13 @@ impl Swapchain {
 					Image::from_existing(
 						device.clone(),
 						image,
-						None,
+						None::<NeverMemoryAllocation>,
 						c_info.image_format,
 						ImageSize::new_2d(
 							NonZeroU32::new_unchecked(c_info.image_extent.width),
 							NonZeroU32::new_unchecked(c_info.image_extent.height),
-							NonZeroU32::new_unchecked(c_info.image_array_layers)
+							NonZeroU32::new_unchecked(c_info.image_array_layers),
+							MipmapLevels::One()
 						).into(),
 						HostMemoryAllocator::Unspecified()
 					),

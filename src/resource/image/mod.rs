@@ -1,6 +1,5 @@
 use std::{
 	fmt::{self, Debug},
-	num::NonZeroU32,
 	ops::Deref
 };
 
@@ -9,7 +8,7 @@ use ash::{version::DeviceV1_0, vk};
 use crate::{
 	device::Device,
 	memory::{
-		device::{never::NeverMemoryAllocation, DeviceMemoryAllocation, ImageMemoryAllocator},
+		device::{DeviceMemoryAllocation, ImageMemoryAllocator},
 		host::HostMemoryAllocator
 	},
 	queue::sharing_mode::SharingMode,
@@ -18,27 +17,29 @@ use crate::{
 
 pub mod error;
 pub mod params;
-pub mod size;
+pub mod view;
 
-pub struct Image<Mem: DeviceMemoryAllocation = NeverMemoryAllocation> {
+pub struct Image {
 	device: Vrc<Device>,
 	image: vk::Image,
-	memory: Option<Mem>, // This field is optional, but the option is also used in `Drop`
+	// TODO: On one side, the dynamic dispatch here is wasteful.
+	// 	However, avoiding the generic parameter plague that would spread to ImageViews and CommandBuffers is a significant concern.
+	memory: Option<Box<dyn DeviceMemoryAllocation>>,
 
 	format: vk::Format,
-	size: size::ImageSize,
+	size: params::ImageSize,
 
 	host_memory_allocator: HostMemoryAllocator
 }
-impl<Mem: DeviceMemoryAllocation> Image<Mem> {
-	pub fn new<A: ImageMemoryAllocator<Allocation = Mem>>(
+impl Image {
+	pub fn new<A: ImageMemoryAllocator>(
 		device: Vrc<Device>,
 		format: vk::Format,
 		size_info: params::ImageSizeInfo,
 		tiling_and_layout: params::ImageTilingAndLayout,
 		usage: vk::ImageUsageFlags,
 		sharing_mode: SharingMode<impl AsRef<[u32]>>,
-		allocator: Option<(&mut A, A::AllocationRequirements)>,
+		allocator: Option<(&A, A::AllocationRequirements)>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::ImageError<A::Error>> {
 		if cfg!(feature = "runtime_implicit_validations") {
@@ -47,23 +48,15 @@ impl<Mem: DeviceMemoryAllocation> Image<Mem> {
 			}
 		}
 
-		let (size, mipmaps, samples, flags) = size_info.into();
+		let (size, samples, flags) = size_info.into();
 		let (tiling, layout) = tiling_and_layout.into();
-
-		let mipmap_levels = {
-			let maybe_number: Option<NonZeroU32> = mipmaps.into();
-			maybe_number.unwrap_or_else(|| {
-				// TODO: This should consult `VkImageFormatProperties2 imageCreateImageFormatPropertiesList[]` to check the `imageCreateMaxMipLevels`
-				size.complete_mipmap_chain_mipmaps()
-			})
-		};
 
 		let create_info = vk::ImageCreateInfo::builder()
 			.flags(flags)
 			.image_type(size.image_type())
 			.format(format)
 			.extent(size.into())
-			.mip_levels(mipmap_levels.get())
+			.mip_levels(size.mipmap_levels().get())
 			.array_layers(size.array_layers().get())
 			.samples(samples)
 			.tiling(tiling)
@@ -80,21 +73,21 @@ impl<Mem: DeviceMemoryAllocation> Image<Mem> {
 	/// ### Safety
 	///
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCreateImage.html>.
-	pub unsafe fn from_create_info<A: ImageMemoryAllocator<Allocation = Mem>>(
+	pub unsafe fn from_create_info<A: ImageMemoryAllocator>(
 		device: Vrc<Device>,
 		create_info: impl Deref<Target = vk::ImageCreateInfo>,
-		allocator: Option<(&mut A, A::AllocationRequirements)>,
+		allocator: Option<(&A, A::AllocationRequirements)>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::ImageError<A::Error>> {
+		let c_info = create_info.deref();
+
 		log_trace_common!(
 			"Create image:",
 			device,
-			create_info.deref(),
+			c_info,
 			allocator,
 			host_memory_allocator
 		);
-
-		let c_info = create_info.deref();
 		let image = device.create_image(c_info, host_memory_allocator.as_ref())?;
 
 		let memory = match allocator {
@@ -110,23 +103,12 @@ impl<Mem: DeviceMemoryAllocation> Image<Mem> {
 				}
 
 				device.bind_image_memory(image, *memory.deref(), memory.bind_offset())?;
-				Some(memory)
+				Some(Box::new(memory) as Box<_>)
 			}
 			None => None
 		};
 
-		let width = NonZeroU32::new(c_info.extent.width).expect("width must be non zero");
-		let height = NonZeroU32::new(c_info.extent.width).expect("height must be non zero");
-		let depth = NonZeroU32::new(c_info.extent.width).expect("depth must be non zero");
-		let array_layers =
-			NonZeroU32::new(c_info.array_layers).expect("array layers must be non zero");
-
-		let size = match c_info.image_type {
-			vk::ImageType::TYPE_1D => size::ImageSize::new_1d(width, array_layers).into(),
-			vk::ImageType::TYPE_2D => size::ImageSize::new_2d(width, height, array_layers).into(),
-			vk::ImageType::TYPE_3D => size::ImageSize::new_3d(width, height, depth).into(),
-			_ => unreachable!()
-		};
+		let size = params::ImageSize::from_image_create_info(c_info);
 
 		Ok(Vrc::new(Image {
 			device,
@@ -147,21 +129,26 @@ impl<Mem: DeviceMemoryAllocation> Image<Mem> {
 	/// * `image` must have been crated from the `device`.
 	/// * `memory` must have been allocated from the `device`.
 	/// * All parameters must match the parameters used when creating the image.
-	pub unsafe fn from_existing(
+	pub unsafe fn from_existing<M: DeviceMemoryAllocation + 'static>(
 		device: Vrc<Device>,
 		image: vk::Image,
-		memory: Option<Mem>,
+		memory: Option<M>,
 		format: vk::Format,
-		size: size::ImageSize,
+		size: params::ImageSize,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Self {
 		log_trace_common!(
 			"Creating Image from existing handle:",
 			device,
 			crate::util::fmt::format_handle(image),
+			memory,
 			format,
-			size
+			size,
+			host_memory_allocator
 		);
+
+		let memory = memory.map(|m| Box::new(m) as Box<_>);
+
 		Image {
 			device,
 			image,
@@ -172,31 +159,31 @@ impl<Mem: DeviceMemoryAllocation> Image<Mem> {
 		}
 	}
 
-	// TODO: The following getters cannot be const because of generics
-	pub fn device(&self) -> &Vrc<Device> {
+	pub const fn device(&self) -> &Vrc<Device> {
 		&self.device
 	}
 
-	pub fn size(&self) -> size::ImageSize {
+	pub const fn size(&self) -> params::ImageSize {
 		self.size
 	}
 
-	pub fn format(&self) -> vk::Format {
+	pub const fn format(&self) -> vk::Format {
 		self.format
 	}
 
-	pub fn memory(&self) -> &Option<Mem> {
+	// TODO: Cannot be const because of Sized
+	pub fn memory(&self) -> &Option<Box<dyn DeviceMemoryAllocation>> {
 		&self.memory
 	}
 }
 impl_common_handle_traits! {
-	impl [M: DeviceMemoryAllocation] Deref, PartialEq, Eq, Hash for Image<M> {
+	impl Deref, PartialEq, Eq, Hash for Image {
 		type Target = vk::Image { image }
 	}
 }
-impl<M: DeviceMemoryAllocation> Drop for Image<M> {
+impl Drop for Image {
 	fn drop(&mut self) {
-		log_trace_common!("Dropping Image", self);
+		log_trace_common!("Dropping", self);
 
 		unsafe {
 			self.device
@@ -204,7 +191,7 @@ impl<M: DeviceMemoryAllocation> Drop for Image<M> {
 		}
 	}
 }
-impl<M: DeviceMemoryAllocation> Debug for Image<M> {
+impl Debug for Image {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		f.debug_struct("Image")
 			.field("device", &self.device)
@@ -214,7 +201,7 @@ impl<M: DeviceMemoryAllocation> Debug for Image<M> {
 				&self
 					.memory
 					.as_ref()
-					.map(|m| crate::util::fmt::format_handle(*m.deref()))
+					.map(|m| crate::util::fmt::format_handle(*m.deref().deref()))
 			)
 			.field("format", &self.format)
 			.field("size", &self.size)

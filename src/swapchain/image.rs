@@ -3,9 +3,8 @@ use std::{mem::ManuallyDrop, num::NonZeroU32, ops::Deref};
 use ash::vk;
 
 use crate::{
-	memory::device::never::NeverMemoryAllocation,
 	resource::image::{
-		size::{ImageSize, ImageSize2D},
+		params::{ImageSize, ImageSize2D},
 		Image
 	},
 	Vrc
@@ -40,7 +39,7 @@ impl SwapchainCreateImageInfo {
 pub struct SwapchainImage {
 	swapchain: Vrc<Swapchain>,
 	// Image must not be dropped because it is managed by the Vulkan implementation.
-	image: ManuallyDrop<Image<NeverMemoryAllocation>>,
+	image: ManuallyDrop<Image>,
 	/// Swapchain image index
 	index: u32
 }
@@ -51,11 +50,7 @@ impl SwapchainImage {
 	///
 	/// * `image` must be an image crated from `swapchain` using `.get_swapchain_images`.
 	/// * `index` must be the index of the image as returned by the `.get_swapchain_images`.
-	pub unsafe fn new(
-		swapchain: Vrc<Swapchain>,
-		image: Image<NeverMemoryAllocation>,
-		index: u32
-	) -> Self {
+	pub unsafe fn new(swapchain: Vrc<Swapchain>, image: Image, index: u32) -> Self {
 		SwapchainImage {
 			swapchain,
 			image: ManuallyDrop::new(image),
@@ -72,7 +67,7 @@ impl SwapchainImage {
 	}
 }
 impl Deref for SwapchainImage {
-	type Target = Image<NeverMemoryAllocation>;
+	type Target = Image;
 
 	fn deref(&self) -> &Self::Target {
 		&self.image

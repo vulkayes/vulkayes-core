@@ -15,6 +15,10 @@ mod inner {
 	pub type VutexGuard<'a, T> = std::sync::MutexGuard<'a, T>;
 	/// A type alias to `AtomicBool`.
 	pub type AtomicVool = std::sync::atomic::AtomicBool;
+
+	/// Marker trait for `Send + Sync`.
+	pub trait VSendSync: Send + Sync {}
+	impl<T> VSendSync for T where T: Send + Sync {}
 }
 
 #[cfg(feature = "single_thread")]
@@ -61,6 +65,10 @@ mod inner {
 			self.0.replace(value)
 		}
 	}
+
+	/// Empty marker trait as a "single thread alternative" to `Send + Sync`.
+	pub trait VSendSync {}
+	impl<T> VSendSync for T {}
 }
 
 #[cfg(not(feature = "single_thread"))]
@@ -99,6 +107,7 @@ mod test {
 		swapchain_send_sync: Vrc<crate::swapchain::Swapchain>,
 		swapchain_image_send_sync: Vrc<crate::swapchain::image::SwapchainImage>,
 		image_send_sync: Vrc<crate::resource::image::Image>,
+		image_view_send_sync: Vrc<crate::resource::image::view::ImageView>,
 		command_pool_send_sync: Vrc<crate::command::pool::CommandPool>,
 		command_buffer_send_sync: Vrc<crate::command::buffer::CommandBuffer>
 	);

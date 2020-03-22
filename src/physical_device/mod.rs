@@ -2,8 +2,7 @@
 
 use std::{
 	convert::TryInto,
-	fmt::{Debug, Error, Formatter},
-	ops::Deref
+	fmt::{Debug, Error, Formatter}
 };
 
 use ash::{

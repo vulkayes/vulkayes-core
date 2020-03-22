@@ -101,7 +101,7 @@ unsafe impl ImageMemoryAllocator for NaiveDeviceMemoryAllocator {
 	type Error = AllocationError;
 
 	fn allocate(
-		&mut self,
+		&self,
 		image: vk::Image,
 		required_flags: Self::AllocationRequirements
 	) -> Result<Self::Allocation, Self::Error> {
@@ -132,7 +132,7 @@ unsafe impl BufferMemoryAllocator for NaiveDeviceMemoryAllocator {
 	type Error = AllocationError;
 
 	fn allocate(
-		&mut self,
+		&self,
 		buffer: vk::Buffer,
 		required_flags: Self::AllocationRequirements
 	) -> Result<Self::Allocation, Self::Error> {
