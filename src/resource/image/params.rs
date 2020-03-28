@@ -3,6 +3,7 @@ use std::num::NonZeroU32;
 use ash::vk;
 
 unsafe_enum_variants! {
+	#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 	enum MipmapLevelsInner {
 		/// One mipmap level.
 		pub One => { Some(crate::NONZEROU32_ONE) },
@@ -254,6 +255,7 @@ impl ImageSizeCubeCompatible {
 
 unsafe_enum_variants! {
 	/// Statically typed common safe combinations of image size, mipmap levels, sample flags and image create flags.
+	#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 	enum ImageSizeInfoInner {
 		/// General image size with no flags enabled.
 		pub General { size: ImageSize } => { (size, vk::SampleCountFlags::TYPE_1, vk::ImageCreateFlags::empty()) },
@@ -290,9 +292,15 @@ unsafe_enum_variants! {
 		{unsafe} pub Custom { size: ImageSize, samples: vk::SampleCountFlags, flags: vk::ImageCreateFlags } => { (size, samples, flags) }
 	} as pub ImageSizeInfo impl Into<(ImageSize, vk::SampleCountFlags, vk::ImageCreateFlags)>
 }
+impl From<ImageSize> for ImageSizeInfo {
+	fn from(value: ImageSize) -> Self {
+		ImageSizeInfo::General(value)
+	}
+}
 
 unsafe_enum_variants! {
 	/// Statically typed common safe combinations of image tiling and layout.
+	#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 	enum ImageTilingAndLayoutInner {
 		/// Optimal tiling and undefined layout
 		pub OptimalUndefined => { (vk::ImageTiling::OPTIMAL, vk::ImageLayout::UNDEFINED) },
@@ -307,8 +315,14 @@ unsafe_enum_variants! {
 		{unsafe} pub Custom { tiling: vk::ImageTiling, layout: vk::ImageLayout } => { (tiling, layout) }
 	} as pub ImageTilingAndLayout impl Into<(vk::ImageTiling, vk::ImageLayout)>
 }
+impl Default for ImageTilingAndLayout {
+	fn default() -> Self {
+		ImageTilingAndLayout::OptimalUndefined()
+	}
+}
 
 unsafe_enum_variants! {
+	#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 	enum ImageViewRangeInner {
 		pub Type1D { mipmap_levels_base: u32, mipmap_levels: NonZeroU32, array_layers_base: u32 } => {
 			ImageSubresourceSlice {

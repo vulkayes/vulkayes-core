@@ -479,3 +479,92 @@ macro_rules! lock_and_deref_closure {
 		}
 	}
 }
+
+/// Simple enum dispatch using `Deref`. Suitable for mixed dispatch enums.
+///
+/// Usage:
+/// ```
+/// // Assuming `Trait: Deref<Target = Foo>`
+/// deref_enum_dispatch! {
+/// 	/// Mixed-dispatch image enum.
+/// 	#[derive(Debug, Clone)]
+/// 	pub enum MixedDynTrait {
+/// 		Foo(Foo),
+/// 		Bar(Bar),
+/// 		Dyn(Box<dyn Trait>)
+/// 	}: Deref<Target = Foo>
+/// }
+/// ```
+///
+/// expands to:
+/// ```
+/// /// Mixed-dispatch image enum.
+/// #[derive(Debug, Clone)]
+/// pub enum MixedDynTrait {
+/// 	Foo(Foo),
+/// 	Bar(Bar),
+/// 	Dyn(Box<dyn Trait>)
+/// }
+/// impl Deref for MixedDynTrait {
+/// 	type Target = Foo;
+///
+/// 	fn deref(&self) -> &Self::Target {
+/// 		match self {
+/// 			MixedDynTrait::Foo(value) => value.deref(),
+/// 			MixedDynTrait::Bar(value) => value.deref(),
+/// 			MixedDynTrait::Dyn(value) => value.deref()
+/// 		}
+/// 	}
+/// }
+/// impl From<Foo> for MixedDynTrait {
+/// 	fn from(value: Foo) -> Self {
+/// 		MixedDynTrait::Foo(value)
+/// 	}
+/// }
+/// impl From<Bar> for MixedDynTrait {
+/// 	fn from(value: Bar) -> Self {
+/// 		MixedDynTrait::Bar(value)
+/// 	}
+/// }
+/// impl From<Box<dyn Trait>> for MixedDynTrait {
+/// 	fn from(value: Box<dyn Trait>) -> Self {
+/// 		MixedDynTrait::Dyn(value)
+/// 	}
+/// }
+/// ```
+#[macro_export]
+macro_rules! deref_enum_dispatch {
+	(
+		$( #[$attribute: meta] )*
+		$visibility: vis enum $name: ident {
+			$(
+				$variant: ident ($variant_payload: ty)
+			),+
+		}: Deref<Target = $target: ty>
+	) => {
+		$( #[$attribute] )*
+		$visibility enum $name {
+			$(
+				$variant ($variant_payload)
+			),+
+		}
+		impl Deref for $name {
+			type Target = $target;
+
+			fn deref(&self) -> &Self::Target {
+				match self {
+					$(
+						$name::$variant(value) => value.deref()
+					),+
+				}
+			}
+		}
+		$(
+			impl From<$variant_payload> for $name {
+				fn from(value: $variant_payload) -> Self {
+					$name::$variant(value)
+				}
+			}
+		)+
+	}
+}

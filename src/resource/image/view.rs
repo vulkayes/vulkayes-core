@@ -5,12 +5,11 @@ use ash::{version::DeviceV1_0, vk};
 use crate::{memory::host::HostMemoryAllocator, Vrc};
 
 use super::{
-	params::{ImageSize, ImageSubresourceRange},
-	Image
+	params::{ImageSize, ImageSubresourceRange}
 };
 
 pub struct ImageView {
-	image: Vrc<Image>,
+	image: super::MixedDynImage,
 	view: vk::ImageView,
 
 	subresource_range: ImageSubresourceRange,
@@ -20,7 +19,7 @@ pub struct ImageView {
 }
 impl ImageView {
 	pub fn new(
-		image: Vrc<Image>,
+		image: super::MixedDynImage,
 		view_range: super::params::ImageViewRange,
 		format: Option<vk::Format>,
 		component_mapping: vk::ComponentMapping,
@@ -30,7 +29,7 @@ impl ImageView {
 		let subresource_slice: super::params::ImageSubresourceSlice = view_range.into();
 
 		let create_info = vk::ImageViewCreateInfo::builder()
-			.image(*image.deref().deref())
+			.image(*image.deref().deref().deref())
 			.view_type(subresource_slice.view_type)
 			.format(format.unwrap_or(image.format()))
 			.components(component_mapping)
@@ -51,7 +50,7 @@ impl ImageView {
 	///
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCreateImageView.html>.
 	pub unsafe fn from_create_info(
-		image: Vrc<Image>,
+		image: super::MixedDynImage,
 		create_info: impl Deref<Target = vk::ImageViewCreateInfo>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, super::error::ImageViewError> {
@@ -98,7 +97,7 @@ impl ImageView {
 		}))
 	}
 
-	pub const fn image(&self) -> &Vrc<Image> {
+	pub const fn image(&self) -> &super::MixedDynImage {
 		&self.image
 	}
 

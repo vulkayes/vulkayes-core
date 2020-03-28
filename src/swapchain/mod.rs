@@ -194,7 +194,7 @@ impl Swapchain {
 			.get_swapchain_images(swapchain)? // This is still okay since we haven't given anyone else access to the `swapchain` or `me` object, no synchronization problem
 			.into_iter().enumerate()
 			.map(|(index, image)| {
-				Vrc::new(image::SwapchainImage::new(
+				image::SwapchainImage::new(
 					me.clone(),
 					Image::from_existing(
 						device.clone(),
@@ -210,7 +210,7 @@ impl Swapchain {
 						HostMemoryAllocator::Unspecified()
 					),
 					index as u32
-				))
+				)
 			})
 			.collect();
 

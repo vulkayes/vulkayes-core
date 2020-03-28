@@ -50,12 +50,14 @@ impl SwapchainImage {
 	///
 	/// * `image` must be an image crated from `swapchain` using `.get_swapchain_images`.
 	/// * `index` must be the index of the image as returned by the `.get_swapchain_images`.
-	pub unsafe fn new(swapchain: Vrc<Swapchain>, image: Image, index: u32) -> Self {
-		SwapchainImage {
-			swapchain,
-			image: ManuallyDrop::new(image),
-			index
-		}
+	pub unsafe fn new(swapchain: Vrc<Swapchain>, image: Image, index: u32) -> Vrc<Self> {
+		Vrc::new(
+			SwapchainImage {
+				swapchain,
+				image: ManuallyDrop::new(image),
+				index
+			}
+		)
 	}
 
 	pub const fn swapchain(&self) -> &Vrc<Swapchain> {
