@@ -1,10 +1,13 @@
-use std::{fmt, ops::Deref, num::NonZeroU64};
+use std::{num::NonZeroU64, ops::Deref, ptr::NonNull};
 
 use ash::{version::DeviceV1_0, vk};
 
 use crate::{device::Device, physical_device::enumerate::PhysicalDeviceMemoryProperties, Vrc};
 
-use super::{BufferMemoryAllocator, DeviceMemoryAllocation, ImageMemoryAllocator};
+use super::{
+	allocator::{BufferMemoryAllocator, ImageMemoryAllocator},
+	DeviceMemoryAllocation
+};
 
 vk_result_error! {
 	#[derive(Debug)]
@@ -19,46 +22,6 @@ vk_result_error! {
 
 		#[error("Suitable memory type could not be found")]
 		NoSuitableMemoryType,
-	}
-}
-
-pub struct NaiveDeviceMemoryAllocation {
-	device: Vrc<Device>,
-	memory: vk::DeviceMemory,
-	size: NonZeroU64
-}
-impl Deref for NaiveDeviceMemoryAllocation {
-	type Target = vk::DeviceMemory;
-
-	fn deref(&self) -> &Self::Target {
-		&self.memory
-	}
-}
-unsafe impl DeviceMemoryAllocation for NaiveDeviceMemoryAllocation {
-	fn device(&self) -> &Vrc<Device> {
-		&self.device
-	}
-
-	fn bind_offset(&self) -> vk::DeviceSize {
-		0
-	}
-
-	fn size(&self) -> NonZeroU64 {
-		self.size
-	}
-}
-impl Drop for NaiveDeviceMemoryAllocation {
-	fn drop(&mut self) {
-		log_trace_common!("Dropping", self);
-
-		unsafe { self.device.free_memory(self.memory, None) }
-	}
-}
-impl fmt::Debug for NaiveDeviceMemoryAllocation {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		f.debug_struct("NaiveDeviceMemoryAllocation")
-			.field("memory", &crate::util::fmt::format_handle(self.memory))
-			.finish()
 	}
 }
 
@@ -96,6 +59,38 @@ impl NaiveDeviceMemoryAllocator {
 		Err(AllocationError::NoSuitableMemoryType)
 	}
 
+	fn allocate(
+		&self,
+		info: impl Deref<Target = vk::MemoryAllocateInfo>
+	) -> Result<DeviceMemoryAllocation, AllocationError> {
+		let memory = unsafe { self.device.allocate_memory(&info, None)? };
+		let size = unsafe { NonZeroU64::new_unchecked(info.allocation_size) };
+
+		Ok(unsafe {
+			DeviceMemoryAllocation::new(
+				self.device.clone(),
+				memory,
+				0,
+				size,
+				Box::new(|device, memory, offset, size| {
+					let ptr = device.map_memory(
+						memory,
+						offset,
+						size.get(),
+						vk::MemoryMapFlags::empty()
+					)? as *mut u8;
+					debug_assert_ne!(ptr, std::ptr::null_mut());
+
+					let slice_ptr =
+						std::slice::from_raw_parts_mut(ptr, size.get() as usize) as *mut [u8];
+					Ok(NonNull::new_unchecked(slice_ptr))
+				}),
+				Box::new(|device, memory, _, _, _| device.unmap_memory(memory)),
+				Box::new(|device, memory, _, _| device.free_memory(memory, None))
+			)
+		})
+	}
+
 	pub const fn device(&self) -> &Vrc<Device> {
 		&self.device
 	}
@@ -108,7 +103,7 @@ unsafe impl ImageMemoryAllocator for NaiveDeviceMemoryAllocator {
 		&self,
 		image: vk::Image,
 		required_flags: Self::AllocationRequirements
-	) -> Result<Self::Allocation, Self::Error> {
+	) -> Result<DeviceMemoryAllocation, Self::Error> {
 		let memory_requirements = unsafe { self.device.get_image_memory_requirements(image) };
 		let memory_index = self.find_memory_index(memory_requirements, required_flags)?;
 
@@ -122,13 +117,7 @@ unsafe impl ImageMemoryAllocator for NaiveDeviceMemoryAllocator {
 			required_flags,
 			alloc_info.deref()
 		);
-		let memory = unsafe { self.device.allocate_memory(&alloc_info, None)? };
-
-		Ok(NaiveDeviceMemoryAllocation {
-			device: self.device.clone(),
-			memory,
-			size: unsafe { NonZeroU64::new_unchecked(memory_requirements.size) }
-		})
+		self.allocate(alloc_info)
 	}
 }
 unsafe impl BufferMemoryAllocator for NaiveDeviceMemoryAllocator {
@@ -139,7 +128,7 @@ unsafe impl BufferMemoryAllocator for NaiveDeviceMemoryAllocator {
 		&self,
 		buffer: vk::Buffer,
 		required_flags: Self::AllocationRequirements
-	) -> Result<Self::Allocation, Self::Error> {
+	) -> Result<DeviceMemoryAllocation, Self::Error> {
 		let memory_requirements = unsafe { self.device.get_buffer_memory_requirements(buffer) };
 		let memory_index = self.find_memory_index(memory_requirements, required_flags)?;
 
@@ -154,12 +143,6 @@ unsafe impl BufferMemoryAllocator for NaiveDeviceMemoryAllocator {
 			required_flags,
 			alloc_info.deref()
 		);
-		let memory = unsafe { self.device.allocate_memory(&alloc_info, None)? };
-
-		Ok(NaiveDeviceMemoryAllocation {
-			device: self.device.clone(),
-			memory,
-			size: unsafe { NonZeroU64::new_unchecked(memory_requirements.size) }
-		})
+		self.allocate(alloc_info)
 	}
 }

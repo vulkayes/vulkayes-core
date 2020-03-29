@@ -33,3 +33,21 @@ impl Default for WaitTimeout {
 		WaitTimeout::Forever
 	}
 }
+
+
+/// `align_up(base, align)` returns the smallest greater integer than `base` aligned to `align`.
+///
+/// More formally:
+/// ```
+/// f_d(x) =
+///     0, if x mod d = 0
+///     d - x mod d, otherwise
+/// ```
+/// simplifies to `x - 1 + d - (x - 1) mod d`
+/// assuming `d = 2^N`, can also be written in code like: `(x - 1 + d) & !(d - 1)`
+/// where `x = base` and `d = align`
+///
+/// Similar code to `std::alloc::Layout::padding_needed_for`, but without the `- base`
+pub const fn align_up(base: usize, align: usize) -> usize {
+	base.wrapping_add(align.wrapping_sub(1)) & !align.wrapping_sub(1)
+}

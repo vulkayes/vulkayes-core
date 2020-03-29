@@ -1,11 +1,11 @@
 use std::ops::Deref;
-use std::num::NonZeroU64;
 
 use ash::vk;
 
-use crate::{device::Device, Vrc};
-
-use super::{BufferMemoryAllocator, DeviceMemoryAllocation, ImageMemoryAllocator};
+use super::{
+	allocator::{BufferMemoryAllocator, ImageMemoryAllocator},
+	DeviceMemoryAllocation
+};
 
 /// Device memory allocator that is statically impossible.
 ///
@@ -14,7 +14,7 @@ use super::{BufferMemoryAllocator, DeviceMemoryAllocation, ImageMemoryAllocator}
 #[derive(Debug)]
 pub enum NeverDeviceAllocator {}
 unsafe impl ImageMemoryAllocator for NeverDeviceAllocator {
-	type AllocationRequirements = ();
+	type AllocationRequirements = std::convert::Infallible;
 	type Error = std::convert::Infallible;
 
 	// TODO: Replace with never `!` type when stable
@@ -28,7 +28,7 @@ unsafe impl ImageMemoryAllocator for NeverDeviceAllocator {
 	}
 }
 unsafe impl BufferMemoryAllocator for NeverDeviceAllocator {
-	type AllocationRequirements = ();
+	type AllocationRequirements = std::convert::Infallible;
 	type Error = std::convert::Infallible;
 
 	// TODO: Replace with never `!` type when stable

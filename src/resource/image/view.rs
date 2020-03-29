@@ -4,9 +4,7 @@ use ash::{version::DeviceV1_0, vk};
 
 use crate::{memory::host::HostMemoryAllocator, Vrc};
 
-use super::{
-	params::{ImageSize, ImageSubresourceRange}
-};
+use super::params::{ImageSize, ImageSubresourceRange};
 
 pub struct ImageView {
 	image: super::MixedDynImage,

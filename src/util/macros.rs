@@ -319,28 +319,13 @@ macro_rules! impl_common_handle_traits {
 /// 	pub const fn offsets() -> NameOffsets {
 /// 		let current_offset: usize = 0;
 ///
-/// 		let a = {
-/// 			let x_minus_one = current_offset.wrapping_sub(1);
-/// 			let alignment = std::mem::align_of::<f32>();
-///
-/// 			x_minus_one.wrapping_add(alignment).wrapping_sub(x_minus_one % alignment)
-/// 		};
+/// 		let a = vulkayes_core::util::align_up(current_offset, std::mem::align_of::<f32>());
 /// 		let current_offset = a + std::mem::size_of::<f32>();
 ///
-/// 		let b = {
-/// 			let x_minus_one = current_offset.wrapping_sub(1);
-/// 			let alignment = std::mem::align_of::<[f32; 4]>();
-///
-/// 			x_minus_one.wrapping_add(alignment).wrapping_sub(x_minus_one % alignment)
-/// 		};
+/// 		let b = vulkayes_core::util::align_up(current_offset, std::mem::align_of::<[f32; 4]>());
 /// 		let current_offset = b + std::mem::size_of::<[f32; 4]>();
 ///
-/// 		let c = {
-/// 			let x_minus_one = current_offset.wrapping_sub(1);
-/// 			let alignment = std::mem::align_of::<u8>();
-///
-/// 			x_minus_one.wrapping_add(alignment).wrapping_sub(x_minus_one % alignment)
-/// 		};
+/// 		let c = vulkayes_core::util::align_up(current_offset, std::mem::align_of::<u8>());
 /// 		let current_offset = c + std::mem::size_of::<u8>();
 ///
 /// 		NameOffsets {
@@ -384,26 +369,7 @@ macro_rules! offsetable_struct {
 				let current_offset: usize = 0;
 
 				$(
-					// ```
-					// f_d(x) =
-					//     0, if x mod d = 0
-					//     d - x mod d, otherwise
-					// ```
-					// simplifies to `x - 1 + d - (x - 1) mod d`
-					// assuming `d = 2^N`, can also be written in code like: `(x - 1 + d) & !(d - 1)`
-					//
-					// Similar code to `std::alloc::Layout::padding_needed_for`
-					let $field = {
-						let x_minus_one = current_offset.wrapping_sub(1);
-						let alignment = std::mem::align_of::<$ftype>();
-
-						x_minus_one.wrapping_add(alignment).wrapping_sub(x_minus_one % alignment)
-					};
-					// let $field = {
-					// 	let alignment_minus_one = std::mem::align_of::<$ftype>().wrapping_sub(1);
-					//
-					// 	current_offset.wrapping_add(alignment_minus_one) & !alignment_minus_one
-					// };
+					let $field = $crate::util::align_up(current_offset, std::mem::align_of::<$ftype>());
 					let current_offset = current_offset + std::mem::size_of::<$ftype>();
 				)*
 

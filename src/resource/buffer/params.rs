@@ -1,5 +1,4 @@
-use crate::memory::device::BufferMemoryAllocator;
-use crate::memory::device::never::NeverDeviceAllocator;
+use crate::memory::device::{allocator::BufferMemoryAllocator, never::NeverDeviceAllocator};
 
 #[derive(Debug)]
 pub enum AllocatorParams<'a, A: BufferMemoryAllocator = NeverDeviceAllocator> {

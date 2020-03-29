@@ -1,37 +1,28 @@
-use std::{
-	fmt,
-	ops::Deref,
-	num::NonZeroU64
-};
+use std::{fmt, num::NonZeroU64, ops::Deref};
 
-use ash::vk;
-use ash::version::DeviceV1_0;
+use ash::{version::DeviceV1_0, vk};
 
 use crate::{
 	device::Device,
 	memory::{
-		device::{DeviceMemoryAllocation, BufferMemoryAllocator},
+		device::{allocator::BufferMemoryAllocator, DeviceMemoryAllocation},
 		host::HostMemoryAllocator
 	},
 	queue::sharing_mode::SharingMode,
 	Vrc
 };
 
-
 use super::{error, params};
 
 pub struct Buffer {
 	device: Vrc<Device>,
 	buffer: vk::Buffer,
-	// Dynamic dispatch doesn't hurt because the memory is not accessed often, it only needs to be kept alive
-	// TODO: Except for memory mapping, which will most likely be cached somehow then
 	memory: Option<DeviceMemoryAllocation>,
 
 	usage: vk::BufferUsageFlags,
 	size: NonZeroU64,
 
 	// TODO: Sharing mode + indices?
-
 	host_memory_allocator: HostMemoryAllocator
 }
 impl Buffer {
@@ -56,12 +47,7 @@ impl Buffer {
 			.queue_family_indices(sharing_mode.indices());
 
 		unsafe {
-			Self::from_create_info(
-				device,
-				create_info,
-				allocator_params,
-				host_memory_allocator
-			)
+			Self::from_create_info(device, create_info, allocator_params, host_memory_allocator)
 		}
 	}
 
@@ -88,7 +74,10 @@ impl Buffer {
 		let buffer = device.create_buffer(c_info, host_memory_allocator.as_ref())?;
 
 		let memory = match allocator_params {
-			params::AllocatorParams::Some { allocator, requirements } => {
+			params::AllocatorParams::Some {
+				allocator,
+				requirements
+			} => {
 				let memory = allocator
 					.allocate(buffer, requirements)
 					.map_err(error::BufferError::AllocationError)?;
@@ -100,7 +89,7 @@ impl Buffer {
 				}
 
 				device.bind_buffer_memory(buffer, *memory.deref(), memory.bind_offset())?;
-				Some(Vrc::new(memory) as Vrc<_>)
+				Some(memory)
 			}
 			params::AllocatorParams::None => None
 		};
@@ -158,9 +147,10 @@ impl fmt::Debug for Buffer {
 			.field("buffer", &crate::util::fmt::format_handle(self.buffer))
 			.field(
 				"memory",
-				&self.memory.as_ref().map(|m| crate::util::fmt::format_handle(
-					*m.deref().deref()
-				))
+				&self
+					.memory
+					.as_ref()
+					.map(|m| crate::util::fmt::format_handle(*m.deref().deref()))
 			)
 			.field("usage", &self.usage)
 			.field("size", &self.size)

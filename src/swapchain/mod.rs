@@ -9,7 +9,7 @@ use std::{
 use crate::{
 	ash::vk,
 	device::Device,
-	memory::{device::never::NeverMemoryAllocation, host::HostMemoryAllocator},
+	memory::host::HostMemoryAllocator,
 	queue::{sharing_mode::SharingMode, Queue},
 	resource::image::{
 		params::{ImageSize, MipmapLevels},
@@ -199,7 +199,7 @@ impl Swapchain {
 					Image::from_existing(
 						device.clone(),
 						image,
-						None::<Vrc<NeverMemoryAllocation>>,
+						None,
 						c_info.image_usage,
 						c_info.image_format,
 						ImageSize::new_2d(

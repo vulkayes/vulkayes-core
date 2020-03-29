@@ -1,11 +1,8 @@
-use std::{
-	fmt::{Debug},
-	ops::Deref
-};
+use std::{fmt::Debug, ops::Deref};
 
-use crate::{
-	Vrc
-};
+pub use image::Image;
+
+use crate::{swapchain::image::SwapchainImage, Vrc};
 
 pub mod error;
 
@@ -13,14 +10,11 @@ pub mod image;
 pub mod params;
 pub mod view;
 
-pub use image::Image;
-use crate::swapchain::image::SwapchainImage;
-
 /// Marker trait for `Deref<Target = Image>` implementing objects.
 ///
 /// This trait is used for the dynamic dispatch in the [`MixedDynImage`](enum.MixedDynImage.html) enum.
 pub trait ImageTrait: Deref<Target = Image> + std::fmt::Debug {}
-impl<T> ImageTrait for T where T:  Deref<Target = Image> + std::fmt::Debug {}
+impl<T> ImageTrait for T where T: Deref<Target = Image> + std::fmt::Debug {}
 
 deref_enum_dispatch! {
 	/// Mixed-dispatch image enum.

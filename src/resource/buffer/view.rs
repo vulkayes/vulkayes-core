@@ -1,13 +1,8 @@
-use std::fmt;
-use std::ops::Deref;
-use std::num::NonZeroU64;
+use std::{fmt, num::NonZeroU64, ops::Deref};
 
-use ash::vk;
-use ash::version::DeviceV1_0;
+use ash::{version::DeviceV1_0, vk};
 
-use crate::Vrc;
-use crate::resource::buffer::Buffer;
-use crate::memory::host::HostMemoryAllocator;
+use crate::{memory::host::HostMemoryAllocator, resource::buffer::Buffer, Vrc};
 
 pub struct BufferView {
 	buffer: Vrc<Buffer>,
@@ -31,16 +26,9 @@ impl BufferView {
 		let create_info = vk::BufferViewCreateInfo::builder()
 			.format(format)
 			.offset(offset)
-			.range(range.get())
-			;
+			.range(range.get());
 
-		unsafe {
-			Self::from_create_info(
-				buffer,
-				create_info,
-				host_memory_allocator
-			)
-		}
+		unsafe { Self::from_create_info(buffer, create_info, host_memory_allocator) }
 	}
 
 	pub unsafe fn from_create_info(
@@ -57,28 +45,22 @@ impl BufferView {
 
 		let format = c_info.format;
 		let offset = c_info.offset;
-		let range = NonZeroU64::new(c_info.range).unwrap_or(
-			NonZeroU64::new_unchecked(
-				buffer.size().get() - offset
-			)
-		);
+		let range = NonZeroU64::new(c_info.range)
+			.unwrap_or(NonZeroU64::new_unchecked(buffer.size().get() - offset));
 
-		Ok(
-			Vrc::new(
-				BufferView {
-					buffer,
-					view,
+		Ok(Vrc::new(BufferView {
+			buffer,
+			view,
 
-					format,
+			format,
 
-					offset,
-					range,
+			offset,
+			range,
 
-					host_memory_allocator
-				}
-			)
-		)
+			host_memory_allocator
+		}))
 	}
+
 	pub const fn buffer(&self) -> &Vrc<Buffer> {
 		&self.buffer
 	}

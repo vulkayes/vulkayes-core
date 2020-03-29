@@ -2,8 +2,7 @@ use std::num::NonZeroU32;
 
 use ash::vk;
 
-use crate::memory::device::ImageMemoryAllocator;
-use crate::memory::device::never::NeverDeviceAllocator;
+use crate::memory::device::{allocator::ImageMemoryAllocator, never::NeverDeviceAllocator};
 
 #[derive(Debug)]
 pub enum AllocatorParams<'a, A: ImageMemoryAllocator = NeverDeviceAllocator> {

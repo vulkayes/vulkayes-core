@@ -1,33 +1,28 @@
-use std::{
-	fmt,
-	ops::Deref
-};
+use std::{fmt, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
 use crate::{
 	device::Device,
 	memory::{
-		device::{DeviceMemoryAllocation, ImageMemoryAllocator},
+		device::{allocator::ImageMemoryAllocator, DeviceMemoryAllocation},
 		host::HostMemoryAllocator
 	},
 	queue::sharing_mode::SharingMode,
 	Vrc
 };
 
-use super::{params, error};
+use super::{error, params};
 
 pub struct Image {
 	device: Vrc<Device>,
 	image: vk::Image,
-	// Dynamic dispatch doesn't hurt because the memory is not accessed often, it only needs to be kept alive
 	memory: Option<DeviceMemoryAllocation>,
 
 	usage: vk::ImageUsageFlags,
 	format: vk::Format,
 	size: params::ImageSize,
 	// TODO: Tiling and sharing mode + indices?
-
 	host_memory_allocator: HostMemoryAllocator
 }
 impl Image {
@@ -64,7 +59,9 @@ impl Image {
 			.queue_family_indices(sharing_mode.indices())
 			.initial_layout(layout);
 
-		unsafe { Self::from_create_info(device, create_info, allocator_param, host_memory_allocator) }
+		unsafe {
+			Self::from_create_info(device, create_info, allocator_param, host_memory_allocator)
+		}
 	}
 
 	/// Creates a new `Image` from existing `ImageCreateInfo`
@@ -90,7 +87,10 @@ impl Image {
 		let image = device.create_image(c_info, host_memory_allocator.as_ref())?;
 
 		let memory = match allocator_params {
-			params::AllocatorParams::Some { allocator, requirements } => {
+			params::AllocatorParams::Some {
+				allocator,
+				requirements
+			} => {
 				let memory = allocator
 					.allocate(image, requirements)
 					.map_err(error::ImageError::AllocationError)?;
@@ -102,7 +102,7 @@ impl Image {
 				}
 
 				device.bind_image_memory(image, *memory.deref(), memory.bind_offset())?;
-				Some(Vrc::new(memory) as Vrc<_>)
+				Some(memory)
 			}
 			params::AllocatorParams::None => None
 		};
@@ -202,9 +202,10 @@ impl fmt::Debug for Image {
 			.field("image", &crate::util::fmt::format_handle(self.image))
 			.field(
 				"memory",
-				&self.memory.as_ref().map(|m| crate::util::fmt::format_handle(
-						*m.deref().deref()
-					))
+				&self
+					.memory
+					.as_ref()
+					.map(|m| crate::util::fmt::format_handle(*m.deref().deref()))
 			)
 			.field("usage", &self.usage)
 			.field("format", &self.format)
