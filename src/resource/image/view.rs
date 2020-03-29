@@ -12,6 +12,9 @@ pub struct ImageView {
 	image: super::MixedDynImage,
 	view: vk::ImageView,
 
+	format: vk::Format,
+	component_mapping: vk::ComponentMapping,
+
 	subresource_range: ImageSubresourceRange,
 	subresource_image_size: ImageSize,
 
@@ -90,6 +93,9 @@ impl ImageView {
 			image,
 			view,
 
+			format: c_info.format,
+			component_mapping: c_info.components,
+
 			subresource_range,
 			subresource_image_size,
 
@@ -99,6 +105,14 @@ impl ImageView {
 
 	pub const fn image(&self) -> &super::MixedDynImage {
 		&self.image
+	}
+
+	pub const fn format(&self) -> vk::Format {
+		self.format
+	}
+
+	pub const fn component_mapping(&self) -> vk::ComponentMapping {
+		self.component_mapping
 	}
 
 	pub const fn subresource_range(&self) -> ImageSubresourceRange {
@@ -130,6 +144,10 @@ impl fmt::Debug for ImageView {
 		f.debug_struct("ImageView")
 			.field("image", &self.image)
 			.field("view", &crate::util::fmt::format_handle(self.view))
+			.field("format", &self.format)
+			.field("component_mapping", &self.component_mapping)
+			.field("subresource_range", &self.subresource_range)
+			.field("subresource_image_size", &self.subresource_image_size)
 			.field("host_memory_allocator", &self.host_memory_allocator)
 			.finish()
 	}

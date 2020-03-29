@@ -13,7 +13,7 @@ pub mod image;
 pub mod params;
 pub mod view;
 
-pub use image::*;
+pub use image::Image;
 use crate::swapchain::image::SwapchainImage;
 
 /// Marker trait for `Deref<Target = Image>` implementing objects.

@@ -1,4 +1,4 @@
-use std::{fmt, ops::Deref};
+use std::{fmt, ops::Deref, num::NonZeroU64};
 
 use ash::{version::DeviceV1_0, vk};
 
@@ -24,7 +24,8 @@ vk_result_error! {
 
 pub struct NaiveDeviceMemoryAllocation {
 	device: Vrc<Device>,
-	memory: vk::DeviceMemory
+	memory: vk::DeviceMemory,
+	size: NonZeroU64
 }
 impl Deref for NaiveDeviceMemoryAllocation {
 	type Target = vk::DeviceMemory;
@@ -40,6 +41,10 @@ unsafe impl DeviceMemoryAllocation for NaiveDeviceMemoryAllocation {
 
 	fn bind_offset(&self) -> vk::DeviceSize {
 		0
+	}
+
+	fn size(&self) -> NonZeroU64 {
+		self.size
 	}
 }
 impl Drop for NaiveDeviceMemoryAllocation {
@@ -96,7 +101,6 @@ impl NaiveDeviceMemoryAllocator {
 	}
 }
 unsafe impl ImageMemoryAllocator for NaiveDeviceMemoryAllocator {
-	type Allocation = NaiveDeviceMemoryAllocation;
 	type AllocationRequirements = vk::MemoryPropertyFlags;
 	type Error = AllocationError;
 
@@ -122,12 +126,12 @@ unsafe impl ImageMemoryAllocator for NaiveDeviceMemoryAllocator {
 
 		Ok(NaiveDeviceMemoryAllocation {
 			device: self.device.clone(),
-			memory
+			memory,
+			size: unsafe { NonZeroU64::new_unchecked(memory_requirements.size) }
 		})
 	}
 }
 unsafe impl BufferMemoryAllocator for NaiveDeviceMemoryAllocator {
-	type Allocation = NaiveDeviceMemoryAllocation;
 	type AllocationRequirements = vk::MemoryPropertyFlags;
 	type Error = AllocationError;
 
@@ -154,7 +158,8 @@ unsafe impl BufferMemoryAllocator for NaiveDeviceMemoryAllocator {
 
 		Ok(NaiveDeviceMemoryAllocation {
 			device: self.device.clone(),
-			memory
+			memory,
+			size: unsafe { NonZeroU64::new_unchecked(memory_requirements.size) }
 		})
 	}
 }

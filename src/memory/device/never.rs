@@ -1,4 +1,5 @@
 use std::ops::Deref;
+use std::num::NonZeroU64;
 
 use ash::vk;
 
@@ -13,7 +14,6 @@ use super::{BufferMemoryAllocator, DeviceMemoryAllocation, ImageMemoryAllocator}
 #[derive(Debug)]
 pub enum NeverDeviceAllocator {}
 unsafe impl ImageMemoryAllocator for NeverDeviceAllocator {
-	type Allocation = NeverMemoryAllocation;
 	type AllocationRequirements = ();
 	type Error = std::convert::Infallible;
 
@@ -23,12 +23,11 @@ unsafe impl ImageMemoryAllocator for NeverDeviceAllocator {
 		&self,
 		_: vk::Image,
 		_: Self::AllocationRequirements
-	) -> Result<Self::Allocation, Self::Error> {
+	) -> Result<DeviceMemoryAllocation, Self::Error> {
 		unreachable!()
 	}
 }
 unsafe impl BufferMemoryAllocator for NeverDeviceAllocator {
-	type Allocation = NeverMemoryAllocation;
 	type AllocationRequirements = ();
 	type Error = std::convert::Infallible;
 
@@ -38,7 +37,7 @@ unsafe impl BufferMemoryAllocator for NeverDeviceAllocator {
 		&self,
 		_: vk::Buffer,
 		_: Self::AllocationRequirements
-	) -> Result<Self::Allocation, Self::Error> {
+	) -> Result<DeviceMemoryAllocation, Self::Error> {
 		unreachable!()
 	}
 }
@@ -52,15 +51,6 @@ impl Deref for NeverMemoryAllocation {
 	type Target = vk::DeviceMemory;
 
 	fn deref(&self) -> &Self::Target {
-		unreachable!()
-	}
-}
-unsafe impl DeviceMemoryAllocation for NeverMemoryAllocation {
-	fn device(&self) -> &Vrc<Device> {
-		unreachable!()
-	}
-
-	fn bind_offset(&self) -> u64 {
 		unreachable!()
 	}
 }

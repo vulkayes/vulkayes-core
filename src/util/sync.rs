@@ -100,14 +100,18 @@ mod test {
 	test_send_sync!(
 		instance_send_sync: Vrc<crate::instance::Instance>,
 		device_send_sync: Vrc<crate::device::Device>,
+		//
+		swapchain_send_sync: Vrc<crate::swapchain::Swapchain>,
 		queue_send_sync: Vrc<crate::queue::Queue>,
 		fence_send_sync: Vrc<crate::sync::fence::Fence>,
 		semaphore_send_sync: Vrc<crate::sync::semaphore::Semaphore>,
 		binary_semaphore_send_sync: Vrc<crate::sync::semaphore::BinarySemaphore>,
-		swapchain_send_sync: Vrc<crate::swapchain::Swapchain>,
+		//
 		swapchain_image_send_sync: Vrc<crate::swapchain::image::SwapchainImage>,
 		image_send_sync: Vrc<crate::resource::image::Image>,
 		image_view_send_sync: Vrc<crate::resource::image::view::ImageView>,
+		buffer_send_sync: Vrc<crate::resource::buffer::Buffer>,
+		buffer_view_send_sync: Vrc<crate::resource::buffer::view::BufferView>,
 		command_pool_send_sync: Vrc<crate::command::pool::CommandPool>,
 		command_buffer_send_sync: Vrc<crate::command::buffer::CommandBuffer>
 	);

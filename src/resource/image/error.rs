@@ -1,6 +1,6 @@
 vk_result_error! {
 	#[derive(Debug)]
-	pub enum ImageError [AllocError] where [AllocError: std::error::Error + 'static] { // TODO: Change this default to `!` never type when stable
+	pub enum ImageError [AllocError] where [AllocError: std::error::Error + 'static] {
 		vk {
 			ERROR_OUT_OF_HOST_MEMORY,
 			ERROR_OUT_OF_DEVICE_MEMORY

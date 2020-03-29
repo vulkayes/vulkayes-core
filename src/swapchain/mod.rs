@@ -199,7 +199,8 @@ impl Swapchain {
 					Image::from_existing(
 						device.clone(),
 						image,
-						None::<NeverMemoryAllocation>,
+						None::<Vrc<NeverMemoryAllocation>>,
+						c_info.image_usage,
 						c_info.image_format,
 						ImageSize::new_2d(
 							NonZeroU32::new_unchecked(c_info.image_extent.width),

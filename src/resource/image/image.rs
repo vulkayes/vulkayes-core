@@ -1,5 +1,5 @@
 use std::{
-	fmt::{self, Debug},
+	fmt,
 	ops::Deref
 };
 
@@ -20,11 +20,13 @@ use super::{params, error};
 pub struct Image {
 	device: Vrc<Device>,
 	image: vk::Image,
-	// Dynamic dispatch doesn't hurt because the memory is no accessed often, it only needs to be kept alive
-	memory: Option<Box<dyn DeviceMemoryAllocation>>,
+	// Dynamic dispatch doesn't hurt because the memory is not accessed often, it only needs to be kept alive
+	memory: Option<DeviceMemoryAllocation>,
 
+	usage: vk::ImageUsageFlags,
 	format: vk::Format,
 	size: params::ImageSize,
+	// TODO: Tiling and sharing mode + indices?
 
 	host_memory_allocator: HostMemoryAllocator
 }
@@ -36,7 +38,7 @@ impl Image {
 		tiling_and_layout: params::ImageTilingAndLayout,
 		usage: vk::ImageUsageFlags,
 		sharing_mode: SharingMode<impl AsRef<[u32]>>,
-		allocator: Option<(&A, A::AllocationRequirements)>,
+		allocator_param: params::AllocatorParams<A>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::ImageError<A::Error>> {
 		if cfg!(feature = "runtime_implicit_validations") {
@@ -62,7 +64,7 @@ impl Image {
 			.queue_family_indices(sharing_mode.indices())
 			.initial_layout(layout);
 
-		unsafe { Self::from_create_info(device, create_info, allocator, host_memory_allocator) }
+		unsafe { Self::from_create_info(device, create_info, allocator_param, host_memory_allocator) }
 	}
 
 	/// Creates a new `Image` from existing `ImageCreateInfo`
@@ -73,7 +75,7 @@ impl Image {
 	pub unsafe fn from_create_info<A: ImageMemoryAllocator>(
 		device: Vrc<Device>,
 		create_info: impl Deref<Target = vk::ImageCreateInfo>,
-		allocator: Option<(&A, A::AllocationRequirements)>,
+		allocator_params: params::AllocatorParams<A>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::ImageError<A::Error>> {
 		let c_info = create_info.deref();
@@ -82,13 +84,13 @@ impl Image {
 			"Create image:",
 			device,
 			c_info,
-			allocator,
+			allocator_params,
 			host_memory_allocator
 		);
 		let image = device.create_image(c_info, host_memory_allocator.as_ref())?;
 
-		let memory = match allocator {
-			Some((allocator, requirements)) => {
+		let memory = match allocator_params {
+			params::AllocatorParams::Some { allocator, requirements } => {
 				let memory = allocator
 					.allocate(image, requirements)
 					.map_err(error::ImageError::AllocationError)?;
@@ -100,9 +102,9 @@ impl Image {
 				}
 
 				device.bind_image_memory(image, *memory.deref(), memory.bind_offset())?;
-				Some(Box::new(memory) as Box<_>)
+				Some(Vrc::new(memory) as Vrc<_>)
 			}
-			None => None
+			params::AllocatorParams::None => None
 		};
 
 		let size = params::ImageSize::from_image_create_info(c_info);
@@ -112,6 +114,7 @@ impl Image {
 			image,
 			memory,
 
+			usage: c_info.usage,
 			format: c_info.format,
 			size,
 
@@ -126,10 +129,11 @@ impl Image {
 	/// * `image` must have been crated from the `device`.
 	/// * `memory` must have been allocated from the `device`.
 	/// * All parameters must match the parameters used when creating the image.
-	pub unsafe fn from_existing<M: DeviceMemoryAllocation + 'static>(
+	pub unsafe fn from_existing(
 		device: Vrc<Device>,
 		image: vk::Image,
-		memory: Option<M>,
+		memory: Option<DeviceMemoryAllocation>,
+		usage: vk::ImageUsageFlags,
 		format: vk::Format,
 		size: params::ImageSize,
 		host_memory_allocator: HostMemoryAllocator
@@ -144,12 +148,11 @@ impl Image {
 			host_memory_allocator
 		);
 
-		let memory = memory.map(|m| Box::new(m) as Box<_>);
-
 		Image {
 			device,
 			image,
 			memory,
+			usage,
 			format,
 			size,
 			host_memory_allocator
@@ -158,6 +161,10 @@ impl Image {
 
 	pub const fn device(&self) -> &Vrc<Device> {
 		&self.device
+	}
+
+	pub const fn usage(&self) -> vk::ImageUsageFlags {
+		self.usage
 	}
 
 	pub const fn size(&self) -> params::ImageSize {
@@ -169,8 +176,8 @@ impl Image {
 	}
 
 	// TODO: Cannot be const because of Sized
-	pub fn memory(&self) -> &Option<Box<dyn DeviceMemoryAllocation>> {
-		&self.memory
+	pub fn memory(&self) -> Option<&DeviceMemoryAllocation> {
+		self.memory.as_ref()
 	}
 }
 impl_common_handle_traits! {
@@ -188,7 +195,7 @@ impl Drop for Image {
 		}
 	}
 }
-impl Debug for Image {
+impl fmt::Debug for Image {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		f.debug_struct("Image")
 			.field("device", &self.device)
@@ -199,6 +206,7 @@ impl Debug for Image {
 						*m.deref().deref()
 					))
 			)
+			.field("usage", &self.usage)
 			.field("format", &self.format)
 			.field("size", &self.size)
 			.field("host_memory_allocator", &self.host_memory_allocator)

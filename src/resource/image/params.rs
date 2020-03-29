@@ -2,6 +2,23 @@ use std::num::NonZeroU32;
 
 use ash::vk;
 
+use crate::memory::device::ImageMemoryAllocator;
+use crate::memory::device::never::NeverDeviceAllocator;
+
+#[derive(Debug)]
+pub enum AllocatorParams<'a, A: ImageMemoryAllocator = NeverDeviceAllocator> {
+	None,
+	Some {
+		allocator: &'a A,
+		requirements: A::AllocationRequirements
+	}
+}
+impl Default for AllocatorParams<'static> {
+	fn default() -> Self {
+		AllocatorParams::None
+	}
+}
+
 unsafe_enum_variants! {
 	#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 	enum MipmapLevelsInner {
@@ -434,5 +451,15 @@ impl ImageSubresourceRange {
 			array_layers_base: info.subresource_range.base_array_layer,
 			array_layers: NonZeroU32::new_unchecked(info.subresource_range.layer_count)
 		}
+	}
+}
+impl Into<vk::ImageSubresourceRange> for ImageSubresourceRange {
+	fn into(self) -> vk::ImageSubresourceRange {
+		vk::ImageSubresourceRange::builder()
+			.layer_count(self.array_layers.get())
+			.base_array_layer(self.array_layers_base)
+			.level_count(self.mipmap_levels.get())
+			.base_mip_level(self.mipmap_levels_base)
+			.build()
 	}
 }
