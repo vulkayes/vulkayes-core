@@ -271,7 +271,7 @@ pub enum SliceWriteStride {
 	/// Align the written values to this alignment.
 	///
 	/// If the value is not a power of two, this is treated as `Implicit`.
-	Align(usize),
+	Align(NonZeroUsize),
 	/// Use custom stride.
 	///
 	/// Values will be manually copied in loop at this stride. If the value is smaller than
@@ -285,7 +285,7 @@ impl SliceWriteStride {
 				crate::util::align_up(std::mem::size_of::<T>(), std::mem::align_of::<T>())
 			}
 			SliceWriteStride::Align(align) => {
-				crate::util::align_up(std::mem::size_of::<T>(), *align)
+				crate::util::align_up(std::mem::size_of::<T>(), align.get())
 			}
 			SliceWriteStride::Stride(stride) => stride.get().max(std::mem::size_of::<T>())
 		}
@@ -315,24 +315,25 @@ impl<'a> DeviceMemoryMappingAccess<'a> {
 	/// Write a slice of `T`s into this memory.
 	///
 	/// The `stride` parameter can be used to control the stride of the write in bytes.
-	/// For example, to write 3 `u32`s aligned to 8 bytes, set the `stride` to `Some(8)`.
+	/// For example, to write `u32`s aligned to 8 bytes, `stride` can either be `SliceWriteStride::Align(8)`
+	/// or `SliceWriteStride::Stride(8)`.
 	///
-	/// Setting `stride` to `None` or less than or equal to `size_of::<T>()` will default
-	/// to the implicit stride of `size_of::<T>()` and use `copy_nonoverlapping` instead of a loop of `write`s.
+	/// Note, however, that this can have an effect on the performance. The method will use:
+	/// * `ptr::copy_nonoverlapping` if `stride.for_t::<T>() == SliceWriteStride::Implicit.for_t::<T>()`
+	/// * `ptr::write` in a loop if `stride % std::mem::align_of::<T>() == 0` and `self.bytes.as_mut_ptr() as usize % std::mem::align_of::<T>() == 0`
+	/// * `ptr::write_unaligned` in a loop otherwise
 	///
-	/// Number of `T`s written is the minimum of `data.len()` and `self.memory().len() / stride`.
+	/// Number of `T`s written is the minimum of `data.len()` and `self.bytes().len() / stride`.
 	pub fn write_slice<T: Copy>(&mut self, data: &[T], stride: SliceWriteStride) {
-		let stride = stride.for_t::<T>();
-
 		let bytes = self.bytes_mut();
-		// Compute count of Ts that will be copied
+		let stride = stride.for_t::<T>();
 		let count = data.len().min(bytes.len() / stride);
 
 		log_trace_common!(
 			"Writing slice to mapped memory:",
 			bytes.as_ptr(),
-			count,
-			stride
+			stride,
+			count
 		);
 
 		if stride == SliceWriteStride::Implicit.for_t::<T>() {
