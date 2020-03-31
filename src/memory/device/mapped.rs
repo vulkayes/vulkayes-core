@@ -6,6 +6,7 @@ use std::{
 };
 
 use ash::vk;
+use ash::version::DeviceV1_0;
 
 use crate::{device::Device, Vrc};
 
@@ -126,18 +127,24 @@ impl<'a> DeviceMemoryMappingAccess<'a> {
 
 	/// Write a slice of `T`s into this memory.
 	///
+	/// The `offset` parameter can be used to control the initial offset of the write in bytes.
+	/// If the `offset` is greater than the length of `self.bytes_mut()` it will be clamped to `self.bytes_mut().len()` (and nothing will be written).
+	///
 	/// The `stride` parameter can be used to control the stride of the write in bytes.
 	/// For example, to write `u32`s aligned to 8 bytes, `stride` can either be `SliceWriteStride::Align(8)`
 	/// or `SliceWriteStride::Stride(8)`.
 	///
 	/// Note, however, that this can have an effect on the performance. The method will use:
 	/// * `ptr::copy_nonoverlapping` if `stride.for_t::<T>() == SliceWriteStride::Implicit.for_t::<T>()`
-	/// * `ptr::write` in a loop if `stride % std::mem::align_of::<T>() == 0` and `self.bytes.as_mut_ptr() as usize % std::mem::align_of::<T>() == 0`
+	/// * `ptr::write` in a loop if `stride % std::mem::align_of::<T>() == 0` and `bytes.as_mut_ptr() as usize % std::mem::align_of::<T>() == 0`
 	/// * `ptr::write_unaligned` in a loop otherwise
 	///
-	/// Number of `T`s written is the minimum of `data.len()` and `self.bytes().len() / stride`.
-	pub fn write_slice<T: Copy>(&mut self, data: &[T], stride: SliceWriteStride) {
+	/// Number of `T`s written is the minimum of `data.len()` and `self.bytes()[offset..].len() / stride`.
+	pub fn write_slice<T: Copy>(&mut self, data: &[T], offset: usize, stride: SliceWriteStride) {
 		let bytes = self.bytes_mut();
+		let offset = offset.min(bytes.len());
+
+		let bytes = &mut bytes[offset..];
 		let stride = stride.for_t::<T>();
 		let count = data.len().min(bytes.len() / stride);
 
@@ -180,7 +187,33 @@ impl<'a> DeviceMemoryMappingAccess<'a> {
 		}
 	}
 
-	// TODO: Flush and invalidate?
+	pub fn flush(&mut self) -> Result<(), FlushError> {
+		let mapped_memory_range = vk::MappedMemoryRange::builder()
+			.memory(self.memory)
+			.offset(self.bind_offset)
+			.size(self.size().get())
+			.build();
+
+		unsafe {
+			self.device.flush_mapped_memory_ranges(
+				&[mapped_memory_range]
+			).map_err(Into::into)
+		}
+	}
+
+	pub fn invalidate(&mut self) -> Result<(), FlushError> {
+		let mapped_memory_range = vk::MappedMemoryRange::builder()
+			.memory(self.memory)
+			.offset(self.bind_offset)
+			.size(self.size().get())
+			.build();
+
+		unsafe {
+			self.device.invalidate_mapped_memory_ranges(
+				&[mapped_memory_range]
+			).map_err(Into::into)
+		}
+	}
 
 	pub const fn device(&self) -> &Vrc<Device> {
 		self.device
@@ -194,9 +227,11 @@ impl<'a> DeviceMemoryMappingAccess<'a> {
 		self.bind_offset
 	}
 
-	// pub const fn size(&self) -> NonZeroU64 {
-	// 	self.size
-	// }
+	pub const fn size(&self) -> NonZeroU64 {
+		unsafe {
+			NonZeroU64::new_unchecked(self.bytes.len() as u64)
+		}
+	}
 }
 
 vk_result_error! {
@@ -206,6 +241,16 @@ vk_result_error! {
 			ERROR_OUT_OF_HOST_MEMORY,
 			ERROR_OUT_OF_DEVICE_MEMORY,
 			ERROR_MEMORY_MAP_FAILED
+		}
+	}
+}
+
+vk_result_error! {
+	#[derive(Debug)]
+	pub enum FlushError {
+		vk {
+			ERROR_OUT_OF_HOST_MEMORY,
+			ERROR_OUT_OF_DEVICE_MEMORY
 		}
 	}
 }
