@@ -24,11 +24,17 @@
 //! Some implicit validations cannot be checked statically. This feature enables runtime checks of those validations.
 //! Note that in some circumstances, such as Instance creation and extension name checking, the validation is part of the input
 //! argument transformation and turning it off would not bring any advantages.
+//!
+//! ### `log_max_level_*` and `log_release_max_level_*`
+//!
+//! These features directly correspond to the features on the `log` crate.
 
 // Export `ash` because all other component will use it.
 pub use ash;
 // Export `seq_macro` because `lock_and_deref` macro from `queue` requires it.
 pub use seq_macro;
+// Export `log` so that `log_*` features can be applied to all vulkayes crates
+pub use log;
 
 pub use util::sync::Vrc;
 
@@ -42,6 +48,7 @@ pub mod util;
 pub mod memory;
 
 pub mod command;
+pub mod descriptor;
 pub mod device;
 pub mod entry;
 pub mod instance;

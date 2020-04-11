@@ -4,6 +4,8 @@ use ash::vk;
 
 use crate::{command::pool::CommandPool, util::sync::Vutex, Vrc};
 
+use super::error::CommandBufferError;
+
 pub struct CommandBuffer {
 	pool: Vrc<CommandPool>,
 	command_buffer: Vutex<vk::CommandBuffer>
@@ -57,12 +59,3 @@ impl Debug for CommandBuffer {
 	}
 }
 
-vk_result_error! {
-	#[derive(Debug)]
-	pub enum CommandBufferError {
-		vk {
-			ERROR_OUT_OF_HOST_MEMORY,
-			ERROR_OUT_OF_DEVICE_MEMORY
-		}
-	}
-}

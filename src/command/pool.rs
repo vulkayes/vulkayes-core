@@ -1,4 +1,4 @@
-use std::{fmt::Debug, ops::Deref};
+use std::{fmt, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
@@ -9,6 +9,8 @@ use crate::{
 	util::sync::Vutex,
 	Vrc
 };
+
+use super::error::{CommandPoolError, CommandBufferError};
 
 /// Internally synchronized command pool.
 pub struct CommandPool {
@@ -104,7 +106,7 @@ impl CommandPool {
 		&self,
 		level: vk::CommandBufferLevel,
 		count: std::num::NonZeroU32
-	) -> Result<Vec<vk::CommandBuffer>, super::buffer::CommandBufferError> {
+	) -> Result<Vec<vk::CommandBuffer>, CommandBufferError> {
 		let lock = self.pool.lock().expect("vutex poisoned");
 
 		let alloc_info = vk::CommandBufferAllocateInfo::builder()
@@ -170,8 +172,8 @@ impl Drop for CommandPool {
 		}
 	}
 }
-impl Debug for CommandPool {
-	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl fmt::Debug for CommandPool {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		f.debug_struct("CommandPool")
 			.field("device", &self.device)
 			.field("queue_family_index", &self.queue_family_index)
@@ -181,12 +183,3 @@ impl Debug for CommandPool {
 	}
 }
 
-vk_result_error! {
-	#[derive(Debug)]
-	pub enum CommandPoolError {
-		vk {
-			ERROR_OUT_OF_HOST_MEMORY,
-			ERROR_OUT_OF_DEVICE_MEMORY
-		}
-	}
-}

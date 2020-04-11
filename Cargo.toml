@@ -5,7 +5,7 @@ authors = ["TheEdward162 <TheEdward162@gmail.com>"]
 edition = "2018"
 
 [features]
-default = ["runtime_implicit_validations", "vulkan1_2", "naive_device_allocator"]
+default = ["runtime_implicit_validations", "vulkan1_2", "naive_device_allocator", "log_release_max_level_off"]
 
 # enables rust host memory allocator option
 rust_host_allocator = []
@@ -27,10 +27,24 @@ vulkan1_2 = ["vulkan1_1"]
 ## Adds a fallback that dynamically detects Vulkan version and falls back to 1.0 `create_render_pass` if needed
 #render_pass_2_fallback = ["render_pass_2"]
 
+log_release_max_level_off = ["log/release_max_level_off"]
+log_release_max_level_error = ["log/release_max_level_error"]
+log_release_max_level_warn = ["log/release_max_level_warn"]
+log_release_max_level_info = ["log/release_max_level_info"]
+log_release_max_level_debug = ["log/release_max_level_debug"]
+log_release_max_level_trace = ["log/release_max_level_trace"]
+
+log_max_level_off = ["log/max_level_off"]
+log_max_level_error = ["log/max_level_error"]
+log_max_level_warn = ["log/max_level_warn"]
+log_max_level_info = ["log/max_level_info"]
+log_max_level_debug = ["log/max_level_debug"]
+log_max_level_trace = ["log/max_level_trace"]
+
 [dependencies]
 # core
-# We use git repository because the published crate seems to be quite outdated
-ash = { git = "https://github.com/MaikKlein/ash", rev = "98def0a4e3c5f962f0cd50086700cacfcee1c62b" }
+# A forked git repository is used during development
+ash = { git = "https://github.com/vulkayes/ash" }
 
 # utility
 arrayvec = "0.5"

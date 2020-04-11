@@ -2,7 +2,7 @@
 /// Also generated constructors on the struct that match the enum variants.
 ///
 /// This is useful for making certain enum variants "unsafe" by only allowing their construction using
-/// an unsafe function. Variants also may be private.
+/// an unsafe function. Variants may also be private.
 ///
 /// Since a common usecase across this crate for this macro are typesafe parameter combinations, there
 /// is also a version with `Into` implementation.
@@ -13,30 +13,30 @@
 /// ```
 /// unsafe_enum_variants! {
 /// 	#[derive(Debug)]
-/// 	enum UnsafeEnumInner {
+/// 	enum UnsafeEnumInner ['a] {
 /// 		/// Private
-/// 		Foo => { 0 },
+/// 		Foo => { &0 },
 /// 		/// Public
-/// 		pub Bar => { 1 },
-/// 		/// Unsafe
-/// 		{unsafe} pub Qux { num: u32 } => { num }
-/// 	} as pub UnsafeEnum impl Into<u32>
+/// 		pub Bar => { &1 },
+/// 		/// Unsafe and generic
+/// 		{unsafe} pub Qux { num: &'a u32 } => { num }
+/// 	} as pub UnsafeEnum ['a] impl Into<&'a u32>
 /// }
 /// ```
 ///
 /// expands to:
 /// ```
 /// #[derive(Debug)]
-/// enum UnsafeEnumInner {
+/// enum UnsafeEnumInner<'a> {
 /// 	Foo,
 /// 	Bar,
 /// 	Qux {
-/// 		num: u32
+/// 		num: &'a u32
 /// 	}
 /// }
 /// #[derive(Debug)]
-/// pub struct UnsafeEnum(UnsafeEnumInner);
-/// impl UnsafeEnum {
+/// pub struct UnsafeEnum<'a>(UnsafeEnumInner<'a>);
+/// impl<'a> UnsafeEnum<'a> {
 /// 	#[doc = r###"Private"###]
 /// 	#[allow(non_snake_case)]
 /// 	const fn Foo() -> Self {
@@ -49,15 +49,15 @@
 /// 	}
 /// 	#[doc = r###"Unsafe"###]
 /// 	#[allow(non_snake_case)]
-/// 	pub const unsafe fn Qux(num: u32) -> Self {
+/// 	pub const unsafe fn Qux(num: &'a u32) -> Self {
 /// 		UnsafeEnum(UnsafeEnumInner::Qux { num })
 /// 	}
 /// }
-/// impl Into<u32> for UnsafeEnum {
+/// impl<'a> Into<&'a u32> for UnsafeEnum<'a> {
 /// 	fn into(self) -> u32 {
 /// 		match self.0 {
-/// 			UnsafeEnumInner::Foo => { 0 },
-/// 			UnsafeEnumInner::Bar => { 1 },
+/// 			UnsafeEnumInner::Foo => { &0 },
+/// 			UnsafeEnumInner::Bar => { &1 },
 /// 			UnsafeEnumInner::Qux { num } => { num }
 /// 		}
 /// 	}
@@ -67,25 +67,25 @@
 macro_rules! unsafe_enum_variants {
 	(
 		$(#[$attribute: meta])*
-		enum $inner_name: ident {
+		enum $inner_name: ident $([ $($gen_def_tt: tt)+ ])? {
 			$(
 				$(#[$variant_attribute: meta])*
 				$({$safety: tt})? $v: vis $variant: ident $({
 					 $($variant_name: ident: $variant_type: ty),+
 				})? => { $($into_code: tt)+ }
 			),+
-		} as pub $name: ident impl Into<$into_type: ty>
+		} as pub $name: ident $([ $($gen_usage_tt: tt)+ ])? impl Into<$into_type: ty>
 	) => {
 		unsafe_enum_variants!(
 			$(#[$attribute])*
-			enum $inner_name {
+			enum $inner_name $([ $($gen_def_tt)+ ])? {
 				$(
 					$(#[$variant_attribute])*
 					$({$safety})? $v $variant $({ $($variant_name: $variant_type),+ })?
 				),+
-			} as pub $name
+			} as pub $name $([ $($gen_usage_tt)+ ])?
 		);
-		impl Into<$into_type> for $name {
+		impl $(< $($gen_def_tt)+ >)? Into<$into_type> for $name $(< $($gen_usage_tt)+ >)? {
 			fn into(self) -> $into_type {
 				match self.0 {
 					$(
@@ -98,17 +98,17 @@ macro_rules! unsafe_enum_variants {
 
 	(
 		$(#[$attribute: meta])*
-		enum $inner_name: ident {
+		enum $inner_name: ident $([ $($gen_def_tt: tt)+ ])? {
 			$(
 				$(#[$variant_attribute: meta])*
 				$({$safety: tt})? $v: vis $variant: ident $({
 					 $($variant_name: ident: $variant_type: ty),+
 				})?
 			),+
-		} as pub $name: ident
+		} as pub $name: ident $([ $($gen_usage_tt: tt)+ ])?
 	) => {
 		$(#[$attribute])*
-		enum $inner_name {
+		enum $inner_name $(< $($gen_def_tt)+ >)? {
 			$(
 				$variant $({
 					 $($variant_name: $variant_type),+
@@ -116,8 +116,8 @@ macro_rules! unsafe_enum_variants {
 			),+
 		}
 		$(#[$attribute])*
-		pub struct $name($inner_name);
-		impl $name {
+		pub struct $name $(< $($gen_def_tt)+ >)? ($inner_name $(< $($gen_usage_tt)+ >)?);
+		impl $(< $($gen_def_tt)+ >)? $name $(< $($gen_usage_tt)+ >)? {
 			$(
 				$(#[$variant_attribute])*
 				#[allow(non_snake_case)]

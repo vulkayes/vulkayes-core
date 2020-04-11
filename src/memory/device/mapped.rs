@@ -5,8 +5,7 @@ use std::{
 	ptr::NonNull
 };
 
-use ash::vk;
-use ash::version::DeviceV1_0;
+use ash::{version::DeviceV1_0, vk};
 
 use crate::{device::Device, Vrc};
 
@@ -144,7 +143,7 @@ impl<'a> DeviceMemoryMappingAccess<'a> {
 		let bytes = self.bytes_mut();
 		let offset = offset.min(bytes.len());
 
-		let bytes = &mut bytes[offset..];
+		let bytes = &mut bytes[offset ..];
 		let stride = stride.for_t::<T>();
 		let count = data.len().min(bytes.len() / stride);
 
@@ -195,9 +194,9 @@ impl<'a> DeviceMemoryMappingAccess<'a> {
 			.build();
 
 		unsafe {
-			self.device.flush_mapped_memory_ranges(
-				&[mapped_memory_range]
-			).map_err(Into::into)
+			self.device
+				.flush_mapped_memory_ranges(&[mapped_memory_range])
+				.map_err(Into::into)
 		}
 	}
 
@@ -209,9 +208,9 @@ impl<'a> DeviceMemoryMappingAccess<'a> {
 			.build();
 
 		unsafe {
-			self.device.invalidate_mapped_memory_ranges(
-				&[mapped_memory_range]
-			).map_err(Into::into)
+			self.device
+				.invalidate_mapped_memory_ranges(&[mapped_memory_range])
+				.map_err(Into::into)
 		}
 	}
 
@@ -228,9 +227,7 @@ impl<'a> DeviceMemoryMappingAccess<'a> {
 	}
 
 	pub const fn size(&self) -> NonZeroU64 {
-		unsafe {
-			NonZeroU64::new_unchecked(self.bytes.len() as u64)
-		}
+		unsafe { NonZeroU64::new_unchecked(self.bytes.len() as u64) }
 	}
 }
 
