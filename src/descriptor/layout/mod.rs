@@ -14,16 +14,24 @@ pub mod params;
 pub struct DescriptorSetLayout {
 	device: Vrc<Device>,
 	layout: vk::DescriptorSetLayout,
+
 	host_memory_allocator: HostMemoryAllocator
 }
 impl DescriptorSetLayout {
-	pub fn new(
+	pub fn new<'a>(
 		device: Vrc<Device>,
+		flags: vk::DescriptorSetLayoutCreateFlags,
+		bindings: impl Iterator<Item = params::DescriptorSetLayoutBinding<'a>>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, DescriptorSetLayoutError> {
+		let bindings: Vec<_> = bindings.enumerate().map(|(index, info)| {
+			let builder: vk::DescriptorSetLayoutBindingBuilder = info.into();
+			builder.binding(index as u32).build()
+		}).collect();
 
-		let create_info = vk::DescriptorSetLayoutCreateInfo::builder();
-		unimplemented!();
+		let create_info = vk::DescriptorSetLayoutCreateInfo::builder()
+			.flags(flags)
+			.bindings(bindings.as_slice());
 
 		unsafe {
 			Self::from_create_info(

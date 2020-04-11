@@ -6,7 +6,6 @@ use ash::vk;
 #[allow(non_camel_case_types)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 #[repr(i32)]
-// TODO: This is a huge oof, vk::DescriptorType::as_raw should be const fn
 pub enum DescriptorSetLayoutBindingGenericType {
 	SAMPLED_IMAGE = vk::DescriptorType::SAMPLED_IMAGE.as_raw(),
 	STORAGE_IMAGE = vk::DescriptorType::STORAGE_IMAGE.as_raw(),
@@ -19,9 +18,7 @@ pub enum DescriptorSetLayoutBindingGenericType {
 }
 impl Into<vk::DescriptorType> for DescriptorSetLayoutBindingGenericType {
 	fn into(self) -> vk::DescriptorType {
-		// unsafe { Might become unsafe in the future
-			vk::DescriptorType::from_raw(self as i32)
-		// }
+		vk::DescriptorType::from_raw(self as i32)
 	}
 }
 
@@ -61,14 +58,14 @@ unsafe_enum_variants! {
 				.stage_flags(stage_flags)
 		},
 
-		/// Inline uniform buffer, size is specified in bytes.
+		/// Inline uniform buffer, size is specified in bytes divided by four.
 		pub InlineUniformBlock {
-			size: NonZeroU32,
+			sizeDivFour: NonZeroU32,
 			stage_flags: vk::ShaderStageFlags
 		} => {
 			vk::DescriptorSetLayoutBinding::builder()
 				.descriptor_type(vk::DescriptorType::INLINE_UNIFORM_BLOCK_EXT)
-				.descriptor_count(size.get())
+				.descriptor_count(size.get() * 4)
 				.stage_flags(stage_flags)
 		},
 
