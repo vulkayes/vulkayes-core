@@ -31,6 +31,9 @@ impl Fence {
 		unsafe { Self::from_create_info(device, create_info, host_memory_allocator) }
 	}
 
+	/// ### Safety
+	///
+	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCreateFence.html>.
 	pub unsafe fn from_create_info(
 		device: Vrc<Device>,
 		create_info: impl Deref<Target = vk::FenceCreateInfo>,

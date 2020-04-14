@@ -13,6 +13,7 @@ vk_result_error! {
 		#[error("Swapchain is retired and can no longer be used")]
 		SwapchainRetired,
 
+		#[cfg(feature = "runtime_implicit_validations")]
 		#[error("Image usage must not be empty")]
 		ImageUsageEmpty,
 	}
@@ -32,9 +33,11 @@ vk_result_error! {
 			ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT
 		}
 
+		#[cfg(feature = "runtime_implicit_validations")]
 		#[error("Semaphore and swapchain must come from the same device")]
 		SemaphoreSwapchainDeviceMismatch,
 
+		#[cfg(feature = "runtime_implicit_validations")]
 		#[error("Fence and swapchain must come from the same device")]
 		FenceSwapchainDeviceMismatch,
 	}

@@ -25,6 +25,8 @@
 //! Note that in some circumstances, such as Instance creation and extension name checking, the validation is part of the input
 //! argument transformation and turning it off would not bring any advantages.
 //!
+//! These validations might not be cheap. It is recommended to only enabled them when debugging, not in release/production builds.
+//!
 //! ### `log_max_level_*` and `log_release_max_level_*`
 //!
 //! These features directly correspond to the features on the `log` crate.
@@ -45,14 +47,15 @@ pub const NONZEROU32_ONE: std::num::NonZeroU32 = unsafe { std::num::NonZeroU32::
 #[macro_use]
 pub mod util;
 
-pub mod memory;
-
 pub mod command;
 pub mod descriptor;
 pub mod device;
 pub mod entry;
 pub mod instance;
+pub mod memory;
 pub mod physical_device;
+pub mod pipeline;
+pub mod prelude;
 pub mod queue;
 pub mod resource;
 pub mod surface;

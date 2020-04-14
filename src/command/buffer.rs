@@ -11,24 +11,47 @@ pub struct CommandBuffer {
 	command_buffer: Vutex<vk::CommandBuffer>
 }
 impl CommandBuffer {
-	pub fn new(
+	pub fn new(pool: Vrc<CommandPool>, primary: bool) -> Result<Vrc<Self>, CommandBufferError> {
+		let level = match primary {
+			true => vk::CommandBufferLevel::PRIMARY,
+			false => vk::CommandBufferLevel::SECONDARY
+		};
+		let [raw] = unsafe { pool.allocate_command_buffer(level)? };
+
+		Ok(Vrc::new(unsafe { Self::from_existing(pool, raw) }))
+	}
+
+	pub fn new_multiple(
 		pool: Vrc<CommandPool>,
-		level: vk::CommandBufferLevel,
+		primary: bool,
 		count: std::num::NonZeroU32
 	) -> Result<Vec<Vrc<Self>>, CommandBufferError> {
-		let raw = pool.allocate_command_buffers(level, count)?;
+		let level = match primary {
+			true => vk::CommandBufferLevel::PRIMARY,
+			false => vk::CommandBufferLevel::SECONDARY
+		};
+		let raw = unsafe { pool.allocate_command_buffers(level, count)? };
 
 		let buffers: Vec<_> = raw
 			.into_iter()
 			.map(|command_buffer| {
-				Vrc::new(CommandBuffer {
-					pool: pool.clone(),
-					command_buffer: Vutex::new(command_buffer)
-				})
+				Vrc::new(unsafe { Self::from_existing(pool.clone(), command_buffer) })
 			})
 			.collect();
 
 		Ok(buffers)
+	}
+
+	/// Creates a new `CommandBuffer` from existing handle.
+	///
+	/// ### Safety
+	///
+	/// `command_buffer` must be valid handle allocated from `pool`.
+	pub unsafe fn from_existing(pool: Vrc<CommandPool>, command_buffer: vk::CommandBuffer) -> Self {
+		Self {
+			pool,
+			command_buffer: Vutex::new(command_buffer)
+		}
 	}
 
 	pub const fn pool(&self) -> &Vrc<CommandPool> {
@@ -58,4 +81,3 @@ impl Debug for CommandBuffer {
 			.finish()
 	}
 }
-

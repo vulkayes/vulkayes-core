@@ -36,7 +36,8 @@ impl Image {
 		allocator_param: params::AllocatorParams<A>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::ImageError<A::Error>> {
-		if cfg!(feature = "runtime_implicit_validations") {
+		#[cfg(feature = "runtime_implicit_validations")]
+		{
 			if usage.is_empty() {
 				return Err(error::ImageError::UsageEmpty)
 			}
@@ -95,7 +96,8 @@ impl Image {
 					.allocate(image, requirements)
 					.map_err(error::ImageError::AllocationError)?;
 
-				if cfg!(feature = "runtime_implicit_validations") {
+				#[cfg(feature = "runtime_implicit_validations")]
+				{
 					if memory.device() != &device {
 						return Err(error::ImageError::MemoryDeviceMismatch)
 					}

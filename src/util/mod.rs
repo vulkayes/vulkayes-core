@@ -5,6 +5,7 @@ pub mod macros;
 
 #[macro_use]
 pub mod fmt;
+
 pub mod hash;
 pub mod string;
 pub mod sync;
@@ -40,8 +41,8 @@ impl Default for WaitTimeout {
 /// More formally:
 /// ```
 /// f_d(x) =
-///     0, if x mod d = 0
-///     d - x mod d, otherwise
+///     x, if x mod d = 0
+///     x + d - x mod d, otherwise
 /// ```
 /// simplifies to `x - 1 + d - (x - 1) mod d`
 /// assuming `d = 2^N`, can also be written in code like: `(x - 1 + d) & !(d - 1)`

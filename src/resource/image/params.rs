@@ -1,4 +1,4 @@
-use std::num::NonZeroU32;
+use std::{borrow::Borrow, num::NonZeroU32};
 
 use ash::vk;
 
@@ -45,6 +45,13 @@ pub struct ImageSize {
 	mipmap_levels: NonZeroU32
 }
 impl ImageSize {
+	/// Creates a new image size.
+	///
+	/// ### Safety
+	///
+	/// * `width`, `height` and `depth` must be valid for given `image_type`.
+	/// * `array_layers` must be valid for given `image_type`.
+	/// * `mipmap_levels` must be valid for given `width`, `height` and `depth`
 	pub const unsafe fn new(
 		image_type: vk::ImageType,
 		width: NonZeroU32,
@@ -229,6 +236,12 @@ impl From<ImageSize3D> for ImageSize {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct ImageSize1D(ImageSize);
+impl Borrow<ImageSize> for ImageSize1D {
+	fn borrow(&self) -> &ImageSize {
+		&self.0
+	}
+}
+
 /// Transparent image size wrapper that is guaranteed to be 2D.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(transparent)]
@@ -238,10 +251,22 @@ impl From<ImageSizeCubeCompatible> for ImageSize2D {
 		value.0
 	}
 }
+impl Borrow<ImageSize> for ImageSize2D {
+	fn borrow(&self) -> &ImageSize {
+		&self.0
+	}
+}
+
 /// Transparent image size wrapper that is guaranteed to be 3D.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct ImageSize3D(ImageSize);
+impl Borrow<ImageSize> for ImageSize3D {
+	fn borrow(&self) -> &ImageSize {
+		&self.0
+	}
+}
+
 /// Wrapper around `ImageSize` that is also guaranteed to be cube-compatible.
 /// Cube compatible images must be 2D, must have square dimensions and must have at least 6 layers.
 ///
@@ -266,6 +291,11 @@ impl ImageSizeCubeCompatible {
 			unsafe { NonZeroU32::new_unchecked(layers_minus_6 + 6) },
 			mipmaps
 		))
+	}
+}
+impl Borrow<ImageSize2D> for ImageSizeCubeCompatible {
+	fn borrow(&self) -> &ImageSize2D {
+		&self.0
 	}
 }
 

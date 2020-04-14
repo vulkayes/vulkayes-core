@@ -1,11 +1,8 @@
-use std::ops::Deref;
-use std::fmt;
+use std::{fmt, ops::Deref};
 
-use ash::vk;
-use ash::version::DeviceV1_0;
+use ash::{version::DeviceV1_0, vk};
 
-use crate::{Vrc, device::Device};
-use crate::memory::host::HostMemoryAllocator;
+use crate::{device::Device, memory::host::HostMemoryAllocator, Vrc};
 
 use super::error::DescriptorSetLayoutError;
 
@@ -24,24 +21,24 @@ impl DescriptorSetLayout {
 		bindings: impl Iterator<Item = params::DescriptorSetLayoutBinding<'a>>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, DescriptorSetLayoutError> {
-		let bindings: Vec<_> = bindings.enumerate().map(|(index, info)| {
-			let builder: vk::DescriptorSetLayoutBindingBuilder = info.into();
-			builder.binding(index as u32).build()
-		}).collect();
+		let bindings = collect_iter_faster!(
+			bindings.enumerate().map(|(index, info)| {
+				let builder: vk::DescriptorSetLayoutBindingBuilder = info.into();
+				builder.binding(index as u32).build()
+			}),
+			8
+		);
 
 		let create_info = vk::DescriptorSetLayoutCreateInfo::builder()
 			.flags(flags)
 			.bindings(bindings.as_slice());
 
-		unsafe {
-			Self::from_create_info(
-				device,
-				create_info,
-				host_memory_allocator
-			)
-		}
+		unsafe { Self::from_create_info(device, create_info, host_memory_allocator) }
 	}
 
+	/// ### Safety
+	///
+	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCreateDescriptorSetLayout.html>.
 	pub unsafe fn from_create_info(
 		device: Vrc<Device>,
 		create_info: impl Deref<Target = vk::DescriptorSetLayoutCreateInfo>,
@@ -54,20 +51,14 @@ impl DescriptorSetLayout {
 			host_memory_allocator
 		);
 
-		let layout = device.create_descriptor_set_layout(
-			create_info.deref(),
-			host_memory_allocator.as_ref()
-		)?;
+		let layout = device
+			.create_descriptor_set_layout(create_info.deref(), host_memory_allocator.as_ref())?;
 
-		Ok(
-			Vrc::new(
-				DescriptorSetLayout {
-					device,
-					layout,
-					host_memory_allocator
-				}
-			)
-		)
+		Ok(Vrc::new(DescriptorSetLayout {
+			device,
+			layout,
+			host_memory_allocator
+		}))
 	}
 
 	pub const fn device(&self) -> &Vrc<Device> {
@@ -84,10 +75,8 @@ impl Drop for DescriptorSetLayout {
 		log_trace_common!("Dropping", self);
 
 		unsafe {
-			self.device.destroy_descriptor_set_layout(
-				self.layout,
-				self.host_memory_allocator.as_ref()
-			)
+			self.device
+				.destroy_descriptor_set_layout(self.layout, self.host_memory_allocator.as_ref())
 		}
 	}
 }

@@ -6,9 +6,11 @@ vk_result_error! {
 			ERROR_OUT_OF_DEVICE_MEMORY
 		}
 
+		#[cfg(feature = "runtime_implicit_validations")]
 		#[error("Usage flags must not be empty")]
 		UsageEmpty,
 
+		#[cfg(feature = "runtime_implicit_validations")]
 		#[error("The memory must be allocated from the same device")]
 		MemoryDeviceMismatch,
 

@@ -60,12 +60,12 @@ unsafe_enum_variants! {
 
 		/// Inline uniform buffer, size is specified in bytes divided by four.
 		pub InlineUniformBlock {
-			sizeDivFour: NonZeroU32,
+			size_div_four: NonZeroU32,
 			stage_flags: vk::ShaderStageFlags
 		} => {
 			vk::DescriptorSetLayoutBinding::builder()
 				.descriptor_type(vk::DescriptorType::INLINE_UNIFORM_BLOCK_EXT)
-				.descriptor_count(size.get() * 4)
+				.descriptor_count(size_div_four.get() * 4)
 				.stage_flags(stage_flags)
 		},
 

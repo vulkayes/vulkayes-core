@@ -34,7 +34,8 @@ impl Buffer {
 		allocator_params: params::AllocatorParams<A>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::BufferError<A::Error>> {
-		if cfg!(feature = "runtime_implicit_validations") {
+		#[cfg(feature = "runtime_implicit_validations")]
+		{
 			if usage.is_empty() {
 				return Err(error::BufferError::UsageEmpty)
 			}
@@ -82,7 +83,8 @@ impl Buffer {
 					.allocate(buffer, requirements)
 					.map_err(error::BufferError::AllocationError)?;
 
-				if cfg!(feature = "runtime_implicit_validations") {
+				#[cfg(feature = "runtime_implicit_validations")]
+				{
 					if memory.device() != &device {
 						return Err(error::BufferError::MemoryDeviceMismatch)
 					}

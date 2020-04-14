@@ -7,9 +7,11 @@ vk_result_error! {
 			ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS
 		}
 
+		#[cfg(feature = "runtime_implicit_validations")]
 		#[error("Usage flags must not be empty")]
 		UsageEmpty,
 
+		#[cfg(feature = "runtime_implicit_validations")]
 		#[error("The memory must be allocated from the same device")]
 		MemoryDeviceMismatch,
 

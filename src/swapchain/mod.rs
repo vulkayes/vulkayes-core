@@ -97,7 +97,8 @@ impl Swapchain {
 		create_info: SwapchainCreateInfo<impl AsRef<[u32]>>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<SwapchainData, error::SwapchainError> {
-		if cfg!(feature = "runtime_implicit_validations") {
+		#[cfg(feature = "runtime_implicit_validations")]
+		{
 			if create_info.image_info.image_usage.is_empty() {
 				return Err(error::SwapchainError::ImageUsageEmpty)
 			}
@@ -246,7 +247,8 @@ impl Swapchain {
 		timeout: crate::util::WaitTimeout,
 		synchronization: AcquireSynchronization
 	) -> error::AcquireResult {
-		if cfg!(feature = "runtime_implicit_validations") {
+		#[cfg(feature = "runtime_implicit_validations")]
+		{
 			if let Some(semaphore) = synchronization.semaphore() {
 				if semaphore.device() != self.device() {
 					return Err(error::AcquireError::SemaphoreSwapchainDeviceMismatch)

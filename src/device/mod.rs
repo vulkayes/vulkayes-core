@@ -50,7 +50,8 @@ impl Device {
 	) -> Result<DeviceData, error::DeviceError> {
 		let queues = queues.as_ref();
 
-		if cfg!(feature = "runtime_implicit_validations") {
+		#[cfg(feature = "runtime_implicit_validations")]
+		{
 			if queues.len() == 0 {
 				return Err(error::DeviceError::QueuesEmpty)
 			}

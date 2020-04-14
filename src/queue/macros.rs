@@ -43,7 +43,8 @@ macro_rules! const_queue_submit {
 			use $crate::util::sync::VutexGuard;
 			use $crate::ash::vk;
 
-			if cfg!(feature = "runtime_implicit_validations") {
+			#[cfg(feature = "runtime_implicit_validations")]
+			{
 				for stage in stages.iter() {
 					if stage.is_empty() {
 						return Err(QueueSubmitError::WaitStagesEmpty)
@@ -136,7 +137,8 @@ macro_rules! const_queue_present {
 			use $crate::util::sync::VutexGuard;
 			use $crate::ash::vk;
 
-			if cfg!(feature = "runtime_implicit_validations") {
+			#[cfg(feature = "runtime_implicit_validations")]
+			{
 				if $count_images == 0 {
 					return QueuePresentMultipleResult::Single(
 						Err(QueuePresentError::SwapchainsEmpty)
@@ -158,7 +160,7 @@ macro_rules! const_queue_present {
 
 			let indices = $crate::seq_macro::seq_expr!(
 				N in 0 .. $count_images {
-					[ #( $images[N].index() )* ]
+					[ #( $images[N].index(), )* ]
 				}
 			);
 
@@ -186,11 +188,13 @@ macro_rules! const_queue_present {
 						let result_values: [QueuePresentResult; $count_images] = $crate::seq_macro::seq_expr!(
 							N in 0 .. $count_images {
 								[
-									match $name[N] {
-										vk::Result::SUCCESS => Ok(QueuePresentResultValue::SUCCESS),
-										vk::Result::SUBOPTIMAL_KHR => Ok(QueuePresentResultValue::SUBOPTIMAL_KHR),
-										err => Err(err.into())
-									}
+									#(
+										match $name[N] {
+											vk::Result::SUCCESS => Ok(QueuePresentResultValue::SUCCESS),
+											vk::Result::SUBOPTIMAL_KHR => Ok(QueuePresentResultValue::SUBOPTIMAL_KHR),
+											err => Err(err.into())
+										},
+									)*
 								]
 							}
 						);

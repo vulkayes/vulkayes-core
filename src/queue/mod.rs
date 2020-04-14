@@ -113,6 +113,7 @@ impl Queue {
 
 		log_trace_common!(
 			"Submitting on queue:",
+			self,
 			crate::util::fmt::format_handle(*lock),
 			infos.as_ref(),
 			fence

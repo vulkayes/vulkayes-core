@@ -7,15 +7,19 @@ vk_result_error! {
 			ERROR_DEVICE_LOST
 		}
 
+		#[cfg(feature = "runtime_implicit_validations")]
 		#[error("Queue family of the command buffer and of the queue does not match")]
 		QueueFamilyMismatch,
 
+		#[cfg(feature = "runtime_implicit_validations")]
 		#[error("Queue and fence must be from the same device")]
 		QueueFenceDeviceMismatch,
 
+		#[cfg(feature = "runtime_implicit_validations")]
 		#[error("Wait stage flags must not be empty for any of the the waits")]
 		WaitStagesEmpty,
 
+		#[cfg(feature = "runtime_implicit_validations")]
 		#[error("Wait semaphores, command buffers and signal semaphores must be from the same device")]
 		WaitBufferSignalDeviceMismatch,
 	}
@@ -44,9 +48,11 @@ vk_result_error! {
 			ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT
 		}
 
+		#[cfg(feature = "runtime_implicit_validations")]
 		#[error("Swapchains element must contain at least one element")]
 		SwapchainsEmpty,
 
+		#[cfg(feature = "runtime_implicit_validations")]
 		#[error("Swapchains and wait semaphores must come from the same instance")]
 		SwapchainsSempahoredInstanceMismatch
 	}

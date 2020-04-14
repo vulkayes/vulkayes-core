@@ -534,3 +534,106 @@ macro_rules! deref_enum_dispatch {
 		)+
 	}
 }
+
+/// Collect an iterator into a chosen type.
+///
+/// This macro is mainly provided so that collect implementation used across the crate to lower memory allocation overhead
+/// can be swapped and benchmarked easily. Implementations may come and go and this macro will likely be completely removed at some point.
+///
+/// `$static_size_hint` should be a const-evaluated expression hinting how much memory to preallocate:
+/// * For `Vec` implementation, this is ignored.
+/// * For `smallvec` implementation, this chooses the size of the `SmallVec` stack array.
+/// * For `reusable-memory` implementation, this chooses the size of the borrow.
+/// * For `bumpalo` implementation, this is ignored.
+///
+/// `global_state_access` should be an expression:
+/// * For `Vec` implementation, this is ignored.
+/// * For `smallvec` implemnetation, this is ignored.
+/// * For `reusable-memory` implementation, this provides access to the `ReusableMemory` object to borrow from.
+/// * For `bumpalo` implementation, this provides access to `Bump` object.
+macro_rules! collect_iter_faster {
+	(
+		@vec
+		$(
+			$iter: expr, $static_size_hint: expr
+		),+
+	) => {
+		(
+			$(
+				$iter.collect::<
+					Vec<_>
+				>()
+			),+
+		)
+	};
+
+	(
+		@smallvec
+		$(
+			$iter: expr, $static_size_hint: expr
+		),+
+	) => {
+		(
+			$(
+				$iter.collect::<
+					$crate::smallvec::SmallVec<
+						[_; $static_size_hint]
+					>
+				>()
+			),+
+		)
+	};
+
+	// TODO: These are not trivial to macroize
+	// This is tricky. The `$global_state` needs to give us the correct function to call as well such as `borrow_mut_two_as`
+	// (
+	// 	@reusable_memory $global_state_access: expr;
+	// 	$(
+	// 		$iter: expr, $static_size_hint: expr
+	// 	),+
+	// ) => {
+	// 	{
+	// 		$global_state_access::<
+	// 			$(
+	// 				<$iter as Iterator>::Item
+	// 			),+
+	// 		>(
+	// 			[
+	// 				$(
+	// 					std::num::NonZeroUsize::new($static_size_hint).unwrap()
+	// 				),+
+	// 			]
+	// 		)
+	// 	}
+	// };
+	//
+	// (
+	// 	@bumpalo $global_state_access: expr;
+	// 	$(
+	// 		$iter: expr, $static_size_hint: expr
+	// 	),+
+	// ) => {
+	//
+	// };
+
+	// TODO: Really need this?
+	// (
+	// 	@collected_type
+	// ) => {
+	//
+	// };
+
+	(
+		$(
+			$iter: expr, $static_size_hint: expr $(, $global_state_access: expr)?
+		),+
+	) => {
+		// TODO: Benchmark the best solution
+		collect_iter_faster!(
+			@vec
+			$(
+				$iter, $static_size_hint
+			),+
+		);
+	};
+}

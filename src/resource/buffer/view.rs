@@ -31,6 +31,9 @@ impl BufferView {
 		unsafe { Self::from_create_info(buffer, create_info, host_memory_allocator) }
 	}
 
+	/// ### Safety
+	///
+	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCreateBufferView.html>.
 	pub unsafe fn from_create_info(
 		buffer: Vrc<Buffer>,
 		create_info: impl Deref<Target = vk::BufferViewCreateInfo>,
