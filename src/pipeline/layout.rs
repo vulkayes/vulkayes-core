@@ -101,6 +101,10 @@ impl PipelineLayout {
 	pub const fn descriptor_set_layouts(&self) -> &Vec<Vrc<DescriptorSetLayout>> {
 		&self.descriptor_set_layouts
 	}
+
+	pub const fn device(&self) -> &Vrc<Device> {
+		&self.device
+	}
 }
 impl_common_handle_traits! {
 	impl Deref, PartialEq, Eq, Hash for PipelineLayout {

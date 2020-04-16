@@ -485,6 +485,7 @@ impl ImageSubresourceRange {
 impl Into<vk::ImageSubresourceRange> for ImageSubresourceRange {
 	fn into(self) -> vk::ImageSubresourceRange {
 		vk::ImageSubresourceRange::builder()
+			.aspect_mask(self.aspect_mask)
 			.layer_count(self.array_layers.get())
 			.base_array_layer(self.array_layers_base)
 			.level_count(self.mipmap_levels.get())

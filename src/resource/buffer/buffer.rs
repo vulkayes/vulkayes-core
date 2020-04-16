@@ -122,6 +122,11 @@ impl Buffer {
 		self.size
 	}
 
+	/// Returns the length of this buffer in number of `T`s.
+	pub fn size_of<T>(&self) -> usize {
+		self.size().get() as usize / std::mem::size_of::<T>()
+	}
+
 	// TODO: Cannot be const because of Sized
 	pub fn memory(&self) -> Option<&DeviceMemoryAllocation> {
 		self.memory.as_ref()
