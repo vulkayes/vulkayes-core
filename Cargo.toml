@@ -5,27 +5,34 @@ authors = ["TheEdward162 <TheEdward162@gmail.com>"]
 edition = "2018"
 
 [features]
-default = ["runtime_implicit_validations", "vulkan1_2", "naive_device_allocator", "log_release_max_level_off"]
+default = [
+    "vulkan1_2",
+    "runtime_implicit_validations",
+    "naive_device_allocator",
+    "log_release_max_level_off",
+    "rust_host_allocator",
+    "parking_lot",
+    "insecure_hash"
+]
 
 # enables rust host memory allocator option
 rust_host_allocator = []
 # enables very simple device memory allocator
 naive_device_allocator = []
 
-# replaces use of Arc<T> and Mutex<T> with Rc<T> and RefCell<T>
-single_thread = []
-# use cryptographically secure HashMap and HashSet instead of performance-oriented non-secure one
-crypto_secure_hash = []
+# enable multi thread support by using Arc<T> and Mutex<T> instead of Rc<T> and RefCell<T>
+multi_thread = []
+# use synchronization primitived from the parking_lot crate instead of the stdlib
+parking_lot_vutex = ["parking_lot", "multi_thread"]
+
+# use cryptographically insecure HashMap and HashSet for better peformance
+insecure_hash = ["rustc-hash"]
+
 # Validate implicit validations according to the Vulkan spec at runtime if they can't be validated statically
 runtime_implicit_validations = []
 
 vulkan1_1 = []
 vulkan1_2 = ["vulkan1_1"]
-
-## Uses `crate_render_pass2` from Vulkan 1.2 (requires Vulkan version of 1.2)
-#render_pass_2 = []
-## Adds a fallback that dynamically detects Vulkan version and falls back to 1.0 `create_render_pass` if needed
-#render_pass_2_fallback = ["render_pass_2"]
 
 log_release_max_level_off = ["log/release_max_level_off"]
 log_release_max_level_error = ["log/release_max_level_error"]
@@ -51,7 +58,8 @@ arrayvec = "0.5"
 seq-macro = { git = "https://github.com/ametisf/seq-macro/" }
 
 # performance
-rustc-hash = "1"
+rustc-hash = { version = "1", optional = true }
+parking_lot = { version = "0.10", optional = true }
 
 # debuging
 log = "0.4"

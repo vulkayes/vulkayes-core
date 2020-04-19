@@ -11,13 +11,17 @@
 //! Adds a simple memory allocator `NaiveDeviceMemoryAllocator` that allocates memory for each resource separately.
 //! It should not be used in production applications.
 //!
-//! ### `single_thread`
+//! ### `multi_thread`
 //!
-//! Replaces uses of `Arc<T>` and `Mutex<T>` (dubbed as `Vrc` and `Vutex` across the crate) with `Rc<T>` and `RefCell<T>` (wrapped to have compatible API).
+//! Enables multi thread support by using `Arc<T>` and `Mutex<T>` (dubbed as `Vrc` and `Vutex`) instead of `Rc<T>` and `RefCell<T>` (wrapped to have compatible API).
 //!
-//! ### `crypto_secure_hash`
+//! ### `parking_lot_vutex`
 //!
-//! Uses `std::collections::{HashMap, HashSet}` instead of `rustc_hash::{FxHashMap, FxHashSet}` (dubbed as `VHashMap` and `VHashSet`)  across the crate.
+//! Uses `Mutex` from `parking_lot` crate instead of the standard library. Requires `multi_thread` feature.
+//!
+//! ### `insecure_hash`
+//!
+//! Uses `rustc_hash::{FxHashMap, FxHashSet}` instead of `std::collections::{HashMap, HashSet}` (dubbed as `VHashMap` and `VHashSet`).
 //!
 //! ### `runtime_implicit_validations`
 //!
@@ -26,6 +30,14 @@
 //! argument transformation and turning it off would not bring any advantages.
 //!
 //! These validations might not be cheap. It is recommended to only enabled them when debugging, not in release/production builds.
+//!
+//! ### `vulkan1_1`
+//!
+//! Enables safe methods that will panic on Vulkan 1.0
+//!
+//! ### `vulkan1_2`
+//!
+//! Enables safe methods that will panic on Vulkan 1.0 and 1.1. Requires `vulkan1_1` feature.
 //!
 //! ### `log_max_level_*` and `log_release_max_level_*`
 //!

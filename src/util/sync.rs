@@ -1,17 +1,15 @@
-//! This module contains type aliases and wrappers to make switching `single_thread` feature seamless.
+//! This module contains type aliases and wrappers to make switching `multi_thread` feature seamless.
 
 pub use inner::*;
 
 // IDEA: Consider adding Vrc<T> = ManuallyDrop<T> as an unsafe alternative
 
 #[macro_use]
-#[cfg(not(feature = "single_thread"))]
+#[cfg(feature = "multi_thread")]
 mod inner {
-
 	/// Expands the tokens and adds `+ Send + Sync` at the end.
 	///
-	/// This can be used to conditionally add `Send + Sync` bounds to types
-	/// when the `single_thread` feature is not enabled.
+	/// This can be used to conditionally add `Send + Sync` bounds to types when the `multi_thread` feature is enabled.
 	#[macro_export]
 	macro_rules! VSendSync {
 		(
@@ -23,22 +21,34 @@ mod inner {
 
 	/// A type alias to `Arc`.
 	pub type Vrc<T> = std::sync::Arc<T>;
-
-	/// A type alias to `Mutex`.
-	pub type Vutex<T> = std::sync::Mutex<T>;
-	/// A type alias to `MutexGuard`.
-	pub type VutexGuard<'a, T> = std::sync::MutexGuard<'a, T>;
 	/// A type alias to `AtomicBool`.
 	pub type AtomicVool = std::sync::atomic::AtomicBool;
+
+	#[cfg(feature = "parking_lot_vutex")]
+	mod vutex {
+		/// A type alias to `parking_lot::Mutex`.
+		pub type Vutex<T> = parking_lot::Mutex<T>;
+		/// A type alias to `parking_lot::MutexGuard`.
+		pub type VutexGuard<'a, T> = parking_lot::MutexGuard<'a, T>;
+	}
+	#[cfg(not(feature = "parking_lot_vutex"))]
+	mod vutex {
+		/// A type alias to `Mutex`.
+		pub type Vutex<T> = std::sync::Mutex<T>;
+		/// A type alias to `MutexGuard`.
+		pub type VutexGuard<'a, T> = std::sync::MutexGuard<'a, T>;
+	}
 }
 
-#[cfg(feature = "single_thread")]
+#[macro_use]
+#[cfg(not(feature = "multi_thread"))]
 mod inner {
 	use std::cell::{BorrowMutError, Cell, RefCell, RefMut};
 
 	/// Does nothing.
 	///
-	/// This is provided as a single-thread alternative to the `VSendSync` macro.
+	/// This is provided as a single-thread alternative to the `VSendSync` macro,
+	/// which adds `Send + Sync` bounds to types when the `multi_thread` feature is enabled.
 	#[macro_export]
 	macro_rules! VSendSync {
 		(
@@ -50,25 +60,6 @@ mod inner {
 
 	/// A type alias to `Rc`.
 	pub type Vrc<T> = std::rc::Rc<T>;
-
-	/// Type that is interface-compatible with `Mutex` to be used in single-threaded context.
-	///
-	/// This type is treated as "poisoned" when it is attempted to lock it twice.
-	#[derive(Debug)]
-	#[repr(transparent)]
-	pub struct Vutex<T>(pub RefCell<T>);
-	impl<T> Vutex<T> {
-		pub const fn new(value: T) -> Self {
-			Vutex(RefCell::new(value))
-		}
-
-		pub fn lock(&self) -> Result<VutexGuard<T>, BorrowMutError> {
-			self.0.try_borrow_mut()
-		}
-	}
-	/// Type that is `Deref`-compatible with `MutexGuard` in single-thread context.
-	pub type VutexGuard<'a, T> = RefMut<'a, T>;
-
 	/// A type that is interface-compatible with `AtomicBool` to be used in single-threaded context.
 	pub struct AtomicVool(pub std::cell::Cell<bool>);
 	impl AtomicVool {
@@ -88,10 +79,28 @@ mod inner {
 			self.0.replace(value)
 		}
 	}
+
+	/// Type that is interface-compatible with `Mutex` to be used in single-threaded context.
+	///
+	/// This type is treated as "poisoned" when it is attempted to lock it twice.
+	#[derive(Debug)]
+	#[repr(transparent)]
+	pub struct Vutex<T>(pub RefCell<T>);
+	impl<T> Vutex<T> {
+		pub const fn new(value: T) -> Self {
+			Vutex(RefCell::new(value))
+		}
+
+		pub fn lock(&self) -> Result<VutexGuard<T>, BorrowMutError> {
+			self.0.try_borrow_mut()
+		}
+	}
+	/// Type that is `Deref`-compatible with `MutexGuard` in single-thread context.
+	pub type VutexGuard<'a, T> = RefMut<'a, T>;
 }
 
 #[macro_use]
-#[cfg(not(feature = "single_thread"))]
+#[cfg(feature = "multi_thread")]
 mod test {
 	#[allow(unused_imports)] // It is actually used
 	use crate::Vrc;
