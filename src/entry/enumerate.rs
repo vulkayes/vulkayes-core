@@ -3,6 +3,8 @@ use std::{
 	fmt::{Display, Error, Formatter}
 };
 
+use ash::vk;
+
 use crate::util::{fmt::VkVersion, string::VkSmallString};
 
 vk_result_error! {
@@ -22,10 +24,10 @@ pub struct InstanceLayerProperties {
 	pub implementation_version: VkVersion,
 	pub description: VkSmallString
 }
-impl TryFrom<ash::vk::LayerProperties> for InstanceLayerProperties {
+impl TryFrom<vk::LayerProperties> for InstanceLayerProperties {
 	type Error = std::str::Utf8Error;
 
-	fn try_from(value: ash::vk::LayerProperties) -> Result<Self, Self::Error> {
+	fn try_from(value: vk::LayerProperties) -> Result<Self, Self::Error> {
 		Ok(InstanceLayerProperties {
 			layer_name: VkSmallString::try_from(value.layer_name)?,
 			spec_version: VkVersion(value.spec_version),
@@ -49,10 +51,10 @@ pub struct InstanceExtensionProperties {
 	pub extension_name: VkSmallString,
 	pub spec_version: VkVersion
 }
-impl TryFrom<ash::vk::ExtensionProperties> for InstanceExtensionProperties {
+impl TryFrom<vk::ExtensionProperties> for InstanceExtensionProperties {
 	type Error = std::str::Utf8Error;
 
-	fn try_from(value: ash::vk::ExtensionProperties) -> Result<Self, Self::Error> {
+	fn try_from(value: vk::ExtensionProperties) -> Result<Self, Self::Error> {
 		Ok(InstanceExtensionProperties {
 			extension_name: VkSmallString::try_from(value.extension_name)?,
 			spec_version: VkVersion(value.spec_version)

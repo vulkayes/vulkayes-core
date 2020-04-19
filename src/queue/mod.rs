@@ -56,8 +56,8 @@ impl Queue {
 	///
 	/// ### Safety
 	///
-	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetDeviceQueue.html>.
-	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetDeviceQueue2.html>.
+	/// * See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetDeviceQueue.html>.
+	/// * See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetDeviceQueue2.html>.
 	pub unsafe fn from_device(
 		device: Vrc<Device>,
 		flags: DeviceQueueCreateFlags,

@@ -10,7 +10,7 @@ use crate::{
 	Vrc
 };
 
-use super::error::{DescriptorPoolError, DescriptorSetAllocationError};
+use super::error::{DescriptorPoolError, DescriptorSetError};
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct DescriptorPoolSize {
@@ -39,13 +39,13 @@ macro_rules! impl_allocate_command_buffers_array {
 		pub fn $name(
 			&self,
 			$layouts_name: [&DescriptorSetLayout; $size]
-		) -> Result<[vk::DescriptorSet; $size], DescriptorSetAllocationError> {
+		) -> Result<[vk::DescriptorSet; $size], DescriptorSetError> {
 			let lock = self.pool.lock().expect("vutex poisoned");
 
 			#[cfg(feature = "runtime_implicit_validations")]
 			{
 				if $size == 0 {
-					return Err(DescriptorSetAllocationError::LayoutsEmpty)
+					return Err(DescriptorSetError::LayoutsEmpty)
 				}
 
 				if !$crate::util::validations::validate_all_match(
@@ -53,7 +53,7 @@ macro_rules! impl_allocate_command_buffers_array {
 						$layouts_name.iter().map(|l| l.device())
 					)
 				) {
-					return Err(DescriptorSetAllocationError::DescriptorPoolLayoutsDeviceMismatch)
+					return Err(DescriptorSetError::DescriptorPoolLayoutsDeviceMismatch)
 				}
 			}
 
@@ -89,7 +89,7 @@ macro_rules! impl_allocate_command_buffers_array {
 
 				match err_code {
 					vk::Result::SUCCESS => Ok(sets.assume_init()),
-					_ => Err(DescriptorSetAllocationError::from(err_code))
+					_ => Err(DescriptorSetError::from(err_code))
 				}
 			}
 		}
@@ -187,10 +187,10 @@ impl DescriptorPool {
 	/// ### Panic
 	///
 	/// This function will panic if the pool `Vutex` is poisoned.`
-	pub fn allocate_descriptor_sets(
+	pub fn allocate_descriptor_sets<'a>(
 		&self,
-		layouts: impl Iterator<Item = Vrc<DescriptorSetLayout>>
-	) -> Result<Vec<vk::DescriptorSet>, DescriptorSetAllocationError> {
+		layouts: impl Iterator<Item = &'a DescriptorSetLayout>
+	) -> Result<Vec<vk::DescriptorSet>, DescriptorSetError> {
 		let lock = self.pool.lock().expect("vutex poisoned");
 
 		#[cfg(feature = "runtime_implicit_validations")]
@@ -198,19 +198,19 @@ impl DescriptorPool {
 			// This collect dance is unfortunate
 			let collected: Vec<_> = layouts.collect();
 			if collected.len() == 0 {
-				return Err(DescriptorSetAllocationError::LayoutsEmpty)
+				return Err(DescriptorSetError::LayoutsEmpty)
 			}
 
 			if !crate::util::validations::validate_all_match(
 				std::iter::once(&self.device).chain(collected.iter().map(|l| l.device()))
 			) {
-				return Err(DescriptorSetAllocationError::DescriptorPoolLayoutsDeviceMismatch)
+				return Err(DescriptorSetError::DescriptorPoolLayoutsDeviceMismatch)
 			}
 
 			collected.into_iter()
 		};
 
-		let layouts: Vec<_> = layouts.map(|l| *l.deref().deref()).collect();
+		let layouts: Vec<_> = layouts.map(|l| *l.deref()).collect();
 
 		let alloc_info = vk::DescriptorSetAllocateInfo::builder()
 			.descriptor_pool(*lock)
@@ -267,10 +267,14 @@ impl DescriptorPool {
 			.reset_descriptor_pool(*lock, vk::DescriptorPoolResetFlags::empty())
 			.unwrap();
 	}
+
+	pub const fn device(&self) -> &Vrc<Device> {
+		&self.device
+	}
 }
 impl_common_handle_traits! {
 	impl Deref, PartialEq, Eq, Hash for DescriptorPool {
-		type Target = Vutex<ash::vk::DescriptorPool> { pool }
+		type Target = Vutex<vk::DescriptorPool> { pool }
 
 		to_handle { .lock().expect("vutex poisoned").deref() }
 	}

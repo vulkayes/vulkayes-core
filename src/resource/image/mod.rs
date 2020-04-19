@@ -10,19 +10,20 @@ pub mod image;
 pub mod params;
 pub mod view;
 
-/// Marker trait for `Deref<Target = Image>` implementing objects.
-///
-/// This trait is used for the dynamic dispatch in the [`MixedDynImage`](enum.MixedDynImage.html) enum.
-pub trait ImageTrait: Deref<Target = Image> + std::fmt::Debug {}
-impl<T> ImageTrait for T where T: Deref<Target = Image> + std::fmt::Debug {}
+// TODO: Is this needed?
+// /// Marker trait for `Deref<Target = Image>` implementing objects.
+// ///
+// /// This trait is used for the dynamic dispatch in the [`MixedDynImage`](enum.MixedDynImage.html) enum.
+// pub trait ImageTrait: Deref<Target = Image> + std::fmt::Debug {}
+// impl<T> ImageTrait for T where T: Deref<Target = Image> + std::fmt::Debug {}
 
 deref_enum_dispatch! {
 	/// Mixed-dispatch image enum.
 	#[derive(Debug, Clone)]
 	pub enum MixedDynImage {
 		Image(Vrc<Image>),
-		SwapchainImage(Vrc<SwapchainImage>),
-		Dyn(Vrc<dyn ImageTrait>)
+		SwapchainImage(Vrc<SwapchainImage>)
+		// Dyn(Vrc<dyn ImageTrait>)
 	}: Deref<Target = Image>
 }
 impl MixedDynImage {

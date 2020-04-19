@@ -48,6 +48,12 @@ impl CommandBuffer {
 	///
 	/// `command_buffer` must be valid handle allocated from `pool`.
 	pub unsafe fn from_existing(pool: Vrc<CommandPool>, command_buffer: vk::CommandBuffer) -> Self {
+		log_trace_common!(
+			"Creating CommandBuffer from existing handle:",
+			pool,
+			crate::util::fmt::format_handle(command_buffer)
+		);
+
 		Self {
 			pool,
 			command_buffer: Vutex::new(command_buffer)
@@ -60,7 +66,7 @@ impl CommandBuffer {
 }
 impl_common_handle_traits! {
 	impl Deref, PartialEq, Eq, Hash for CommandBuffer {
-		type Target = Vutex<ash::vk::CommandBuffer> { command_buffer }
+		type Target = Vutex<vk::CommandBuffer> { command_buffer }
 
 		to_handle { .lock().expect("vutex poisoned").deref() }
 	}

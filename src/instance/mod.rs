@@ -9,7 +9,8 @@ use std::{
 
 use ash::{
 	extensions::ext::DebugReport,
-	version::{EntryV1_0, InstanceV1_0}
+	version::{EntryV1_0, InstanceV1_0},
+	vk
 };
 
 use crate::{
@@ -36,7 +37,7 @@ pub struct ApplicationInfo<'a> {
 
 struct InstanceDebug {
 	loader: DebugReport,
-	callback: ash::vk::DebugReportCallbackEXT,
+	callback: vk::DebugReportCallbackEXT,
 	host_memory_allocator: HostMemoryAllocator
 }
 impl Debug for InstanceDebug {
@@ -70,7 +71,7 @@ impl Instance {
 		let application_name_c = CString::new(application_info.application_name)?;
 		let engine_name_c = CString::new(application_info.engine_name)?;
 
-		let app_info = ash::vk::ApplicationInfo::builder()
+		let app_info = vk::ApplicationInfo::builder()
 			.application_name(application_name_c.as_ref())
 			.engine_name(engine_name_c.as_ref())
 			.application_version(application_info.application_version.0)
@@ -96,7 +97,7 @@ impl Instance {
 			cstr_layers,
 			cstr_extensions
 		);
-		let create_info = ash::vk::InstanceCreateInfo::builder()
+		let create_info = vk::InstanceCreateInfo::builder()
 			.application_info(&app_info)
 			.enabled_layer_names(ptr_layers.as_slice())
 			.enabled_extension_names(ptr_extensions.as_slice());

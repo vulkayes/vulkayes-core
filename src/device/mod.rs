@@ -4,7 +4,7 @@ use std::{ffi::CString, fmt::Debug, ops::Deref, os::raw::c_char};
 
 use ash::{
 	version::{DeviceV1_0, InstanceV1_0},
-	vk::{DeviceCreateInfo, DeviceQueueCreateInfo}
+	vk::{self, DeviceCreateInfo, DeviceQueueCreateInfo}
 };
 
 use crate::{
@@ -16,8 +16,6 @@ use crate::{
 };
 
 pub mod error;
-#[cfg(test)]
-pub mod test;
 
 #[derive(Debug, Clone, Copy)]
 pub struct QueueCreateInfo<P: AsRef<[f32]>> {
@@ -45,7 +43,7 @@ impl Device {
 		queues: impl AsRef<[QueueCreateInfo<P>]>,
 		layers: impl IntoIterator<Item = &'a str>,
 		extensions: impl IntoIterator<Item = &'a str>,
-		features: ash::vk::PhysicalDeviceFeatures,
+		features: vk::PhysicalDeviceFeatures,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<DeviceData, error::DeviceError> {
 		let queues = queues.as_ref();
@@ -94,7 +92,7 @@ impl Device {
 			cstr_extensions,
 			features
 		);
-		let create_info = ash::vk::DeviceCreateInfo::builder()
+		let create_info = vk::DeviceCreateInfo::builder()
 			.queue_create_infos(&queue_create_infos)
 			.enabled_layer_names(ptr_layers.as_slice())
 			.enabled_extension_names(ptr_extensions.as_slice())

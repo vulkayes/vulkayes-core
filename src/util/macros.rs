@@ -11,13 +11,14 @@
 ///
 /// Usage:
 /// ```
+/// # #[macro_use] extern crate vulkayes_core;
 /// unsafe_enum_variants! {
 /// 	#[derive(Debug)]
 /// 	enum UnsafeEnumInner ['a] {
 /// 		/// Private
-/// 		Foo => { &0 },
+/// 		Foo => { &0u32 },
 /// 		/// Public
-/// 		pub Bar => { &1 },
+/// 		pub Bar => { &1u32 },
 /// 		/// Unsafe and generic
 /// 		{unsafe} pub Qux { num: &'a u32 } => { num }
 /// 	} as pub UnsafeEnum ['a] impl Into<&'a u32>
@@ -54,10 +55,10 @@
 /// 	}
 /// }
 /// impl<'a> Into<&'a u32> for UnsafeEnum<'a> {
-/// 	fn into(self) -> u32 {
+/// 	fn into(self) -> &'a u32 {
 /// 		match self.0 {
-/// 			UnsafeEnumInner::Foo => { &0 },
-/// 			UnsafeEnumInner::Bar => { &1 },
+/// 			UnsafeEnumInner::Foo => { &0u32 },
+/// 			UnsafeEnumInner::Bar => { &1u32 },
 /// 			UnsafeEnumInner::Qux { num } => { num }
 /// 		}
 /// 	}
@@ -135,6 +136,9 @@ macro_rules! unsafe_enum_variants {
 ///
 /// Usage:
 /// ```
+/// # #[macro_use] extern crate vulkayes_core;
+/// trait Trait: std::error::Error + 'static {}
+///
 /// vk_result_error! {
 /// 	#[derive(Debug)]
 /// 	pub enum ImageError [A] where [A: Trait] {
@@ -151,6 +155,9 @@ macro_rules! unsafe_enum_variants {
 ///
 /// expands to:
 /// ```
+/// # trait Trait: std::error::Error + 'static {}
+/// // ...
+///
 /// #[allow(unused_imports)]
 /// use thiserror::*;
 ///
@@ -223,7 +230,20 @@ macro_rules! vk_result_error {
 ///
 /// Since not all types deref directly into a handle, it is possible to provide a code fragment to get handle from deref target:
 /// ```
-/// impl_cmmon_handle_traits! {
+/// # #[macro_use] extern crate vulkayes_core;
+/// # use std::fmt::Debug;
+/// # struct Foo;
+/// # impl Foo {
+/// # 	fn handle(&self) -> u32 {
+/// # 		1u32
+/// # 	}
+/// # }
+/// # type DerefTarget = Foo;
+/// struct MyType<A> {
+/// 	field_on_self: DerefTarget,
+/// 	other_field: A
+/// }
+/// impl_common_handle_traits! {
 /// 	impl [A: Debug] Deref, PartialEq, Eq, Hash for MyType<A> {
 /// 		type Target = DerefTarget { field_on_self } // Derefs to `DerefTarget` by invoking `&self.field_on_self`
 ///
@@ -234,7 +254,21 @@ macro_rules! vk_result_error {
 ///
 /// expands to:
 /// ```
-/// impl<A: Debug> Deref for MyType<A> {
+/// # use std::fmt::Debug;
+/// # struct Foo;
+/// # impl Foo {
+/// # 	fn handle(&self) -> u32 {
+/// # 		1u32
+/// # 	}
+/// # }
+/// # type DerefTarget = Foo;
+/// # struct MyType<A> {
+/// # 	field_on_self: DerefTarget,
+/// # 	other_field: A
+/// # }
+/// // ...
+///
+/// impl<A: Debug> std::ops::Deref for MyType<A> {
 /// 	type Target = DerefTarget;
 ///
 /// 	fn deref(&self) -> &Self::Target {
@@ -247,7 +281,7 @@ macro_rules! vk_result_error {
 /// 	}
 /// }
 /// impl<A: Debug> Eq for MyType<A> {}
-/// impl<A: Debug> Hash for MyType<A> {
+/// impl<A: Debug> std::hash::Hash for MyType<A> {
 /// 	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
 /// 		self.field_on_self.handle().hash(state)
 /// 	}
@@ -288,6 +322,7 @@ macro_rules! impl_common_handle_traits {
 /// Creates a `repr(C)` struct and a companion offsets struct which represents byte offsets of the fields.
 ///
 /// ```
+/// # #[macro_use] extern crate vulkayes_core;
 /// offsetable_struct! {
 /// 	#[derive(Debug)]
 /// 	pub struct Name {
@@ -389,10 +424,17 @@ macro_rules! offsetable_struct {
 ///
 /// Usage:
 /// ```
+/// # #[macro_use] extern crate vulkayes_core;
+/// # use vulkayes_core::util::sync::{Vutex, VutexGuard};
+/// # #[derive(Debug)]
+/// # struct Bar;
+/// let foo = [Vutex::new(0), Vutex::new(1)];
+/// let bar: [Vutex<Bar>; 0] = [];
 /// lock_and_deref_closure!(
-/// 	let foo[2]{.lock().unwrap()} => |foo_locks, foo_derefs|
-/// 	let bar[0]{.lock().unwrap()} => |bar_locks: [LockGuard<Bar>; 0], bar_derefs|
+/// 	let [foo; 2]{.lock().unwrap()} => |foo_locks, foo_derefs|
+/// 	let [bar; 0]{.lock().unwrap()} => |bar_locks: [VutexGuard<Bar>; 0], bar_derefs|
 /// 	{
+/// # 		let bar_derefs: [&Bar; 0] = bar_derefs;
 /// 		println!("{:?} {:?}", foo_derefs, bar_derefs);
 /// 	}
 /// )
@@ -400,6 +442,11 @@ macro_rules! offsetable_struct {
 ///
 /// expands to:
 /// ```
+/// # use vulkayes_core::util::sync::{Vutex, VutexGuard};
+/// # #[derive(Debug)]
+/// # struct Bar;
+/// # let foo = [Vutex::new(0), Vutex::new(1)];
+/// # let bar: [Vutex<Bar>; 0] = [];
 /// {
 /// 	let (foo_locks, foo_derefs) = {
 /// 		let locks = [foo[0].lock().unwrap(), foo[1].lock().unwrap()];
@@ -408,13 +455,16 @@ macro_rules! offsetable_struct {
 /// 		(locks, derefs)
 /// 	};
 /// 	let (bar_locks, bar_derefs) = {
-/// 		let locks = [];
+/// 		let locks: [VutexGuard<Bar>; 0] = [];
 /// 		let derefs = [];
 ///
 /// 		(locks, derefs)
 /// 	};
 ///
-/// 	let closure = |foo_locks: [_; 2], foo_derefs: [_; 2], bar_locks: [_; 0], bar_derefs: [_; 0]| { println!("{:?} {:?}", foo_derefs, bar_derefs); };
+/// 	let closure = |foo_locks: [_; 2], foo_derefs: [_; 2], bar_locks: [_; 0], bar_derefs: [_; 0]| {
+/// # 		let bar_derefs: [&Bar; 0] = bar_derefs;
+/// 		println!("{:?} {:?}", foo_derefs, bar_derefs);
+/// 	};
 /// 	closure(foo_locks, foo_derefs, bar_locks, bar_derefs)
 /// }
 /// ```
@@ -422,7 +472,7 @@ macro_rules! offsetable_struct {
 macro_rules! lock_and_deref_closure {
 	(
 		$(
-			let $ex: ident[$count: literal] {$($lock_code: tt)+} => |$locks: ident $(: $l_type: ty)?, $derefs: ident|
+			let [$ex: ident; $count: literal] {$($lock_code: tt)+} => |$locks: ident $(: $l_type: ty)?, $derefs: ident|
 		)+
 		{ $($closure_body: tt)* }
 	) => {
@@ -450,29 +500,75 @@ macro_rules! lock_and_deref_closure {
 ///
 /// Usage:
 /// ```
-/// // Assuming `Trait: Deref<Target = Foo>`
+/// # #[macro_use] extern crate vulkayes_core;
+/// use std::{ops::Deref, rc::Rc};
+/// pub struct Baz;
+///
+/// #[derive(Debug, Clone)]
+/// pub struct Foo;
+/// impl Deref for Foo {
+/// 	type Target = Baz;
+/// #
+/// # 	fn deref(&self) -> &Self::Target {
+/// # 		&Baz
+/// # 	}
+/// }
+/// #[derive(Debug, Clone)]
+/// pub struct Bar;
+/// impl Deref for Bar {
+/// 	type Target = Baz;
+/// #
+/// # 	fn deref(&self) -> &Self::Target {
+/// # 		&Baz
+/// # 	}
+/// }
+/// trait Trait: Deref<Target = Baz> + std::fmt::Debug {}
+///
 /// deref_enum_dispatch! {
 /// 	/// Mixed-dispatch image enum.
 /// 	#[derive(Debug, Clone)]
 /// 	pub enum MixedDynTrait {
 /// 		Foo(Foo),
 /// 		Bar(Bar),
-/// 		Dyn(Box<dyn Trait>)
-/// 	}: Deref<Target = Foo>
+/// 		Dyn(Rc<dyn Trait>)
+/// 	}: Deref<Target = Baz>
 /// }
 /// ```
 ///
 /// expands to:
 /// ```
+/// # use std::{ops::Deref, rc::Rc};
+/// # pub struct Baz;
+/// # #[derive(Debug, Clone)]
+/// # pub struct Foo;
+/// # impl Deref for Foo {
+/// # 	type Target = Baz;
+/// #
+/// # 	fn deref(&self) -> &Self::Target {
+/// # 		&Baz
+/// # 	}
+/// # }
+/// # #[derive(Debug, Clone)]
+/// # pub struct Bar;
+/// # impl Deref for Bar {
+/// # 	type Target = Baz;
+/// #
+/// # 	fn deref(&self) -> &Self::Target {
+/// # 		&Baz
+/// # 	}
+/// # }
+/// # trait Trait: Deref<Target = Baz> + std::fmt::Debug {}
+/// // ...
+///
 /// /// Mixed-dispatch image enum.
 /// #[derive(Debug, Clone)]
 /// pub enum MixedDynTrait {
 /// 	Foo(Foo),
 /// 	Bar(Bar),
-/// 	Dyn(Box<dyn Trait>)
+/// 	Dyn(Rc<dyn Trait>)
 /// }
 /// impl Deref for MixedDynTrait {
-/// 	type Target = Foo;
+/// 	type Target = Baz;
 ///
 /// 	fn deref(&self) -> &Self::Target {
 /// 		match self {
@@ -492,8 +588,8 @@ macro_rules! lock_and_deref_closure {
 /// 		MixedDynTrait::Bar(value)
 /// 	}
 /// }
-/// impl From<Box<dyn Trait>> for MixedDynTrait {
-/// 	fn from(value: Box<dyn Trait>) -> Self {
+/// impl From<Rc<dyn Trait>> for MixedDynTrait {
+/// 	fn from(value: Rc<dyn Trait>) -> Self {
 /// 		MixedDynTrait::Dyn(value)
 /// 	}
 /// }

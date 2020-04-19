@@ -6,9 +6,11 @@ pub mod macros;
 #[macro_use]
 pub mod fmt;
 
+#[macro_use]
+pub mod sync;
+
 pub mod hash;
 pub mod string;
-pub mod sync;
 pub mod validations;
 
 #[derive(Debug, Copy, Clone)]
@@ -39,11 +41,12 @@ impl Default for WaitTimeout {
 /// `align_up(base, align)` returns the smallest greater integer than `base` aligned to `align`.
 ///
 /// More formally:
-/// ```
+/// ```text
 /// f_d(x) =
 ///     x, if x mod d = 0
 ///     x + d - x mod d, otherwise
 /// ```
+///
 /// simplifies to `x - 1 + d - (x - 1) mod d`
 /// assuming `d = 2^N`, can also be written in code like: `(x - 1 + d) & !(d - 1)`
 /// where `x = base` and `d = align`

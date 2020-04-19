@@ -23,8 +23,6 @@ use ash::{
 use crate::{instance::Instance, Vrc};
 
 pub mod enumerate;
-#[cfg(test)]
-pub mod test;
 
 #[derive(Clone)]
 pub struct PhysicalDevice {

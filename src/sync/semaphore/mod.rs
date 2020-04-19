@@ -84,7 +84,7 @@ impl Semaphore {
 }
 impl_common_handle_traits! {
 	impl Deref, PartialEq, Eq, Hash for Semaphore {
-		type Target = Vutex<ash::vk::Semaphore> { semaphore }
+		type Target = Vutex<vk::Semaphore> { semaphore }
 
 		to_handle { .lock().expect("vutex poisoned").deref() }
 	}

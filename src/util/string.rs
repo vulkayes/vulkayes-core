@@ -14,7 +14,7 @@ pub struct VkSmallString {
 }
 impl VkSmallString {
 	// TODO: This should be the max of { MAX_PHYSICAL_DEVICE_NAME_SIZE, MAX_EXTENSION_NAME_SIZE, MAX_DESCRIPTION_SIZE, MAX_DRIVER_NAME_SIZE_KHR, MAX_DRIVER_INFO_SIZE_KHR }
-	// Right now this seems to be the correct value
+	// 	Right now this seems to be the correct value
 	pub const MAX_STRING_SIZE: usize = 256;
 
 	/// Creates a new `VkSmallString` from an existing `c_char` buffer.

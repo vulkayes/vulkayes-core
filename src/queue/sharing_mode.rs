@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use ash::vk;
+
 use crate::queue::Queue;
 
 #[derive(Debug, Copy, Clone)]
@@ -31,7 +33,7 @@ impl<A: AsRef<[u32]>> SharingMode<A> {
 		Ok(SharingMode(queues))
 	}
 
-	pub fn sharing_mode(&self) -> ash::vk::SharingMode {
+	pub fn sharing_mode(&self) -> vk::SharingMode {
 		debug_assert_ne!(self.0.as_ref().len(), 0);
 
 		if self.0.as_ref().len() == 1 {

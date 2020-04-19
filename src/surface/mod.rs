@@ -24,7 +24,7 @@ pub struct Surface {
 	host_memory_allocator: HostMemoryAllocator
 }
 impl Surface {
-	/// Creates a new surface from an existing `ash::vk::SurfaceKHR`.
+	/// Creates a new surface from an existing `vk::SurfaceKHR`.
 	///
 	/// ### Safety
 	///
@@ -32,14 +32,14 @@ impl Surface {
 	/// `surface` must be a valid surface handle for the whole lifetime of this object.
 	pub unsafe fn from_existing(
 		instance: Vrc<Instance>,
-		surface: ash::vk::SurfaceKHR,
+		surface: vk::SurfaceKHR,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Self {
 		let loader =
 			ash::extensions::khr::Surface::new(instance.entry().deref(), instance.deref().deref());
 
 		log_trace_common!(
-			"Creating surface:",
+			"Creating surface from existing handle:",
 			instance,
 			surface,
 			host_memory_allocator

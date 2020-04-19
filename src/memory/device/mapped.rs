@@ -9,19 +9,13 @@ use ash::{version::DeviceV1_0, vk};
 
 use crate::{device::Device, Vrc};
 
+use super::{MapMemoryImpl, UnmapMemoryImpl};
+
 pub(super) struct DeviceMemoryMapping {
 	pub ptr: Option<NonNull<[u8]>>,
 
-	pub map_impl: Box<
-		dyn FnMut(
-			&Vrc<Device>,
-			vk::DeviceMemory,
-			vk::DeviceSize,
-			NonZeroU64
-		) -> Result<NonNull<[u8]>, MapError>
-	>,
-	pub unmap_impl:
-		Box<dyn FnMut(&Vrc<Device>, vk::DeviceMemory, vk::DeviceSize, NonZeroU64, NonNull<[u8]>)>
+	pub map_impl: MapMemoryImpl,
+	pub unmap_impl: UnmapMemoryImpl
 }
 impl DeviceMemoryMapping {
 	pub fn map(
@@ -57,6 +51,9 @@ impl DeviceMemoryMapping {
 		}
 	}
 }
+// Safe because a mutable reference is required to access any field of this object
+unsafe impl Send for DeviceMemoryMapping {}
+unsafe impl Sync for DeviceMemoryMapping {}
 impl fmt::Debug for DeviceMemoryMapping {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		f.debug_struct("DeviceMemoryMapping")

@@ -14,6 +14,24 @@ mod mapped;
 pub mod naive;
 pub mod never;
 
+type DropAllocImpl =
+	Box<VSendSync![dyn FnOnce(&Vrc<Device>, vk::DeviceMemory, vk::DeviceSize, NonZeroU64)]>;
+type MapMemoryImpl = Box<
+	VSendSync![
+		dyn FnMut(
+			&Vrc<Device>,
+			vk::DeviceMemory,
+			vk::DeviceSize,
+			NonZeroU64
+		) -> Result<NonNull<[u8]>, MapError>
+	]
+>;
+type UnmapMemoryImpl = Box<
+	VSendSync![
+		dyn FnMut(&Vrc<Device>, vk::DeviceMemory, vk::DeviceSize, NonZeroU64, NonNull<[u8]>)
+	]
+>;
+
 /// Struct that represents a device memory allocation.
 pub struct DeviceMemoryAllocation {
 	device: Vrc<Device>,
@@ -26,7 +44,7 @@ pub struct DeviceMemoryAllocation {
 
 	/// This is a drop function that will be called when this memory allocation is dropped.
 	/// Wrapped in `Option` because it is moved out in `Drop`.
-	drop_impl: Option<Box<dyn FnOnce(&Vrc<Device>, vk::DeviceMemory, vk::DeviceSize, NonZeroU64)>>
+	drop_impl: Option<DropAllocImpl>
 }
 impl DeviceMemoryAllocation {
 	/// Creates a new memory allocation from parameters.
@@ -53,19 +71,10 @@ impl DeviceMemoryAllocation {
 		bind_offset: vk::DeviceSize,
 		size: NonZeroU64,
 
-		map_impl: Box<
-			dyn FnMut(
-				&Vrc<Device>,
-				vk::DeviceMemory,
-				vk::DeviceSize,
-				NonZeroU64
-			) -> Result<NonNull<[u8]>, MapError>
-		>,
-		unmap_impl: Box<
-			dyn FnMut(&Vrc<Device>, vk::DeviceMemory, vk::DeviceSize, NonZeroU64, NonNull<[u8]>)
-		>,
+		map_impl: MapMemoryImpl,
+		unmap_impl: UnmapMemoryImpl,
 
-		drop_impl: Box<dyn FnOnce(&Vrc<Device>, vk::DeviceMemory, vk::DeviceSize, NonZeroU64)>
+		drop_impl: DropAllocImpl
 	) -> Self {
 		DeviceMemoryAllocation {
 			device,

@@ -5,6 +5,7 @@ use std::{
 };
 
 use ash::vk::{
+	self,
 	Bool32,
 	DebugReportCallbackCreateInfoEXT,
 	DebugReportFlagsEXT,
@@ -83,5 +84,5 @@ unsafe extern "system" fn default_debug_callback(
 		) // This should be unreachable
 	}
 
-	ash::vk::FALSE
+	vk::FALSE
 }

@@ -2,7 +2,8 @@
 ///
 /// Usage:
 /// ```
-/// const_queue_submit! {
+/// # #[macro_use] extern crate vulkayes_core;
+/// const_queue_submit!(
 /// 	pub fn submit_one(
 /// 		&queue,
 /// 		waits: [&Semaphore; 1],
@@ -11,7 +12,7 @@
 /// 		signals: [&Semaphore; 1],
 /// 		fence: Option<&Fence>
 /// 	) -> Result<(), QueueSubmitError>;
-/// }
+/// );
 /// ```
 ///
 /// this expands to something like the [Queue::submit_one](queue/struct.Queue.html#method.submit_one)
@@ -74,9 +75,9 @@ macro_rules! const_queue_submit {
 			}
 
 			$crate::lock_and_deref_closure!(
-				let $waits[$count_waits]{.lock().expect("vutex poisoned")} => |$waits: [VutexGuard<vk::Semaphore>; $count_waits], w|
-				let $buffers[$count_buffers]{.lock().expect("vutex poisoned")} => |$buffers: [VutexGuard<vk::CommandBuffer>; $count_buffers], b|
-				let $signals[$count_signals]{.lock().expect("vutex poisoned")} => |$signals: [VutexGuard<vk::Semaphore>; $count_signals], s|
+				let [$waits; $count_waits]{.lock().expect("vutex poisoned")} => |$waits: [VutexGuard<vk::Semaphore>; $count_waits], w|
+				let [$buffers; $count_buffers]{.lock().expect("vutex poisoned")} => |$buffers: [VutexGuard<vk::CommandBuffer>; $count_buffers], b|
+				let [$signals; $count_signals]{.lock().expect("vutex poisoned")} => |$signals: [VutexGuard<vk::Semaphore>; $count_signals], s|
 				{
 					let submit_info = vk::SubmitInfo::builder()
 						.wait_semaphores(&w)
@@ -102,6 +103,7 @@ macro_rules! const_queue_submit {
 ///
 /// Usage:
 /// ```
+/// # #[macro_use] extern crate vulkayes_core;
 /// const_queue_present!(
 /// 	pub fn present_one(
 /// 		&queue,
@@ -109,7 +111,7 @@ macro_rules! const_queue_submit {
 /// 		images: [&SwapchainImage; 1],
 /// 		result_for_all: bool
 /// 	) -> QueuePresentMultipleResult<[QueuePresentResult; _]>;
-/// )
+/// );
 /// ```
 ///
 /// this expands to something like the [Queue::present_one](queue/struct.Queue.html#method.present_one)
@@ -165,8 +167,8 @@ macro_rules! const_queue_present {
 			);
 
 			$crate::lock_and_deref_closure!(
-				let $waits[$count_waits]{.lock().expect("vutex poisoned")} => |$waits: [VutexGuard<vk::Semaphore>; $count_waits], w|
-				let $images[$count_images]{.swapchain().lock().expect("vutex poisoned")} => |$images: [VutexGuard<vk::SwapchainKHR>; $count_images], s|
+				let [$waits; $count_waits]{.lock().expect("vutex poisoned")} => |$waits: [VutexGuard<vk::Semaphore>; $count_waits], w|
+				let [$images; $count_images]{.swapchain().lock().expect("vutex poisoned")} => |$images: [VutexGuard<vk::SwapchainKHR>; $count_images], s|
 				{
 					let present_info = vk::PresentInfoKHR::builder()
 						.wait_semaphores(&w)

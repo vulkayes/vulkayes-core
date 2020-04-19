@@ -236,7 +236,7 @@ impl CommandPool {
 }
 impl_common_handle_traits! {
 	impl Deref, PartialEq, Eq, Hash for CommandPool {
-		type Target = Vutex<ash::vk::CommandPool> { pool }
+		type Target = Vutex<vk::CommandPool> { pool }
 
 		to_handle { .lock().expect("vutex poisoned").deref() }
 	}
