@@ -1,8 +1,9 @@
 pub use crate::{
 	command::{buffer::CommandBuffer, pool::CommandPool},
-	descriptor::{layout::DescriptorSetLayout, pool::DescriptorPool},
+	descriptor::{layout::DescriptorSetLayout, pool::DescriptorPool, sampler::Sampler},
 	device::Device,
 	instance::Instance,
+	memory::host::HostMemoryAllocator,
 	physical_device::PhysicalDevice,
 	pipeline::layout::PipelineLayout,
 	queue::Queue,
@@ -20,5 +21,6 @@ pub use crate::{
 		fence::Fence,
 		semaphore::{BinarySemaphore, Semaphore}
 	},
-	Vrc
+	util::sync::{Vrc, Vutex},
+	util::handle::{HasHandle, HasSynchronizedHandle, SafeHandle}
 };

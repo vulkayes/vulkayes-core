@@ -18,7 +18,7 @@ use crate::{
 	memory::host::HostMemoryAllocator,
 	physical_device::PhysicalDevice,
 	util::fmt::VkVersion,
-	Vrc
+	prelude::Vrc
 };
 
 pub mod debug;
@@ -173,8 +173,8 @@ impl Instance {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for Instance {
-		type Target = ash::Instance { instance }
+	impl Borrow<ash::Instance>, Deref, Eq, Hash, Ord for Instance {
+		target = { instance }
 
 		to_handle { .handle() }
 	}

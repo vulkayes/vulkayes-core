@@ -90,6 +90,7 @@ macro_rules! unsafe_enum_variants {
 			fn into(self) -> $into_type {
 				match self.0 {
 					$(
+						$(#[$variant_attribute])*
 						$inner_name::$variant $({ $($variant_name),+ })? => { $($into_code)+ }
 					),+
 				}
@@ -111,6 +112,7 @@ macro_rules! unsafe_enum_variants {
 		$(#[$attribute])*
 		enum $inner_name $(< $($gen_def_tt)+ >)? {
 			$(
+				$(#[$variant_attribute])*
 				$variant $({
 					 $($variant_name: $variant_type),+
 				})?
@@ -124,6 +126,7 @@ macro_rules! unsafe_enum_variants {
 				#[allow(non_snake_case)]
 				$v const $($safety)? fn $variant($( $( $variant_name: $variant_type ),+ )?) -> Self {
 					$name(
+						$(#[$variant_attribute])*
 						$inner_name::$variant $({ $($variant_name),+ })?
 					)
 				}
@@ -226,55 +229,96 @@ macro_rules! vk_result_error {
 	}
 }
 
-/// Implements `Deref`, `PartialEq`, `Eq` and `Hash` for a type based on its `Deref` implementation.
+/// Implements `Borrow`, `Deref`, `PartialEq`, `Eq`, `Hash`, `PartialOrd` and `Ord` for a type based on its `Borrow` implementation.
 ///
-/// Since not all types deref directly into a handle, it is possible to provide a code fragment to get handle from deref target:
+/// This macro is closely tied to the `HasHandle` and `HasSynchronizedHandle` traits.
+///
+/// There are three variants of this macro:
 /// ```
 /// # #[macro_use] extern crate vulkayes_core;
 /// # use std::fmt::Debug;
+/// # use vulkayes_core::prelude::Vutex;
+/// # use vulkayes_core::ash::vk;
+/// #
 /// # struct Foo;
 /// # impl Foo {
-/// # 	fn handle(&self) -> u32 {
-/// # 		1u32
+/// # 	fn handle(&self) -> vk::Image {
+/// # 		unimplemented!()
 /// # 	}
 /// # }
-/// # type DerefTarget = Foo;
+/// # type Target = Foo;
+///
 /// struct MyType<A> {
-/// 	field_on_self: DerefTarget,
+/// 	field_on_self: Target,
 /// 	other_field: A
 /// }
-/// impl_common_handle_traits! {
-/// 	impl [A: Debug] Deref, PartialEq, Eq, Hash for MyType<A> {
-/// 		type Target = DerefTarget { field_on_self } // Derefs to `DerefTarget` by invoking `&self.field_on_self`
 ///
-/// 		to_handle { .handle() } // Gets a handle from `DerefTarget` by invoking `self.field_on_self.handle()`
+/// // Base variant
+/// impl_common_handle_traits! {
+/// 	impl [A: Debug] Borrow<Target>, Deref, Eq, Hash, Ord for MyType<A> {
+/// 		target = { field_on_self } // Borrows and Derefs to `Target` by invoking `&self.field_on_self`
+///
+/// 		to_handle { .handle() } // Gets a handle from `Target` by invoking `self.field_on_self.handle()`
 /// 	}
 /// }
+///
+/// // HasHandle variant
+/// // struct MyType<A> {
+/// // 	field_on_self: vk::Image,
+/// // 	other_field: A
+/// // }
+/// // impl_common_handle_traits! {
+/// // 	impl [A: Debug] HasHandle<Target>, Borrow, Deref, Eq, Hash, Ord for MyType<A> {
+/// // 		target = { field_on_self }
+/// // 	}
+/// // }
+///
+/// // HasSynchronizedHandle variant
+/// // struct MyType<A> {
+/// // 	field_on_self: Vutex<vk::Image>,
+/// // 	other_field: A
+/// // }
+/// // impl_common_handle_traits! {
+/// // 	impl [A: Debug] HasSynchronizedHandle<Target>, Borrow, Deref, Eq, Hash, Ord for MyType<A> {
+/// // 		target = { field_on_self }
+/// // 	}
+/// // }
 /// ```
 ///
 /// expands to:
 /// ```
 /// # use std::fmt::Debug;
+/// # use vulkayes_core::prelude::Vutex;
+/// # use vulkayes_core::ash::vk;
+/// #
 /// # struct Foo;
 /// # impl Foo {
-/// # 	fn handle(&self) -> u32 {
-/// # 		1u32
+/// # 	fn handle(&self) -> vk::Image {
+/// # 		unimplemented!()
 /// # 	}
 /// # }
-/// # type DerefTarget = Foo;
+/// # type Target = Foo;
+/// #
 /// # struct MyType<A> {
-/// # 	field_on_self: DerefTarget,
+/// # 	field_on_self: Target,
 /// # 	other_field: A
 /// # }
 /// // ...
 ///
+/// // Base variant
 /// impl<A: Debug> std::ops::Deref for MyType<A> {
-/// 	type Target = DerefTarget;
+/// 	type Target = Target;
 ///
 /// 	fn deref(&self) -> &Self::Target {
 /// 		&self.field_on_self
 /// 	}
 /// }
+/// impl<A: Debug> std::borrow::Borrow<Target> for MyType<A> {
+/// 	fn borrow(&self) -> &Target {
+/// 		&self.field_on_self
+/// 	}
+/// }
+///
 /// impl<A: Debug> PartialEq for MyType<A> {
 /// 	fn eq(&self, other: &Self) -> bool {
 /// 		self.field_on_self.handle() == other.field_on_self.handle()
@@ -286,12 +330,57 @@ macro_rules! vk_result_error {
 /// 		self.field_on_self.handle().hash(state)
 /// 	}
 /// }
+///
+/// impl<A: Debug> std::cmp::PartialOrd for MyType<A> {
+/// 	fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+/// 		self.field_on_self.handle().partial_cmp(&other.field_on_self.handle())
+/// 	}
+/// }
+/// impl<A: Debug> std::cmp::Ord for MyType<A> {
+/// 	fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+/// 		self.field_on_self.handle().cmp(&other.field_on_self.handle())
+/// 	}
+/// }
+///
+/// // HasHandle variant adds to the previous implementations also:
+/// // impl<A: Debug> vulkayes_core::util::handle::HasHandle<vk::Image> for MyType<A> {}
+///
+/// // While HasSynchronizedHandle adds:
+/// // impl<A: Debug> vulkayes_core::util::handle::HasSynchronizedHandle<vk::Image> for MyType<A> {}
 /// ```
 #[macro_export]
 macro_rules! impl_common_handle_traits {
 	(
-		impl $([ $($impl_gen: tt)+ ])? Deref, PartialEq, Eq, Hash for $tp: ty {
-			type Target = $target: ty { $($target_code: tt)+ }
+		impl $([ $($impl_gen: tt)+ ])? HasHandle<$target: ty>, Borrow, Deref, Eq, Hash, Ord for $tp: ty {
+			target = { $($target_code: tt)+ }
+		}
+	) => {
+		impl_common_handle_traits!(
+			impl $([ $($impl_gen)+ ])? Borrow<$target>, Deref, Eq, Hash, Ord for $tp {
+				target = { $($target_code)+ }
+			}
+		);
+		impl $crate::util::handle::HasHandle<$target> for $tp {}
+	};
+
+	(
+		impl $([ $($impl_gen: tt)+ ])? HasSynchronizedHandle<$target: ty>, Borrow, Deref, Eq, Hash, Ord for $tp: ty {
+			target = { $($target_code: tt)+ }
+		}
+	) => {
+		impl_common_handle_traits!(
+			impl $([ $($impl_gen)+ ])? Borrow<$crate::util::sync::Vutex<$target>>, Deref, Eq, Hash, Ord for $tp {
+				target = { $($target_code)+ }
+
+				to_handle { .lock().expect("vutex poisoned").deref() }
+			}
+		);
+		impl $crate::util::handle::HasSynchronizedHandle<$target> for $tp {}
+	};
+
+	(
+		impl $([ $($impl_gen: tt)+ ])? Borrow<$target: ty>, Deref, Eq, Hash, Ord for $tp: ty {
+			target = { $($target_code: tt)+ }
 
 			$(
 				to_handle { $($to_handle_code: tt)+ }
@@ -305,15 +394,32 @@ macro_rules! impl_common_handle_traits {
 				&self.$($target_code)+
 			}
 		}
+		impl $(< $($impl_gen)+ >)? std::borrow::Borrow<$target> for $tp {
+			fn borrow(&self) -> &$target {
+				&self.$($target_code)+
+			}
+		}
+
 		impl $(< $($impl_gen)+ >)? PartialEq for $tp {
 			fn eq(&self, other: &Self) -> bool {
-				self.$($target_code)+ $( $($to_handle_code)+ )? == other.$($target_code)+ $( $($to_handle_code)+ )?
+				self.$($target_code)+$( $($to_handle_code)+ )? == other.$($target_code)+$( $($to_handle_code)+ )?
 			}
 		}
 		impl $(< $($impl_gen)+ >)? Eq for $tp {}
 		impl $(< $($impl_gen)+ >)? std::hash::Hash for $tp {
 			fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-				self.$($target_code)+ $( $($to_handle_code)+ )? .hash(state)
+				self.$($target_code)+$( $($to_handle_code)+ )?.hash(state)
+			}
+		}
+
+		impl $(< $($impl_gen)+ >)? std::cmp::PartialOrd for $tp {
+			fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+				self.$($target_code)+$( $($to_handle_code)+ )?.partial_cmp(&other.$($target_code)+$( $($to_handle_code)+ )?)
+			}
+		}
+		impl $(< $($impl_gen)+ >)? std::cmp::Ord for $tp {
+			fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+				self.$($target_code)+$( $($to_handle_code)+ )?.cmp(&other.$($target_code)+$( $($to_handle_code)+ )?)
 			}
 		}
 	}

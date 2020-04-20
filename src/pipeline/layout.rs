@@ -2,7 +2,7 @@ use std::{fmt, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::{device::Device, memory::host::HostMemoryAllocator, Vrc};
+use crate::{prelude::Device, prelude::HostMemoryAllocator, prelude::Vrc, prelude::HasHandle};
 
 use super::error::PipelineLayoutError;
 use crate::descriptor::layout::DescriptorSetLayout;
@@ -41,7 +41,7 @@ impl PipelineLayout {
 		let descriptor_set_layouts: Vec<_> = descriptor_set_layouts.collect();
 
 		let descriptor_set_layout_handles =
-			collect_iter_faster!(descriptor_set_layouts.iter().map(|l| *l.deref().deref()), 8);
+			collect_iter_faster!(descriptor_set_layouts.iter().map(|l| l.handle()), 8);
 		let push_constant_ranges = collect_iter_faster!(
 			push_constant_ranges.map(|r| Into::<vk::PushConstantRange>::into(r)),
 			4
@@ -107,8 +107,8 @@ impl PipelineLayout {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for PipelineLayout {
-		type Target = vk::PipelineLayout { layout }
+	impl HasHandle<vk::PipelineLayout>, Borrow, Deref, Eq, Hash, Ord for PipelineLayout {
+		target = { layout }
 	}
 }
 impl Drop for PipelineLayout {
@@ -125,7 +125,7 @@ impl fmt::Debug for PipelineLayout {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		f.debug_struct("PipelineLayout")
 			.field("device", &self.device)
-			.field("layout", &crate::util::fmt::format_handle(self.layout))
+			.field("layout", &self.safe_handle())
 			.field("host_memory_allocator", &self.host_memory_allocator)
 			.finish()
 	}

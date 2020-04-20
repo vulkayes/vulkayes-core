@@ -20,7 +20,7 @@ use ash::{
 	}
 };
 
-use crate::{instance::Instance, Vrc};
+use crate::{prelude::Instance, prelude::Vrc, prelude::HasHandle};
 
 pub mod enumerate;
 
@@ -36,7 +36,7 @@ impl PhysicalDevice {
 	///
 	/// The `instance` must be the parent of the `physical_device`.
 	pub unsafe fn from_existing(
-		instance: crate::Vrc<Instance>,
+		instance: Vrc<Instance>,
 		physical_device: ash::vk::PhysicalDevice
 	) -> Self {
 		log_trace_common!(
@@ -156,8 +156,8 @@ impl PhysicalDevice {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for PhysicalDevice {
-		type Target = vk::PhysicalDevice { physical_device }
+	impl HasHandle<vk::PhysicalDevice>, Borrow, Deref, Eq, Hash, Ord for PhysicalDevice {
+		target = { physical_device }
 	}
 }
 impl Debug for PhysicalDevice {
@@ -165,7 +165,7 @@ impl Debug for PhysicalDevice {
 		f.debug_struct("PhysicalDevice")
 			.field(
 				"physical_device",
-				&crate::util::fmt::format_handle(self.physical_device)
+				&self.safe_handle()
 			)
 			.finish()
 	}

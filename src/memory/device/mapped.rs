@@ -7,7 +7,7 @@ use std::{
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::{device::Device, Vrc};
+use crate::{device::Device, prelude::Vrc};
 
 use super::{MapMemoryImpl, UnmapMemoryImpl};
 

@@ -12,6 +12,7 @@ pub mod sync;
 pub mod hash;
 pub mod string;
 pub mod validations;
+pub mod handle;
 
 #[derive(Debug, Copy, Clone)]
 pub enum WaitTimeout {
@@ -36,7 +37,6 @@ impl Default for WaitTimeout {
 		WaitTimeout::Forever
 	}
 }
-
 
 /// `align_up(base, align)` returns the smallest greater integer than `base` aligned to `align`.
 ///

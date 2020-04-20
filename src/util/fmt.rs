@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display, Error, Formatter};
+use std::fmt::{Debug, Display, Result, Formatter};
 
 macro_rules! log_trace_common {
 	(
@@ -28,12 +28,12 @@ pub fn format_handle<H: ash::vk::Handle>(handle: H) -> impl Debug + Display {
 		raw: u64
 	}
 	impl Debug for Inner {
-		fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+		fn fmt(&self, f: &mut Formatter) -> Result {
 			write!(f, "<{:?} 0x{:x}>", self.ty, self.raw)
 		}
 	}
 	impl Display for Inner {
-		fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+		fn fmt(&self, f: &mut Formatter) -> Result {
 			write!(f, "<{:?} 0x{:x}>", self.ty, self.raw)
 		}
 	}
@@ -53,12 +53,12 @@ impl VkVersion {
 	}
 }
 impl Debug for VkVersion {
-	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+	fn fmt(&self, f: &mut Formatter) -> Result {
 		<VkVersion as Display>::fmt(self, f)
 	}
 }
 impl Display for VkVersion {
-	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+	fn fmt(&self, f: &mut Formatter) -> Result {
 		write!(
 			f,
 			"v{}.{}.{}",
@@ -80,7 +80,7 @@ pub fn format_uuid(uuid: [u8; 16]) -> impl Debug + Display {
 		uuid: [u8; 16]
 	}
 	impl Debug for Inner {
-		fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+		fn fmt(&self, f: &mut Formatter) -> Result {
 			write!(
 				f,
 				"{:0>2x}{:0>2x}{:0>2x}{:0>2x}-{:0>2x}{:0>2x}-{:0>2x}{:0>2x}-{:0>2x}{:0>2x}-{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}",
@@ -93,7 +93,7 @@ pub fn format_uuid(uuid: [u8; 16]) -> impl Debug + Display {
 		}
 	}
 	impl Display for Inner {
-		fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+		fn fmt(&self, f: &mut Formatter) -> Result {
 			write!(
 				f,
 				"{:x}{:x}{:x}{:x}-{:x}{:x}-{:x}{:X}-{:x}{:x}-{:x}{:x}{:x}{:x}{:x}{:x}",

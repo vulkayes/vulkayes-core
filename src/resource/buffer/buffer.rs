@@ -9,7 +9,7 @@ use crate::{
 		host::HostMemoryAllocator
 	},
 	queue::sharing_mode::SharingMode,
-	Vrc
+	prelude::Vrc
 };
 
 use super::{error, params};
@@ -133,8 +133,8 @@ impl Buffer {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for Buffer {
-		type Target = vk::Buffer { buffer }
+	impl HasHandle<vk::Buffer>, Borrow, Deref, Eq, Hash, Ord for Buffer {
+		target = { buffer }
 	}
 }
 impl Drop for Buffer {

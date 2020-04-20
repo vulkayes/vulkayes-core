@@ -8,10 +8,11 @@ use std::{
 use ash::vk;
 
 use crate::{
-	instance::Instance,
-	memory::host::HostMemoryAllocator,
-	physical_device::PhysicalDevice,
-	Vrc
+	prelude::Instance,
+	prelude::HostMemoryAllocator,
+	prelude::PhysicalDevice,
+	prelude::Vrc,
+	prelude::HasHandle
 };
 
 pub mod error;
@@ -121,8 +122,8 @@ impl Surface {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for Surface {
-		type Target = vk::SurfaceKHR { surface }
+	impl HasHandle<vk::SurfaceKHR>, Borrow, Deref, Eq, Hash, Ord for Surface {
+		target = { surface }
 	}
 }
 impl Drop for Surface {
@@ -140,7 +141,7 @@ impl Debug for Surface {
 		f.debug_struct("Surface")
 			.field("instance", &self.instance)
 			.field("loader", &"<ash::extensions::khr::Surface>")
-			.field("surface", &crate::util::fmt::format_handle(self.surface))
+			.field("surface", &self.safe_handle())
 			.field("host_memory_allocator", &self.host_memory_allocator)
 			.finish()
 	}

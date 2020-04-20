@@ -3,13 +3,14 @@ use std::{fmt, ops::Deref};
 use ash::{version::DeviceV1_0, vk};
 
 use crate::{
-	device::Device,
+	prelude::Device,
+	prelude::HostMemoryAllocator,
 	memory::{
-		device::{allocator::ImageMemoryAllocator, DeviceMemoryAllocation},
-		host::HostMemoryAllocator
+		device::{allocator::ImageMemoryAllocator, DeviceMemoryAllocation}
 	},
 	queue::sharing_mode::SharingMode,
-	Vrc
+	prelude::Vrc,
+	prelude::HasHandle
 };
 
 use super::{error, params};
@@ -183,8 +184,8 @@ impl Image {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for Image {
-		type Target = vk::Image { image }
+	impl HasHandle<vk::Image>, Borrow, Deref, Eq, Hash, Ord for Image {
+		target = { image }
 	}
 }
 impl Drop for Image {
@@ -201,7 +202,7 @@ impl fmt::Debug for Image {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		f.debug_struct("Image")
 			.field("device", &self.device)
-			.field("image", &crate::util::fmt::format_handle(self.image))
+			.field("image", &self.safe_handle())
 			.field(
 				"memory",
 				&self

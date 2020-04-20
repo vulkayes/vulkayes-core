@@ -7,7 +7,7 @@ use crate::{
 		params::{ImageSize, ImageSize2D},
 		Image
 	},
-	Vrc
+	prelude::Vrc
 };
 
 use super::Swapchain;

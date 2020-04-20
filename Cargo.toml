@@ -15,8 +15,10 @@ default = [
     "insecure_hash"
 ]
 
+# enables host allocator Custom variant, making it a sized type
+host_allocator = []
 # enables rust host memory allocator option
-rust_host_allocator = []
+rust_host_allocator = ["host_allocator"]
 # enables very simple device memory allocator
 naive_device_allocator = []
 

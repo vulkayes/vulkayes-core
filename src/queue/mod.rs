@@ -8,7 +8,7 @@ use ash::{
 	vk::{self, DeviceQueueCreateFlags, DeviceQueueInfo2}
 };
 
-use crate::{device::Device, sync::fence::Fence, util::sync::Vutex, Vrc};
+use crate::{device::Device, sync::fence::Fence, util::sync::Vutex, prelude::Vrc};
 
 #[macro_use]
 pub mod macros;
@@ -155,10 +155,8 @@ impl Queue {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for Queue {
-		type Target = Vutex<ash::vk::Queue> { queue }
-
-		to_handle { .lock().expect("vutex poisoned").deref() }
+	impl HasSynchronizedHandle<vk::Queue>, Borrow, Deref, Eq, Hash, Ord for Queue {
+		target = { queue }
 	}
 }
 impl Debug for Queue {

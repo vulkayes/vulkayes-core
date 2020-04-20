@@ -2,7 +2,7 @@ use std::{fmt, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::{memory::host::HostMemoryAllocator, Vrc};
+use crate::{prelude::HostMemoryAllocator, prelude::Vrc, prelude::HasHandle};
 
 use super::params::{ImageSize, ImageSubresourceRange};
 
@@ -30,7 +30,7 @@ impl ImageView {
 		let subresource_slice: super::params::ImageSubresourceSlice = view_range.into();
 
 		let create_info = vk::ImageViewCreateInfo::builder()
-			.image(*image.deref().deref().deref())
+			.image(image.handle())
 			.view_type(subresource_slice.view_type)
 			.format(format.unwrap_or(image.format()))
 			.components(component_mapping)
@@ -122,8 +122,8 @@ impl ImageView {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for ImageView {
-		type Target = vk::ImageView { view }
+	impl HasHandle<vk::ImageView>, Borrow, Deref, Eq, Hash, Ord for ImageView {
+		target = { view }
 	}
 }
 impl Drop for ImageView {
@@ -141,7 +141,7 @@ impl fmt::Debug for ImageView {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		f.debug_struct("ImageView")
 			.field("image", &self.image)
-			.field("view", &crate::util::fmt::format_handle(self.view))
+			.field("view", &self.safe_handle())
 			.field("format", &self.format)
 			.field("component_mapping", &self.component_mapping)
 			.field("subresource_range", &self.subresource_range)

@@ -5,7 +5,7 @@ use std::{
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::{device::Device, memory::host::HostMemoryAllocator, util::sync::Vutex, Vrc};
+use crate::{device::Device, memory::host::HostMemoryAllocator, util::sync::Vutex, prelude::Vrc};
 
 pub mod error;
 
@@ -83,10 +83,8 @@ impl Semaphore {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for Semaphore {
-		type Target = Vutex<vk::Semaphore> { semaphore }
-
-		to_handle { .lock().expect("vutex poisoned").deref() }
+	impl HasSynchronizedHandle<vk::Semaphore>, Borrow, Deref, Eq, Hash, Ord for Semaphore {
+		target = { semaphore }
 	}
 }
 impl Drop for Semaphore {

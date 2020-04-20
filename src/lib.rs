@@ -2,9 +2,11 @@
 //!
 //! ## Crate features:
 //!
-//! ### `rust_host_allocator`
+//! ### `host_allocator` and `rust_host_allocator`
 //!
-//! Adds `Rust()` constructor to `HostMemoryAllocator` that uses Rusts `std::alloc` methods.
+//! `host_allocator` adds `Custom` variant to `HostMemoryAllocator`. This makes the type sized, but enables the use of custom host memory allocators.
+//!
+//! `rust_host_allocator` adds `Rust()` constructor to `HostMemoryAllocator` that uses Rusts `std::alloc` methods. Requires `host_allocator` feature.
 //!
 //! ### `naive_device_allocator`
 //!
@@ -31,13 +33,11 @@
 //!
 //! These validations might not be cheap. It is recommended to only enabled them when debugging, not in release/production builds.
 //!
-//! ### `vulkan1_1`
+//! ### `vulkan1_1` and `vulkan1_2`
 //!
-//! Enables safe methods that will panic on Vulkan 1.0
+//! `vulkan1_1` enables methods that will panic on Vulkan 1.0
 //!
-//! ### `vulkan1_2`
-//!
-//! Enables safe methods that will panic on Vulkan 1.0 and 1.1. Requires `vulkan1_1` feature.
+//! `vulkan1_2` enables methods that will panic on Vulkan 1.0 and 1.1. Requires `vulkan1_1` feature.
 //!
 //! ### `log_max_level_*` and `log_release_max_level_*`
 //!
@@ -45,12 +45,10 @@
 
 // Export `ash` because all other component will use it.
 pub use ash;
-// Export `seq_macro` because `lock_and_deref` macro from `queue` requires it.
+// Export `seq_macro` because `lock_and_deref` macro requires it.
 pub use seq_macro;
 // Export `log` so that `log_*` features can be applied to all vulkayes crates
 pub use log;
-
-pub use util::sync::Vrc;
 
 /// Non zero `1u32` constant to avoid unnecessary unsafe blocks in constant contexts.
 pub const NONZEROU32_ONE: std::num::NonZeroU32 = unsafe { std::num::NonZeroU32::new_unchecked(1) };
@@ -91,5 +89,29 @@ mod test {
 			);
 			logger.init_boxed().expect("Could not initialize logger");
 		}
+	}
+
+	#[test]
+	// Debug test for testing small thing during development
+	fn debug() {
+		setup_testing_logger();
+
+		log::info!(
+			"HostMemoryAllocator size: {} align: {}",
+			std::mem::size_of::<crate::memory::host::HostMemoryAllocator>(),
+			std::mem::align_of::<crate::memory::host::HostMemoryAllocator>()
+		);
+
+		log::info!(
+			"ash::Instance size: {} align: {}",
+			std::mem::size_of::<ash::Instance>(),
+			std::mem::align_of::<ash::Instance>()
+		);
+
+		log::info!(
+			"ash::Device size: {} align: {}",
+			std::mem::size_of::<ash::Device>(),
+			std::mem::align_of::<ash::Device>()
+		);
 	}
 }

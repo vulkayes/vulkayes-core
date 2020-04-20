@@ -3,11 +3,11 @@ use std::{fmt, num::NonZeroU32, ops::Deref};
 use ash::{version::DeviceV1_0, vk};
 
 use crate::{
-	descriptor::layout::DescriptorSetLayout,
-	device::Device,
-	memory::host::HostMemoryAllocator,
-	util::sync::Vutex,
-	Vrc
+	prelude::DescriptorSetLayout,
+	prelude::Device,
+	prelude::HostMemoryAllocator,
+	prelude::Vutex,
+	prelude::Vrc
 };
 
 use super::error::{DescriptorPoolError, DescriptorSetError};
@@ -40,6 +40,8 @@ macro_rules! impl_allocate_command_buffers_array {
 			&self,
 			$layouts_name: [&DescriptorSetLayout; $size]
 		) -> Result<[vk::DescriptorSet; $size], DescriptorSetError> {
+			use $crate::util::handle::HasHandle;
+
 			let lock = self.pool.lock().expect("vutex poisoned");
 
 			#[cfg(feature = "runtime_implicit_validations")]
@@ -61,7 +63,7 @@ macro_rules! impl_allocate_command_buffers_array {
 				N in 0 .. $size {
 					[
 						#(
-							*($layouts_name[N]).deref().deref(),
+							($layouts_name[N]).handle(),
 						)*
 					]
 				}
@@ -273,10 +275,8 @@ impl DescriptorPool {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for DescriptorPool {
-		type Target = Vutex<vk::DescriptorPool> { pool }
-
-		to_handle { .lock().expect("vutex poisoned").deref() }
+	impl HasSynchronizedHandle<vk::DescriptorPool>, Borrow, Deref, Eq, Hash, Ord for DescriptorPool {
+		target = { pool }
 	}
 }
 impl Drop for DescriptorPool {

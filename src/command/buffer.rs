@@ -2,7 +2,7 @@ use std::{fmt::Debug, ops::Deref};
 
 use ash::vk;
 
-use crate::{command::pool::CommandPool, util::sync::Vutex, Vrc};
+use crate::{command::pool::CommandPool, util::sync::Vutex, prelude::Vrc};
 
 use super::error::CommandBufferError;
 
@@ -65,10 +65,8 @@ impl CommandBuffer {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for CommandBuffer {
-		type Target = Vutex<vk::CommandBuffer> { command_buffer }
-
-		to_handle { .lock().expect("vutex poisoned").deref() }
+	impl HasSynchronizedHandle<vk::CommandBuffer>, Borrow, Deref, Eq, Hash, Ord for CommandBuffer {
+		target = { command_buffer }
 	}
 }
 impl Drop for CommandBuffer {

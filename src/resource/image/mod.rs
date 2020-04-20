@@ -2,7 +2,7 @@ use std::{fmt::Debug, ops::Deref};
 
 pub use image::Image;
 
-use crate::{swapchain::image::SwapchainImage, Vrc};
+use crate::{swapchain::image::SwapchainImage, prelude::Vrc};
 
 pub mod error;
 

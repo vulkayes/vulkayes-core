@@ -18,7 +18,7 @@ use crate::{
 	surface::Surface,
 	sync::{fence::Fence, semaphore::BinarySemaphore},
 	util::sync::{AtomicVool, Vutex},
-	Vrc
+	prelude::Vrc
 };
 
 pub mod error;
@@ -305,10 +305,8 @@ impl Swapchain {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for Swapchain {
-		type Target = Vutex<vk::SwapchainKHR> { swapchain }
-
-		to_handle { .lock().expect("vutex poisoned").deref() }
+	impl HasSynchronizedHandle<vk::SwapchainKHR>, Borrow, Deref, Eq, Hash, Ord for Swapchain {
+		target = { swapchain }
 	}
 }
 impl Drop for Swapchain {

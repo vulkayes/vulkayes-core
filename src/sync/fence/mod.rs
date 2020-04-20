@@ -5,7 +5,7 @@ use std::{
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::{device::Device, memory::host::HostMemoryAllocator, util::sync::Vutex, Vrc};
+use crate::{device::Device, memory::host::HostMemoryAllocator, util::sync::Vutex, prelude::Vrc};
 
 pub mod error;
 
@@ -82,7 +82,7 @@ impl Fence {
 		// Unfortunately this is an ash API design bug that it doesn't return bool from wait_for_fences
 		let result = unsafe {
 			self.device.fp_v1_0().wait_for_fences(
-				self.device.deref().deref().handle(),
+				self.device.handle(),
 				1u32,
 				[*lock].as_ptr(),
 				false as u32,
@@ -104,10 +104,8 @@ impl Fence {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for Fence {
-		type Target = Vutex<ash::vk::Fence> { fence }
-
-		to_handle { .lock().expect("vutex poisoned").deref() }
+	impl HasSynchronizedHandle<vk::Fence>, Borrow, Deref, Eq, Hash, Ord for Fence {
+		target = { fence }
 	}
 }
 impl Drop for Fence {

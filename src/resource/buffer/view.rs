@@ -2,7 +2,7 @@ use std::{fmt, num::NonZeroU64, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::{memory::host::HostMemoryAllocator, resource::buffer::Buffer, Vrc};
+use crate::{prelude::HostMemoryAllocator, prelude::Buffer, prelude::Vrc, prelude::HasHandle};
 
 pub struct BufferView {
 	buffer: Vrc<Buffer>,
@@ -24,6 +24,7 @@ impl BufferView {
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, super::error::BufferViewError> {
 		let create_info = vk::BufferViewCreateInfo::builder()
+			.buffer(buffer.handle())
 			.format(format)
 			.offset(offset)
 			.range(range.get());
@@ -33,7 +34,8 @@ impl BufferView {
 
 	/// ### Safety
 	///
-	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCreateBufferView.html>.
+	/// * See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCreateBufferView.html>.
+	/// `buffer` must be the same buffer as the one in the `create_info`.
 	pub unsafe fn from_create_info(
 		buffer: Vrc<Buffer>,
 		create_info: impl Deref<Target = vk::BufferViewCreateInfo>,
@@ -81,8 +83,8 @@ impl BufferView {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for BufferView {
-		type Target = vk::BufferView { view }
+	impl HasHandle<vk::BufferView>, Borrow, Deref, Eq, Hash, Ord for BufferView {
+		target ={ view }
 	}
 }
 impl Drop for BufferView {
@@ -100,7 +102,7 @@ impl fmt::Debug for BufferView {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		f.debug_struct("BufferView")
 			.field("buffer", &self.buffer)
-			.field("view", &crate::util::fmt::format_handle(self.view))
+			.field("view", &self.safe_handle())
 			.field("format", &self.format)
 			.field("offset", &self.offset)
 			.field("range", &self.range)

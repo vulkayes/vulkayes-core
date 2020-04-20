@@ -7,7 +7,7 @@ use crate::{
 	memory::host::HostMemoryAllocator,
 	queue::Queue,
 	util::sync::Vutex,
-	Vrc
+	prelude::Vrc
 };
 
 use super::error::{CommandBufferError, CommandPoolError};
@@ -235,10 +235,8 @@ impl CommandPool {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for CommandPool {
-		type Target = Vutex<vk::CommandPool> { pool }
-
-		to_handle { .lock().expect("vutex poisoned").deref() }
+	impl HasSynchronizedHandle<vk::CommandPool>, Borrow, Deref, Eq, Hash, Ord for CommandPool {
+		target = { pool }
 	}
 }
 impl Drop for CommandPool {

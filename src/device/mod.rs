@@ -12,7 +12,7 @@ use crate::{
 	memory::host::HostMemoryAllocator,
 	physical_device::PhysicalDevice,
 	queue::Queue,
-	Vrc
+	prelude::Vrc
 };
 
 pub mod error;
@@ -163,10 +163,12 @@ impl Device {
 	pub const fn instance(&self) -> &Vrc<Instance> {
 		self.physical_device.instance()
 	}
+
+	// pub const fn safe_handle(&self) -> crate::util::handle::SafeHandle<>
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for Device {
-		type Target = ash::Device { device }
+	impl Borrow<ash::Device>, Deref, Eq, Hash, Ord for Device {
+		target = { device }
 
 		to_handle { .handle() }
 	}
