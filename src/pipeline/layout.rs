@@ -107,7 +107,7 @@ impl PipelineLayout {
 	}
 }
 impl_common_handle_traits! {
-	impl HasHandle<vk::PipelineLayout>, Borrow, Deref, Eq, Hash, Ord for PipelineLayout {
+	impl HasHandle<vk::PipelineLayout>, Deref, Borrow, Eq, Hash, Ord for PipelineLayout {
 		target = { layout }
 	}
 }

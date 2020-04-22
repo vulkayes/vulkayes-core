@@ -155,7 +155,7 @@ impl Queue {
 	}
 }
 impl_common_handle_traits! {
-	impl HasSynchronizedHandle<vk::Queue>, Borrow, Deref, Eq, Hash, Ord for Queue {
+	impl HasSynchronizedHandle<vk::Queue>, Deref, Borrow, Eq, Hash, Ord for Queue {
 		target = { queue }
 	}
 }

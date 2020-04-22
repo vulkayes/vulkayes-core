@@ -275,7 +275,7 @@ impl DescriptorPool {
 	}
 }
 impl_common_handle_traits! {
-	impl HasSynchronizedHandle<vk::DescriptorPool>, Borrow, Deref, Eq, Hash, Ord for DescriptorPool {
+	impl HasSynchronizedHandle<vk::DescriptorPool>, Deref, Borrow, Eq, Hash, Ord for DescriptorPool {
 		target = { pool }
 	}
 }

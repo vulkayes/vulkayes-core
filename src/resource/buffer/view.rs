@@ -83,7 +83,7 @@ impl BufferView {
 	}
 }
 impl_common_handle_traits! {
-	impl HasHandle<vk::BufferView>, Borrow, Deref, Eq, Hash, Ord for BufferView {
+	impl HasHandle<vk::BufferView>, Deref, Borrow, Eq, Hash, Ord for BufferView {
 		target ={ view }
 	}
 }

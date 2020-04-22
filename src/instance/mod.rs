@@ -52,6 +52,8 @@ impl Debug for InstanceDebug {
 pub struct Instance {
 	entry: Entry,
 	instance: ash::Instance,
+	// For the HasHandle trait
+	instance_handle: vk::Instance,
 	host_memory_allocator: HostMemoryAllocator,
 
 	debug: Option<InstanceDebug>
@@ -145,6 +147,7 @@ impl Instance {
 
 		Ok(Vrc::new(Instance {
 			entry,
+			instance_handle: instance.handle(),
 			instance,
 			host_memory_allocator,
 			debug
@@ -173,10 +176,15 @@ impl Instance {
 	}
 }
 impl_common_handle_traits! {
-	impl Borrow<ash::Instance>, Deref, Eq, Hash, Ord for Instance {
-		target = { instance }
+	impl HasHandle<vk::Instance>, Borrow, Eq, Hash, Ord for Instance {
+		target = { instance_handle }
+	}
+}
+impl Deref for Instance {
+	type Target = ash::Instance;
 
-		to_handle { .handle() }
+	fn deref(&self) -> &Self::Target {
+		&self.instance
 	}
 }
 impl Drop for Instance {

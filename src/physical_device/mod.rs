@@ -156,7 +156,7 @@ impl PhysicalDevice {
 	}
 }
 impl_common_handle_traits! {
-	impl HasHandle<vk::PhysicalDevice>, Borrow, Deref, Eq, Hash, Ord for PhysicalDevice {
+	impl HasHandle<vk::PhysicalDevice>, Deref, Borrow, Eq, Hash, Ord for PhysicalDevice {
 		target = { physical_device }
 	}
 }

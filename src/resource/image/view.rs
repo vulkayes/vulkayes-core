@@ -122,7 +122,7 @@ impl ImageView {
 	}
 }
 impl_common_handle_traits! {
-	impl HasHandle<vk::ImageView>, Borrow, Deref, Eq, Hash, Ord for ImageView {
+	impl HasHandle<vk::ImageView>, Deref, Borrow, Eq, Hash, Ord for ImageView {
 		target = { view }
 	}
 }

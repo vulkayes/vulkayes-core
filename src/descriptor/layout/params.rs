@@ -33,7 +33,7 @@ unsafe_enum_variants! {
 		pub ImmutableSamplers {
 			combined: bool,
 			stage_flags: vk::ShaderStageFlags,
-			samplers: &'a [()] // TODO: Sampler object
+			samplers: &'a [crate::util::handle::SafeHandle<'a, vk::Sampler>]
 		} => {
 			vk::DescriptorSetLayoutBinding::builder()
 				.descriptor_type(
@@ -41,7 +41,9 @@ unsafe_enum_variants! {
 				)
 				.descriptor_count(samplers.len() as u32)
 				.stage_flags(stage_flags)
-				.immutable_samplers(unimplemented!())
+				.immutable_samplers(
+					unsafe { std::mem::transmute(samplers) }
+				)
 		},
 
 		/// Sampler or combined image sampler with mutable sampler.

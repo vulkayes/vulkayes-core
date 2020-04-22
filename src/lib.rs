@@ -96,22 +96,21 @@ mod test {
 	fn debug() {
 		setup_testing_logger();
 
-		log::info!(
-			"HostMemoryAllocator size: {} align: {}",
-			std::mem::size_of::<crate::memory::host::HostMemoryAllocator>(),
-			std::mem::align_of::<crate::memory::host::HostMemoryAllocator>()
-		);
+		fn print_size<T>(name: &str) {
+			log::info!(
+				"{} size: {} align: {}",
+				name,
+				std::mem::size_of::<T>(),
+				std::mem::align_of::<T>()
+			);
+		}
 
-		log::info!(
-			"ash::Instance size: {} align: {}",
-			std::mem::size_of::<ash::Instance>(),
-			std::mem::align_of::<ash::Instance>()
-		);
+		print_size::<crate::memory::host::HostMemoryAllocator>("HostMemoryAllocator");
 
-		log::info!(
-			"ash::Device size: {} align: {}",
-			std::mem::size_of::<ash::Device>(),
-			std::mem::align_of::<ash::Device>()
-		);
+		print_size::<ash::Instance>("ash::Instance");
+		print_size::<ash::Device>("ash::Instance");
+
+		print_size::<crate::instance::Instance>("Instance");
+		print_size::<crate::device::Device>("Device");
 	}
 }

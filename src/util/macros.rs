@@ -72,9 +72,9 @@ macro_rules! unsafe_enum_variants {
 			$(
 				$(#[$variant_attribute: meta])*
 				$({$safety: tt})? $v: vis $variant: ident $({
-					 $($variant_name: ident: $variant_type: ty),+
+					 $($variant_name: ident: $variant_type: ty),+ $(,)?
 				})? => { $($into_code: tt)+ }
-			),+
+			),+ $(,)?
 		} as pub $name: ident $([ $($gen_usage_tt: tt)+ ])? impl Into<$into_type: ty>
 	) => {
 		unsafe_enum_variants!(
@@ -104,9 +104,9 @@ macro_rules! unsafe_enum_variants {
 			$(
 				$(#[$variant_attribute: meta])*
 				$({$safety: tt})? $v: vis $variant: ident $({
-					 $($variant_name: ident: $variant_type: ty),+
+					 $($variant_name: ident: $variant_type: ty),+ $(,)?
 				})?
-			),+
+			),+ $(,)?
 		} as pub $name: ident $([ $($gen_usage_tt: tt)+ ])?
 	) => {
 		$(#[$attribute])*
@@ -196,7 +196,7 @@ macro_rules! vk_result_error {
 				$(
 					$( #[$variant_attribute: meta] )*
 					$vk_error: ident
-				),+
+				),+ $(,)?
 			}
 			$( $other: tt )*
 		}
@@ -268,7 +268,7 @@ macro_rules! vk_result_error {
 /// // 	other_field: A
 /// // }
 /// // impl_common_handle_traits! {
-/// // 	impl [A: Debug] HasHandle<Target>, Borrow, Deref, Eq, Hash, Ord for MyType<A> {
+/// // 	impl [A: Debug] HasHandle<Target>, Deref, Borrow, Eq, Hash, Ord for MyType<A> {
 /// // 		target = { field_on_self }
 /// // 	}
 /// // }
@@ -279,7 +279,7 @@ macro_rules! vk_result_error {
 /// // 	other_field: A
 /// // }
 /// // impl_common_handle_traits! {
-/// // 	impl [A: Debug] HasSynchronizedHandle<Target>, Borrow, Deref, Eq, Hash, Ord for MyType<A> {
+/// // 	impl [A: Debug] HasSynchronizedHandle<Target>, Deref, Borrow, Eq, Hash, Ord for MyType<A> {
 /// // 		target = { field_on_self }
 /// // 	}
 /// // }
@@ -351,12 +351,24 @@ macro_rules! vk_result_error {
 #[macro_export]
 macro_rules! impl_common_handle_traits {
 	(
-		impl $([ $($impl_gen: tt)+ ])? HasHandle<$target: ty>, Borrow, Deref, Eq, Hash, Ord for $tp: ty {
+		impl $([ $($impl_gen: tt)+ ])? HasHandle<$target: ty>, Deref, Borrow, Eq, Hash, Ord for $tp: ty {
+			target = { $($target_code: tt)+ }
+		} $(+ $deref: ident)?
+	) => {
+		impl_common_handle_traits!(
+			impl $([ $($impl_gen)+ ])? Deref<$target>, Borrow, Eq, Hash, Ord for $tp {
+				target = { $($target_code)+ }
+			}
+		);
+		impl $crate::util::handle::HasHandle<$target> for $tp {}
+	};
+	(
+		impl $([ $($impl_gen: tt)+ ])? HasHandle<$target: ty>, Borrow, Eq, Hash, Ord for $tp: ty {
 			target = { $($target_code: tt)+ }
 		}
 	) => {
 		impl_common_handle_traits!(
-			impl $([ $($impl_gen)+ ])? Borrow<$target>, Deref, Eq, Hash, Ord for $tp {
+			impl $([ $($impl_gen)+ ])? Borrow<$target>, Eq, Hash, Ord for $tp {
 				target = { $($target_code)+ }
 			}
 		);
@@ -364,12 +376,26 @@ macro_rules! impl_common_handle_traits {
 	};
 
 	(
-		impl $([ $($impl_gen: tt)+ ])? HasSynchronizedHandle<$target: ty>, Borrow, Deref, Eq, Hash, Ord for $tp: ty {
+		impl $([ $($impl_gen: tt)+ ])? HasSynchronizedHandle<$target: ty>, Deref, Borrow, Eq, Hash, Ord for $tp: ty {
 			target = { $($target_code: tt)+ }
 		}
 	) => {
 		impl_common_handle_traits!(
-			impl $([ $($impl_gen)+ ])? Borrow<$crate::util::sync::Vutex<$target>>, Deref, Eq, Hash, Ord for $tp {
+			impl $([ $($impl_gen)+ ])? Deref<$crate::util::sync::Vutex<$target>>, Borrow, Eq, Hash, Ord for $tp {
+				target = { $($target_code)+ }
+
+				to_handle { .lock().expect("vutex poisoned").deref() }
+			}
+		);
+		impl $crate::util::handle::HasSynchronizedHandle<$target> for $tp {}
+	};
+	(
+		impl $([ $($impl_gen: tt)+ ])? HasSynchronizedHandle<$target: ty>, Borrow, Eq, Hash, Ord for $tp: ty {
+			target = { $($target_code: tt)+ }
+		}
+	) => {
+		impl_common_handle_traits!(
+			impl $([ $($impl_gen)+ ])? Borrow<$crate::util::sync::Vutex<$target>>, Eq, Hash, Ord for $tp {
 				target = { $($target_code)+ }
 
 				to_handle { .lock().expect("vutex poisoned").deref() }
@@ -379,7 +405,7 @@ macro_rules! impl_common_handle_traits {
 	};
 
 	(
-		impl $([ $($impl_gen: tt)+ ])? Borrow<$target: ty>, Deref, Eq, Hash, Ord for $tp: ty {
+		impl $([ $($impl_gen: tt)+ ])? Deref<$target: ty>, Borrow, Eq, Hash, Ord for $tp: ty {
 			target = { $($target_code: tt)+ }
 
 			$(
@@ -394,6 +420,26 @@ macro_rules! impl_common_handle_traits {
 				&self.$($target_code)+
 			}
 		}
+		impl_common_handle_traits!(
+			impl $([ $($impl_gen)+ ])? Borrow<$target>, Eq, Hash, Ord for $tp {
+				target = { $($target_code)+ }
+
+				$(
+					to_handle { $($to_handle_code)+ }
+				)?
+			}
+		);
+	};
+
+	(
+		impl $([ $($impl_gen: tt)+ ])? Borrow<$target: ty>, Eq, Hash, Ord for $tp: ty {
+			target = { $($target_code: tt)+ }
+
+			$(
+				to_handle { $($to_handle_code: tt)+ }
+			)?
+		}
+	) => {
 		impl $(< $($impl_gen)+ >)? std::borrow::Borrow<$target> for $tp {
 			fn borrow(&self) -> &$target {
 				&self.$($target_code)+

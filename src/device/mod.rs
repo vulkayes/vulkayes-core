@@ -32,6 +32,7 @@ pub struct DeviceData {
 
 pub struct Device {
 	device: ash::Device,
+	device_handle: vk::Device,
 
 	physical_device: PhysicalDevice,
 
@@ -124,6 +125,7 @@ impl Device {
 		)?;
 
 		let device = Vrc::new(Device {
+			device_handle: device.handle(),
 			device,
 			physical_device,
 			host_memory_allocator
@@ -163,14 +165,17 @@ impl Device {
 	pub const fn instance(&self) -> &Vrc<Instance> {
 		self.physical_device.instance()
 	}
-
-	// pub const fn safe_handle(&self) -> crate::util::handle::SafeHandle<>
 }
 impl_common_handle_traits! {
-	impl Borrow<ash::Device>, Deref, Eq, Hash, Ord for Device {
-		target = { device }
+	impl HasHandle<vk::Device>, Borrow, Eq, Hash, Ord for Device {
+		target = { device_handle }
+	}
+}
+impl Deref for Device {
+	type Target = ash::Device;
 
-		to_handle { .handle() }
+	fn deref(&self) -> &Self::Target {
+		&self.device
 	}
 }
 impl Drop for Device {

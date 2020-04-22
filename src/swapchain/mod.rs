@@ -305,7 +305,7 @@ impl Swapchain {
 	}
 }
 impl_common_handle_traits! {
-	impl HasSynchronizedHandle<vk::SwapchainKHR>, Borrow, Deref, Eq, Hash, Ord for Swapchain {
+	impl HasSynchronizedHandle<vk::SwapchainKHR>, Deref, Borrow, Eq, Hash, Ord for Swapchain {
 		target = { swapchain }
 	}
 }

@@ -133,7 +133,7 @@ impl Buffer {
 	}
 }
 impl_common_handle_traits! {
-	impl HasHandle<vk::Buffer>, Borrow, Deref, Eq, Hash, Ord for Buffer {
+	impl HasHandle<vk::Buffer>, Deref, Borrow, Eq, Hash, Ord for Buffer {
 		target = { buffer }
 	}
 }

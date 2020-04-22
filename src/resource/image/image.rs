@@ -184,7 +184,7 @@ impl Image {
 	}
 }
 impl_common_handle_traits! {
-	impl HasHandle<vk::Image>, Borrow, Deref, Eq, Hash, Ord for Image {
+	impl HasHandle<vk::Image>, Deref, Borrow, Eq, Hash, Ord for Image {
 		target = { image }
 	}
 }

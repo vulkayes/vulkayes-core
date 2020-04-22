@@ -122,7 +122,7 @@ impl Surface {
 	}
 }
 impl_common_handle_traits! {
-	impl HasHandle<vk::SurfaceKHR>, Borrow, Deref, Eq, Hash, Ord for Surface {
+	impl HasHandle<vk::SurfaceKHR>, Deref, Borrow, Eq, Hash, Ord for Surface {
 		target = { surface }
 	}
 }

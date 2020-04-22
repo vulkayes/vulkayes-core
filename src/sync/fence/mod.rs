@@ -104,7 +104,7 @@ impl Fence {
 	}
 }
 impl_common_handle_traits! {
-	impl HasSynchronizedHandle<vk::Fence>, Borrow, Deref, Eq, Hash, Ord for Fence {
+	impl HasSynchronizedHandle<vk::Fence>, Deref, Borrow, Eq, Hash, Ord for Fence {
 		target = { fence }
 	}
 }

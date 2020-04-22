@@ -235,7 +235,7 @@ impl CommandPool {
 	}
 }
 impl_common_handle_traits! {
-	impl HasSynchronizedHandle<vk::CommandPool>, Borrow, Deref, Eq, Hash, Ord for CommandPool {
+	impl HasSynchronizedHandle<vk::CommandPool>, Borrow, Eq, Hash, Ord for CommandPool {
 		target = { pool }
 	}
 }

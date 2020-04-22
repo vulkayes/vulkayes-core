@@ -2,7 +2,7 @@ use std::{fmt, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::{device::Device, memory::host::HostMemoryAllocator, Vrc};
+use crate::{prelude::Device, prelude::HostMemoryAllocator, prelude::Vrc, prelude::HasHandle};
 
 use super::error::DescriptorSetLayoutError;
 
@@ -66,8 +66,8 @@ impl DescriptorSetLayout {
 	}
 }
 impl_common_handle_traits! {
-	impl Deref, PartialEq, Eq, Hash for DescriptorSetLayout {
-		type Target = vk::DescriptorSetLayout { layout }
+	impl HasHandle<vk::DescriptorSetLayout>, Deref, Borrow, Eq, Hash, Ord for DescriptorSetLayout {
+		target = { layout }
 	}
 }
 impl Drop for DescriptorSetLayout {
@@ -84,7 +84,7 @@ impl fmt::Debug for DescriptorSetLayout {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		f.debug_struct("DescriptorSetLayout")
 			.field("device", &self.device)
-			.field("layout", &crate::util::fmt::format_handle(self.layout))
+			.field("layout", &self.safe_handle())
 			.field("host_memory_allocator", &self.host_memory_allocator)
 			.finish()
 	}

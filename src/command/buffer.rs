@@ -65,7 +65,7 @@ impl CommandBuffer {
 	}
 }
 impl_common_handle_traits! {
-	impl HasSynchronizedHandle<vk::CommandBuffer>, Borrow, Deref, Eq, Hash, Ord for CommandBuffer {
+	impl HasSynchronizedHandle<vk::CommandBuffer>, Deref, Borrow, Eq, Hash, Ord for CommandBuffer {
 		target = { command_buffer }
 	}
 }

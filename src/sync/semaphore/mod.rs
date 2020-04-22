@@ -83,7 +83,7 @@ impl Semaphore {
 	}
 }
 impl_common_handle_traits! {
-	impl HasSynchronizedHandle<vk::Semaphore>, Borrow, Deref, Eq, Hash, Ord for Semaphore {
+	impl HasSynchronizedHandle<vk::Semaphore>, Deref, Borrow, Eq, Hash, Ord for Semaphore {
 		target = { semaphore }
 	}
 }
