@@ -11,8 +11,8 @@ use crate::{
 	instance::Instance,
 	memory::host::HostMemoryAllocator,
 	physical_device::PhysicalDevice,
-	queue::Queue,
-	prelude::Vrc
+	prelude::Vrc,
+	queue::Queue
 };
 
 pub mod error;

@@ -1,15 +1,8 @@
 use std::{fmt::Debug, ops::Deref};
 
-use ash::vk;
-use ash::version::DeviceV1_0;
+use ash::{version::DeviceV1_0, vk};
 
-use crate::{
-	prelude::DescriptorSetLayout,
-	prelude::DescriptorPool,
-	prelude::Vutex,
-	prelude::Vrc,
-	prelude::Transparent
-};
+use crate::prelude::{DescriptorPool, DescriptorSetLayout, Transparent, Vrc, Vutex};
 
 use super::error::DescriptorSetError;
 
@@ -75,11 +68,7 @@ impl DescriptorSet {
 		}
 	}
 
-	pub fn update<'a>(
-		&self,
-		writes: &[update::DescriptorSetWrite<'a>],
-		copies: &[()]
-	) {
+	pub fn update<'a>(&self, writes: &[update::DescriptorSetWrite<'a>], copies: &[()]) {
 		unsafe {
 			self.pool.device().update_descriptor_sets(
 				Transparent::transmute_slice(Transparent::transmute_slice(writes)),

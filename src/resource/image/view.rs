@@ -2,7 +2,7 @@ use std::{fmt, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::{prelude::HostMemoryAllocator, prelude::Vrc, prelude::HasHandle};
+use crate::prelude::{HasHandle, HostMemoryAllocator, Vrc};
 
 use super::params::{ImageSize, ImageSubresourceRange};
 

@@ -9,11 +9,11 @@ pub mod fmt;
 #[macro_use]
 pub mod sync;
 
+pub mod handle;
 pub mod hash;
 pub mod string;
-pub mod validations;
-pub mod handle;
 pub mod transparent;
+pub mod validations;
 
 #[derive(Debug, Copy, Clone)]
 pub enum WaitTimeout {

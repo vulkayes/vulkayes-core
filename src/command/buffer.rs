@@ -2,7 +2,7 @@ use std::{fmt::Debug, ops::Deref};
 
 use ash::vk;
 
-use crate::{command::pool::CommandPool, util::sync::Vutex, prelude::Vrc};
+use crate::{command::pool::CommandPool, prelude::Vrc, util::sync::Vutex};
 
 use super::error::CommandBufferError;
 

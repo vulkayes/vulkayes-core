@@ -2,12 +2,7 @@ use std::{fmt, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::{
-	prelude::Device,
-	prelude::HostMemoryAllocator,
-	prelude::Vrc,
-	prelude::HasHandle
-};
+use crate::prelude::{Device, HasHandle, HostMemoryAllocator, Vrc};
 
 pub mod params;
 
@@ -25,13 +20,7 @@ impl Sampler {
 	) -> Result<Vrc<Self>, super::error::SamplerError> {
 		let create_info: vk::SamplerCreateInfo = create_info.into();
 
-		unsafe {
-			Self::from_create_info(
-				device,
-				&create_info,
-				host_memory_allocator
-			)
-		}
+		unsafe { Self::from_create_info(device, &create_info, host_memory_allocator) }
 	}
 
 	pub unsafe fn from_create_info(
@@ -46,20 +35,13 @@ impl Sampler {
 			host_memory_allocator
 		);
 
-		let sampler = device.create_sampler(
-			create_info.deref(),
-			host_memory_allocator.as_ref()
-		)?;
+		let sampler = device.create_sampler(create_info.deref(), host_memory_allocator.as_ref())?;
 
-		Ok(
-			Vrc::new(
-				Sampler {
-					device,
-					sampler,
-					host_memory_allocator
-				}
-			)
-		)
+		Ok(Vrc::new(Sampler {
+			device,
+			sampler,
+			host_memory_allocator
+		}))
 	}
 
 	pub const fn device(&self) -> &Vrc<Device> {
@@ -76,7 +58,8 @@ impl Drop for Sampler {
 		log_trace_common!("Dropping", self);
 
 		unsafe {
-			self.device.destroy_sampler(self.sampler, self.host_memory_allocator.as_ref())
+			self.device
+				.destroy_sampler(self.sampler, self.host_memory_allocator.as_ref())
 		}
 	}
 }

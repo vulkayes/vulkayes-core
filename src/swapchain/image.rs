@@ -3,11 +3,11 @@ use std::{mem::ManuallyDrop, num::NonZeroU32, ops::Deref};
 use ash::vk;
 
 use crate::{
+	prelude::Vrc,
 	resource::image::{
 		params::{ImageSize, ImageSize2D},
 		Image
-	},
-	prelude::Vrc
+	}
 };
 
 use super::Swapchain;

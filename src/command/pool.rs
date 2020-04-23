@@ -5,9 +5,9 @@ use ash::{version::DeviceV1_0, vk};
 use crate::{
 	device::Device,
 	memory::host::HostMemoryAllocator,
+	prelude::Vrc,
 	queue::Queue,
-	util::sync::Vutex,
-	prelude::Vrc
+	util::sync::Vutex
 };
 
 use super::error::{CommandBufferError, CommandPoolError};

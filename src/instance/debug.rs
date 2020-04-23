@@ -60,11 +60,7 @@ unsafe extern "system" fn default_debug_callback(
 	let object_optional = if object_type == DebugReportObjectTypeEXT::UNKNOWN {
 		Cow::Borrowed("")
 	} else {
-		Cow::Owned(
-			format!(
-				"<{:?} 0x{:x}> ", object_type, object
-			)
-		)
+		Cow::Owned(format!("<{:?} 0x{:x}> ", object_type, object))
 	};
 
 	let debug_message = CStr::from_ptr(p_message).to_string_lossy();

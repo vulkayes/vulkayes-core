@@ -8,7 +8,7 @@ use ash::{
 	vk::{self, DeviceQueueCreateFlags, DeviceQueueInfo2}
 };
 
-use crate::{device::Device, sync::fence::Fence, util::sync::Vutex, prelude::Vrc};
+use crate::{device::Device, prelude::Vrc, sync::fence::Fence, util::sync::Vutex};
 
 #[macro_use]
 pub mod macros;

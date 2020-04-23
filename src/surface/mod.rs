@@ -7,13 +7,7 @@ use std::{
 
 use ash::vk;
 
-use crate::{
-	prelude::Instance,
-	prelude::HostMemoryAllocator,
-	prelude::PhysicalDevice,
-	prelude::Vrc,
-	prelude::HasHandle
-};
+use crate::prelude::{HasHandle, HostMemoryAllocator, Instance, PhysicalDevice, Vrc};
 
 pub mod error;
 

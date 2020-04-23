@@ -21,7 +21,9 @@ pub use crate::{
 		fence::Fence,
 		semaphore::{BinarySemaphore, Semaphore}
 	},
-	util::sync::{Vrc, Vutex},
-	util::handle::{HasHandle, HasSynchronizedHandle, SafeHandle},
-	util::transparent::Transparent
+	util::{
+		handle::{HasHandle, HasSynchronizedHandle, SafeHandle},
+		sync::{Vrc, Vutex},
+		transparent::Transparent
+	}
 };

@@ -8,8 +8,8 @@ use crate::{
 		device::{allocator::BufferMemoryAllocator, DeviceMemoryAllocation},
 		host::HostMemoryAllocator
 	},
-	queue::sharing_mode::SharingMode,
-	prelude::Vrc
+	prelude::Vrc,
+	queue::sharing_mode::SharingMode
 };
 
 use super::{error, params};

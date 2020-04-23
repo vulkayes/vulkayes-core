@@ -20,7 +20,7 @@ use ash::{
 	}
 };
 
-use crate::{prelude::Instance, prelude::Vrc, prelude::HasHandle};
+use crate::prelude::{HasHandle, Instance, Vrc};
 
 pub mod enumerate;
 
@@ -163,10 +163,7 @@ impl_common_handle_traits! {
 impl Debug for PhysicalDevice {
 	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
 		f.debug_struct("PhysicalDevice")
-			.field(
-				"physical_device",
-				&self.safe_handle()
-			)
+			.field("physical_device", &self.safe_handle())
 			.finish()
 	}
 }

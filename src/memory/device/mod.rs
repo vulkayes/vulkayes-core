@@ -5,7 +5,7 @@ use ash::vk;
 use mapped::DeviceMemoryMapping;
 pub use mapped::{DeviceMemoryMappingAccess, MapError, MappingAccessResult, SliceWriteStride};
 
-use crate::{device::Device, util::sync::Vutex, prelude::Vrc};
+use crate::{device::Device, prelude::Vrc, util::sync::Vutex};
 
 pub mod allocator;
 mod mapped;

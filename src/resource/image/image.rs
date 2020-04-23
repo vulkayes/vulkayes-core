@@ -3,14 +3,9 @@ use std::{fmt, ops::Deref};
 use ash::{version::DeviceV1_0, vk};
 
 use crate::{
-	prelude::Device,
-	prelude::HostMemoryAllocator,
-	memory::{
-		device::{allocator::ImageMemoryAllocator, DeviceMemoryAllocation}
-	},
-	queue::sharing_mode::SharingMode,
-	prelude::Vrc,
-	prelude::HasHandle
+	memory::device::{allocator::ImageMemoryAllocator, DeviceMemoryAllocation},
+	prelude::{Device, HasHandle, HostMemoryAllocator, Vrc},
+	queue::sharing_mode::SharingMode
 };
 
 use super::{error, params};

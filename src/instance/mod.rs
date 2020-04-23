@@ -17,8 +17,8 @@ use crate::{
 	entry::Entry,
 	memory::host::HostMemoryAllocator,
 	physical_device::PhysicalDevice,
-	util::fmt::VkVersion,
-	prelude::Vrc
+	prelude::Vrc,
+	util::fmt::VkVersion
 };
 
 pub mod debug;

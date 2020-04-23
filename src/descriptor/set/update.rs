@@ -2,11 +2,11 @@ use std::num::NonZeroU64;
 
 use ash::vk;
 
-use crate::prelude::{SafeHandle, ImageView, Sampler, HasHandle, Buffer};
+use crate::prelude::{Buffer, HasHandle, ImageView, SafeHandle, Sampler};
 
 use super::error::{DescriptorImageInfoError, DescriptorInlineUniformBlockInfoError};
 use crate::util::transparent::Transparent;
-use std::ops::{DerefMut, Deref};
+use std::ops::{Deref, DerefMut};
 
 /// Transparent wrapper struct over `DescriptorImageInfoBuilder` that guarantees validity of handles.
 #[repr(transparent)]
@@ -16,9 +16,7 @@ pub struct DescriptorImageInfo<'a> {
 }
 impl<'a> DescriptorImageInfo<'a> {
 	pub const unsafe fn from_raw(builder: vk::DescriptorImageInfoBuilder<'a>) -> Self {
-		DescriptorImageInfo {
-			builder
-		}
+		DescriptorImageInfo { builder }
 	}
 
 	pub fn new(
@@ -29,20 +27,16 @@ impl<'a> DescriptorImageInfo<'a> {
 		#[cfg(feature = "runtime_implicit_validations")]
 		{
 			if sampler.device() != image_view.image().device() {
-				return Err(
-					DescriptorImageInfoError::SamplerImageViewDeviceMismatch
-				)
+				return Err(DescriptorImageInfoError::SamplerImageViewDeviceMismatch)
 			}
 		}
 
-		Ok(
-			Self {
-				builder: vk::DescriptorImageInfo::builder()
-					.sampler(sampler.handle())
-					.image_view(image_view.handle())
-					.image_layout(image_layout)
-			}
-		)
+		Ok(Self {
+			builder: vk::DescriptorImageInfo::builder()
+				.sampler(sampler.handle())
+				.image_view(image_view.handle())
+				.image_layout(image_layout)
+		})
 	}
 
 	pub fn with_immutable_sampler(
@@ -80,16 +74,10 @@ pub struct DescriptorBufferInfo<'a> {
 }
 impl<'a> DescriptorBufferInfo<'a> {
 	pub const unsafe fn from_raw(builder: vk::DescriptorBufferInfoBuilder<'a>) -> Self {
-		DescriptorBufferInfo {
-			builder
-		}
+		DescriptorBufferInfo { builder }
 	}
 
-	pub fn new(
-		buffer: &'a Buffer,
-		offset: vk::DeviceSize,
-		range: NonZeroU64
-	) -> Self {
+	pub fn new(buffer: &'a Buffer, offset: vk::DeviceSize, range: NonZeroU64) -> Self {
 		DescriptorBufferInfo {
 			builder: vk::DescriptorBufferInfo::builder()
 				.buffer(buffer.handle())
@@ -99,9 +87,7 @@ impl<'a> DescriptorBufferInfo<'a> {
 	}
 
 	pub fn transmute_slice(me: &[Self]) -> &[vk::DescriptorBufferInfoBuilder<'a>] {
-		unsafe {
-			std::mem::transmute(me)
-		}
+		unsafe { std::mem::transmute(me) }
 	}
 }
 unsafe impl<'a> Transparent for DescriptorBufferInfo<'a> {
@@ -132,10 +118,10 @@ pub struct DescriptorInlineUniformBlockInfo<'a> {
 	builder: vk::WriteDescriptorSetInlineUniformBlockEXTBuilder<'a>
 }
 impl<'a> DescriptorInlineUniformBlockInfo<'a> {
-	pub const unsafe fn from_raw(builder: vk::WriteDescriptorSetInlineUniformBlockEXTBuilder<'a>) -> Self {
-		DescriptorInlineUniformBlockInfo {
-			builder
-		}
+	pub const unsafe fn from_raw(
+		builder: vk::WriteDescriptorSetInlineUniformBlockEXTBuilder<'a>
+	) -> Self {
+		DescriptorInlineUniformBlockInfo { builder }
 	}
 
 	pub fn new(data: &'a [u8]) -> Result<Self, DescriptorInlineUniformBlockInfoError> {
@@ -150,11 +136,9 @@ impl<'a> DescriptorInlineUniformBlockInfo<'a> {
 			}
 		}
 
-		Ok(
-			DescriptorInlineUniformBlockInfo {
-				builder: vk::WriteDescriptorSetInlineUniformBlockEXT::builder().data(data)
-			}
-		)
+		Ok(DescriptorInlineUniformBlockInfo {
+			builder: vk::WriteDescriptorSetInlineUniformBlockEXT::builder().data(data)
+		})
 	}
 }
 impl<'a> Deref for DescriptorInlineUniformBlockInfo<'a> {
@@ -177,7 +161,9 @@ unsafe impl<'a> Transparent for vk::WriteDescriptorSetInlineUniformBlockEXTBuild
 }
 
 /// This is a hack. Waiting on `const_mut_refs` but it works like this on stable.
-pub struct DescriptorInlineUniformBlockInfoRefMut<'a>(pub &'a mut DescriptorInlineUniformBlockInfo<'a>);
+pub struct DescriptorInlineUniformBlockInfoRefMut<'a>(
+	pub &'a mut DescriptorInlineUniformBlockInfo<'a>
+);
 
 unsafe_enum_variants! {
 	enum DescriptorSetWriteDataInner ['a] {
@@ -246,12 +232,9 @@ impl<'a> DescriptorSetWrite<'a> {
 		let builder = Into::<vk::WriteDescriptorSetBuilder>::into(data)
 			.dst_set(descriptor_set.into_handle())
 			.dst_binding(binding)
-			.dst_array_element(array_element)
-		;
+			.dst_array_element(array_element);
 
-		DescriptorSetWrite {
-			builder
-		}
+		DescriptorSetWrite { builder }
 	}
 }
 unsafe impl<'a> Transparent for DescriptorSetWrite<'a> {
@@ -260,4 +243,3 @@ unsafe impl<'a> Transparent for DescriptorSetWrite<'a> {
 unsafe impl<'a> Transparent for vk::WriteDescriptorSetBuilder<'a> {
 	type Target = vk::WriteDescriptorSet;
 }
-

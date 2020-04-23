@@ -2,13 +2,7 @@ use std::{fmt, num::NonZeroU32, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::{
-	prelude::DescriptorSetLayout,
-	prelude::Device,
-	prelude::HostMemoryAllocator,
-	prelude::Vutex,
-	prelude::Vrc
-};
+use crate::prelude::{DescriptorSetLayout, Device, HostMemoryAllocator, Vrc, Vutex};
 
 use super::error::{DescriptorPoolError, DescriptorSetError};
 

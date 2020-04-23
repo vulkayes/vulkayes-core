@@ -10,6 +10,7 @@ use crate::{
 	ash::vk,
 	device::Device,
 	memory::host::HostMemoryAllocator,
+	prelude::Vrc,
 	queue::{sharing_mode::SharingMode, Queue},
 	resource::image::{
 		params::{ImageSize, MipmapLevels},
@@ -17,8 +18,7 @@ use crate::{
 	},
 	surface::Surface,
 	sync::{fence::Fence, semaphore::BinarySemaphore},
-	util::sync::{AtomicVool, Vutex},
-	prelude::Vrc
+	util::sync::{AtomicVool, Vutex}
 };
 
 pub mod error;

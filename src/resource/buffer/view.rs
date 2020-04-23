@@ -2,7 +2,7 @@ use std::{fmt, num::NonZeroU64, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::{prelude::HostMemoryAllocator, prelude::Buffer, prelude::Vrc, prelude::HasHandle};
+use crate::prelude::{Buffer, HasHandle, HostMemoryAllocator, Vrc};
 
 pub struct BufferView {
 	buffer: Vrc<Buffer>,

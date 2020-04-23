@@ -1,9 +1,4 @@
-use crate::{
-	entry,
-	instance,
-	memory::host::HostMemoryAllocator,
-	util::fmt::VkVersion
-};
+use crate::{entry, instance, memory::host::HostMemoryAllocator, util::fmt::VkVersion};
 
 #[cfg(feature = "rust_host_allocator")]
 #[test]
