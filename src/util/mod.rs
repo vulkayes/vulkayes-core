@@ -13,6 +13,7 @@ pub mod hash;
 pub mod string;
 pub mod validations;
 pub mod handle;
+pub mod transparent;
 
 #[derive(Debug, Copy, Clone)]
 pub enum WaitTimeout {

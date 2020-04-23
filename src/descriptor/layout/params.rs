@@ -2,24 +2,18 @@ use std::num::NonZeroU32;
 
 use ash::vk;
 
-/// Enum for supported descriptor set layout types and don't require special handling.
-#[allow(non_camel_case_types)]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-#[repr(i32)]
-pub enum DescriptorSetLayoutBindingGenericType {
-	SAMPLED_IMAGE = vk::DescriptorType::SAMPLED_IMAGE.as_raw(),
-	STORAGE_IMAGE = vk::DescriptorType::STORAGE_IMAGE.as_raw(),
-	UNIFORM_TEXEL_BUFFER = vk::DescriptorType::UNIFORM_TEXEL_BUFFER.as_raw(),
-	STORAGE_TEXEL_BUFFER = vk::DescriptorType::STORAGE_TEXEL_BUFFER.as_raw(),
-	UNIFORM_BUFFER = vk::DescriptorType::UNIFORM_BUFFER.as_raw(),
-	STORAGE_BUFFER = vk::DescriptorType::STORAGE_BUFFER.as_raw(),
-	UNIFORM_BUFFER_DYNAMIC = vk::DescriptorType::UNIFORM_BUFFER_DYNAMIC.as_raw(),
-	STORAGE_BUFFER_DYNAMIC = vk::DescriptorType::STORAGE_BUFFER_DYNAMIC.as_raw()
-}
-impl Into<vk::DescriptorType> for DescriptorSetLayoutBindingGenericType {
-	fn into(self) -> vk::DescriptorType {
-		vk::DescriptorType::from_raw(self as i32)
-	}
+vk_enum_subset! {
+	/// Enum for supported descriptor set layout types and don't require special handling.
+	pub enum DescriptorSetLayoutBindingGenericType {
+		SAMPLED_IMAGE,
+		STORAGE_IMAGE,
+		UNIFORM_TEXEL_BUFFER,
+		STORAGE_TEXEL_BUFFER,
+		UNIFORM_BUFFER,
+		STORAGE_BUFFER,
+		UNIFORM_BUFFER_DYNAMIC,
+		STORAGE_BUFFER_DYNAMIC
+	} impl Into<vk::DescriptorType>
 }
 
 unsafe_enum_variants! {

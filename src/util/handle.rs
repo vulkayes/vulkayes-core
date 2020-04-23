@@ -5,6 +5,7 @@ use std::fmt;
 use ash::vk;
 
 use crate::util::sync::{Vutex, VutexGuard};
+use crate::util::transparent::Transparent;
 
 /// Trait for objects that have corresponding Vulkan handles.
 pub trait HasHandle<T: vk::Handle + Copy>: std::borrow::Borrow<T> + PartialEq + Eq + Hash + PartialOrd + Ord {
@@ -51,6 +52,12 @@ impl<'a, T: vk::Handle> Deref for VutexGuardSafeHandleBorrow<'a, T> {
 		self.guard.deref()
 	}
 }
+impl<'a, T: vk::Handle> Into<VutexGuard<'a, T>> for VutexGuardSafeHandleBorrow<'a, T> {
+	fn into(self) -> VutexGuard<'a, T> {
+		self.guard
+	}
+}
+
 /// Trait for objects that have corresponding Vulkan handles and are internally synchronized.
 pub trait HasSynchronizedHandle<T: vk::Handle + Copy>: std::borrow::Borrow<Vutex<T>> + PartialEq + Eq + Hash + PartialOrd + Ord {
 	fn lock_handle(&self) -> VutexGuard<T> {
@@ -82,10 +89,8 @@ impl<'a, T: ash::vk::Handle> SafeHandle<'a, T> {
 		}
 	}
 
-	pub fn transmute_slice(me: &[Self]) -> &[T] {
-		unsafe {
-			std::mem::transmute(me)
-		}
+	pub fn into_handle(self) -> T {
+		self.handle
 	}
 }
 impl<'a, T: ash::vk::Handle + Clone> SafeHandle<'a, T> {
@@ -102,6 +107,9 @@ impl<'a, T: ash::vk::Handle> std::ops::Deref for SafeHandle<'a, T> {
 	fn deref(&self) -> &Self::Target {
 		&self.handle
 	}
+}
+unsafe impl<'a, T: ash::vk::Handle> Transparent for SafeHandle<'a, T> {
+	type Target = T;
 }
 impl<'a, T: ash::vk::Handle + Copy> fmt::Debug for SafeHandle<'a, T> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

@@ -22,5 +22,6 @@ pub use crate::{
 		semaphore::{BinarySemaphore, Semaphore}
 	},
 	util::sync::{Vrc, Vutex},
-	util::handle::{HasHandle, HasSynchronizedHandle, SafeHandle}
+	util::handle::{HasHandle, HasSynchronizedHandle, SafeHandle},
+	util::transparent::Transparent
 };

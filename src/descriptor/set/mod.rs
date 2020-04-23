@@ -1,18 +1,22 @@
 use std::{fmt::Debug, ops::Deref};
 
 use ash::vk;
+use ash::version::DeviceV1_0;
 
 use crate::{
 	prelude::DescriptorSetLayout,
 	prelude::DescriptorPool,
 	prelude::Vutex,
-	prelude::Vrc
+	prelude::Vrc,
+	prelude::Transparent
 };
 
 use super::error::DescriptorSetError;
 
 #[macro_use]
 pub mod update;
+
+pub mod error;
 
 pub struct DescriptorSet {
 	pool: Vrc<DescriptorPool>,
@@ -68,6 +72,19 @@ impl DescriptorSet {
 			pool,
 			layout,
 			descriptor_set: Vutex::new(descriptor_set)
+		}
+	}
+
+	pub fn update<'a>(
+		&self,
+		writes: &[update::DescriptorSetWrite<'a>],
+		copies: &[()]
+	) {
+		unsafe {
+			self.pool.device().update_descriptor_sets(
+				Transparent::transmute_slice(Transparent::transmute_slice(writes)),
+				&[]
+			)
 		}
 	}
 

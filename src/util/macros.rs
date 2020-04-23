@@ -88,6 +88,7 @@ macro_rules! unsafe_enum_variants {
 		);
 		impl $(< $($gen_def_tt)+ >)? Into<$into_type> for $name $(< $($gen_usage_tt)+ >)? {
 			fn into(self) -> $into_type {
+				#[allow(unused_doc_comments)]
 				match self.0 {
 					$(
 						$(#[$variant_attribute])*
@@ -126,6 +127,7 @@ macro_rules! unsafe_enum_variants {
 				#[allow(non_snake_case)]
 				$v const $($safety)? fn $variant($( $( $variant_name: $variant_type ),+ )?) -> Self {
 					$name(
+						#[allow(unused_doc_comments)]
 						$(#[$variant_attribute])*
 						$inner_name::$variant $({ $($variant_name),+ })?
 					)
@@ -254,8 +256,9 @@ macro_rules! vk_result_error {
 /// }
 ///
 /// // Base variant
+/// // Deref is optional. If it is not desired, the `<Target>` token is appended to `Borrow` instead.
 /// impl_common_handle_traits! {
-/// 	impl [A: Debug] Borrow<Target>, Deref, Eq, Hash, Ord for MyType<A> {
+/// 	impl [A: Debug] Deref<Target>, Borrow, Eq, Hash, Ord for MyType<A> {
 /// 		target = { field_on_self } // Borrows and Derefs to `Target` by invoking `&self.field_on_self`
 ///
 /// 		to_handle { .handle() } // Gets a handle from `Target` by invoking `self.field_on_self.handle()`
@@ -306,6 +309,7 @@ macro_rules! vk_result_error {
 /// // ...
 ///
 /// // Base variant
+/// // Deref is optional
 /// impl<A: Debug> std::ops::Deref for MyType<A> {
 /// 	type Target = Target;
 ///
@@ -780,6 +784,93 @@ macro_rules! deref_enum_dispatch {
 				}
 			}
 		)+
+	}
+}
+
+/// Creates a subset of a vk enum, which is defined as an i32 struct with associated constants.
+///
+/// Usage:
+/// ```
+/// # use vulkayes_core::vk_enum_subset;
+/// # mod vk {
+/// # 	pub struct MainEnum(i32);
+/// # 	impl MainEnum {
+/// # 		pub const FOO: Self = MainEnum(0);
+/// # 		pub const BAR: Self = MainEnum(1);
+/// # 		pub const BAZ: Self = MainEnum(2);
+/// # 		pub const QUZ: Self = MainEnum(3);
+/// #
+/// # 		pub const fn as_raw(self) -> i32 { self.0 }
+/// # 		pub const fn from_raw(v: i32) -> Self { MainEnum(v) }
+/// # 	}
+/// # }
+///
+/// vk_enum_subset! {
+/// 	/// Doc
+/// 	pub enum SubsetEnum {
+/// 		FOO,
+/// 		BAR,
+/// 		BAZ
+/// 	} impl Into<vk::MainEnum>
+/// }
+/// ```
+///
+/// expands to:
+/// ```
+/// # mod vk {
+/// # 	pub struct MainEnum(i32);
+/// # 	impl MainEnum {
+/// # 		pub const FOO: Self = MainEnum(0);
+/// # 		pub const BAR: Self = MainEnum(1);
+/// # 		pub const BAZ: Self = MainEnum(2);
+/// # 		pub const QUZ: Self = MainEnum(3);
+/// #
+/// # 		pub const fn as_raw(self) -> i32 { self.0 }
+/// # 		pub const fn from_raw(v: i32) -> Self { MainEnum(v) }
+/// # 	}
+/// # }
+///
+/// #[allow(non_camel_case_types)]
+/// #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+/// #[repr(i32)]
+/// /// Doc
+/// pub enum SubsetEnum {
+/// 	FOO = <vk::MainEnum>::FOO.as_raw(),
+/// 	BAR = <vk::MainEnum>::BAR.as_raw(),
+/// 	BAZ = <vk::MainEnum>::BAZ.as_raw()
+/// }
+/// impl Into<vk::MainEnum> for SubsetEnum {
+/// 	fn into(self) -> vk::MainEnum {
+/// 		<vk::MainEnum>::from_raw(self as i32)
+/// 	}
+/// }
+/// ```
+#[macro_export]
+macro_rules! vk_enum_subset {
+	(
+		$( #[$attribute: meta] )*
+		pub enum $name: ident {
+			$(
+				$( #[$variant_attribute: meta] )*
+				$variant: ident
+			),+ $(,)?
+		} impl Into<$vk_enum: ty>
+	) => {
+		#[allow(non_camel_case_types)]
+		#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+		#[repr(i32)]
+		$( #[$attribute] )*
+		pub enum $name {
+			$(
+				$( #[$variant_attribute] )*
+				$variant = <$vk_enum>::$variant.as_raw()
+			),+
+		}
+		impl Into<$vk_enum> for $name {
+			fn into(self) -> $vk_enum {
+				<$vk_enum>::from_raw(self as i32)
+			}
+		}
 	}
 }
 

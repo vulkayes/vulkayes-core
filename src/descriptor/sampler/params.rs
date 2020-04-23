@@ -1,19 +1,11 @@
 use ash::vk;
-use ash::vk::SamplerAddressMode;
 
-
-/// Sampler address mode containing only clamp modes.
-#[allow(non_camel_case_types)]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-#[repr(i32)]
-pub enum AddressModeClamp {
-	CLAMP_TO_EDGE = vk::SamplerAddressMode::CLAMP_TO_EDGE.as_raw(),
-	CLAMP_TO_BORDER = vk::SamplerAddressMode::CLAMP_TO_BORDER.as_raw()
-}
-impl Into<vk::SamplerAddressMode> for AddressModeClamp {
-	fn into(self) -> SamplerAddressMode {
-		unsafe { std::mem::transmute(self) }
-	}
+vk_enum_subset! {
+	/// Sampler address mode containing only clamp modes.
+	pub enum AddressModeClamp {
+		CLAMP_TO_EDGE,
+		CLAMP_TO_BORDER
+	} impl Into<vk::SamplerAddressMode>
 }
 
 unsafe_enum_variants! {
@@ -86,13 +78,8 @@ unsafe_enum_variants! {
 			}
 
 			builder.build()
-		},
-
-		{unsafe} pub Custom {
-			info: vk::SamplerCreateInfo
-		} => {
-			info
 		}
 	} as pub SamplerCreateInfo impl Into<vk::SamplerCreateInfo>
-	// TODO: the builder for this doesn't need a lifetime, but it has one
+	// TODO: the builder for this doesn't need a lifetime, but it has one,
+	// 	so we couldn't use it without phantom data
 }

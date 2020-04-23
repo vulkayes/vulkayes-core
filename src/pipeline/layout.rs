@@ -38,7 +38,7 @@ impl PipelineLayout {
 		push_constant_ranges: impl Iterator<Item = PushConstantRange>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, PipelineLayoutError> {
-		let descriptor_set_layouts: Vec<_> = descriptor_set_layouts.collect();
+		let descriptor_set_layouts: Vec<_> = collect_iter_faster!(descriptor_set_layouts, 8);
 
 		let descriptor_set_layout_handles =
 			collect_iter_faster!(descriptor_set_layouts.iter().map(|l| l.handle()), 8);

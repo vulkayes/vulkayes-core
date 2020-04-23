@@ -212,7 +212,7 @@ impl DescriptorPool {
 			collected.into_iter()
 		};
 
-		let layouts: Vec<_> = layouts.map(|l| *l.deref()).collect();
+		let layouts = collect_iter_faster!(layouts.map(|l| *l.deref()), 8);
 
 		let alloc_info = vk::DescriptorSetAllocateInfo::builder()
 			.descriptor_pool(*lock)
