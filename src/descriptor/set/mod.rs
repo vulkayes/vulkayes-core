@@ -68,22 +68,18 @@ impl DescriptorSet {
 		}
 	}
 
-	pub fn update<'a>(&self, writes: &[update::DescriptorSetWrite<'a>], copies: &[()]) {
+	pub fn update<'a>(
+		&self,
+		writes: &[update::DescriptorSetWrite<'a>],
+		copies: &[update::DescriptorSetCopy<'a>]
+	) {
 		unsafe {
 			self.pool.device().update_descriptor_sets(
 				Transparent::transmute_slice(Transparent::transmute_slice(writes)),
-				&[]
+				Transparent::transmute_slice(Transparent::transmute_slice(copies))
 			)
 		}
 	}
-
-	// #[cfg(feature = "nightly_const_generics")]
-	// pub fn update_const_gen<const S: usize, const W: usize, const C: usize>(
-	// 	descriptor_sets: [&DescriptorSet; S],
-	// 	writes: [(); W],
-	// 	copies: [(); C]
-	// ) {
-	// }
 
 	pub const fn pool(&self) -> &Vrc<DescriptorPool> {
 		&self.pool

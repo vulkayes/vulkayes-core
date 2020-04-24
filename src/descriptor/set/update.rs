@@ -207,11 +207,14 @@ unsafe_enum_variants! {
 		pub InlineUniformBlock {
 			info: DescriptorInlineUniformBlockInfoRefMut<'a>
 		} => {
-			vk::WriteDescriptorSet::builder()
+			let mut builder = vk::WriteDescriptorSet::builder()
 				.descriptor_type(vk::DescriptorType::INLINE_UNIFORM_BLOCK_EXT)
-				.push_next(
-					info.0.deref_mut()
-				)
+			;
+			builder.descriptor_count = info.0.data_size;
+
+			builder.push_next(
+				info.0.deref_mut()
+			)
 		}
 	} as pub DescriptorSetWriteData ['a] impl Into<vk::WriteDescriptorSetBuilder<'a>>
 }
@@ -228,13 +231,20 @@ impl<'a> DescriptorSetWrite<'a> {
 		binding: u32,
 		array_element: u32,
 		data: DescriptorSetWriteData<'a>
-	) -> Self {
+	) -> Result<Self, super::error::DescriptorSetWriteError> {
 		let builder = Into::<vk::WriteDescriptorSetBuilder>::into(data)
 			.dst_set(descriptor_set.into_handle())
 			.dst_binding(binding)
 			.dst_array_element(array_element);
 
-		DescriptorSetWrite { builder }
+		#[cfg(feature = "runtime_implicit_validations")]
+		{
+			if builder.descriptor_count == 0 {
+				return Err(super::error::DescriptorSetWriteError::ZeroCount)
+			}
+		}
+
+		Ok(DescriptorSetWrite { builder })
 	}
 }
 unsafe impl<'a> Transparent for DescriptorSetWrite<'a> {
@@ -242,4 +252,39 @@ unsafe impl<'a> Transparent for DescriptorSetWrite<'a> {
 }
 unsafe impl<'a> Transparent for vk::WriteDescriptorSetBuilder<'a> {
 	type Target = vk::WriteDescriptorSet;
+}
+
+/// Wrapper struct that is transparent `vk::WriteDescriptorSetBuilder`, but contains validations.
+#[repr(transparent)]
+pub struct DescriptorSetCopy<'a> {
+	#[allow(dead_code)] // Used through Transparent trait
+	builder: vk::CopyDescriptorSetBuilder<'a>
+}
+impl<'a> DescriptorSetCopy<'a> {
+	pub fn new(
+		source_set: SafeHandle<'a, vk::DescriptorSet>,
+		source_binding: u32,
+		source_array_element: u32,
+		destination_set: SafeHandle<'a, vk::DescriptorSet>,
+		destination_binding: u32,
+		destination_array_element: u32,
+		count: u32
+	) -> Self {
+		DescriptorSetCopy {
+			builder: vk::CopyDescriptorSet::builder()
+				.src_set(source_set.into_handle())
+				.src_binding(source_binding)
+				.src_array_element(source_array_element)
+				.dst_set(destination_set.into_handle())
+				.dst_binding(destination_binding)
+				.dst_array_element(destination_array_element)
+				.descriptor_count(count)
+		}
+	}
+}
+unsafe impl<'a> Transparent for DescriptorSetCopy<'a> {
+	type Target = vk::CopyDescriptorSetBuilder<'a>;
+}
+unsafe impl<'a> Transparent for vk::CopyDescriptorSetBuilder<'a> {
+	type Target = vk::CopyDescriptorSet;
 }

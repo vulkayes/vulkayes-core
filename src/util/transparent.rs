@@ -41,6 +41,7 @@ pub unsafe trait Transparent {
 	}
 }
 
+#[cfg(test)]
 mod test {
 	use crate::{descriptor::set::update::DescriptorSetWrite, util::transparent::Transparent};
 

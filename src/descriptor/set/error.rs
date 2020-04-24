@@ -17,3 +17,10 @@ pub enum DescriptorInlineUniformBlockInfoError {
 	#[error("Data size must be a multiple of four")]
 	SizeNotMultipleOfFour
 }
+
+#[derive(Error, Debug)]
+pub enum DescriptorSetWriteError {
+	#[cfg(feature = "runtime_implicit_validations")]
+	#[error("Descriptor count must not be zero")]
+	ZeroCount
+}
