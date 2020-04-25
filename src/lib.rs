@@ -45,10 +45,10 @@
 
 // Export `ash` because all other component will use it.
 pub use ash;
-// Export `seq_macro` because `lock_and_deref` macro requires it.
-pub use seq_macro;
 // Export `log` so that `log_*` features can be applied to all vulkayes crates
 pub use log;
+// Export `seq_macro` because `lock_and_deref` macro requires it.
+pub use seq_macro;
 
 /// Non zero `1u32` constant to avoid unnecessary unsafe blocks in constant contexts.
 pub const NONZEROU32_ONE: std::num::NonZeroU32 = unsafe { std::num::NonZeroU32::new_unchecked(1) };
@@ -67,6 +67,7 @@ pub mod physical_device;
 pub mod pipeline;
 pub mod prelude;
 pub mod queue;
+pub mod render_pass;
 pub mod resource;
 pub mod surface;
 pub mod swapchain;

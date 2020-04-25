@@ -18,9 +18,9 @@ impl Sampler {
 		create_info: params::SamplerCreateInfo,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, super::error::SamplerError> {
-		let create_info: vk::SamplerCreateInfo = create_info.into();
+		let create_info: vk::SamplerCreateInfoBuilder<'static> = create_info.into();
 
-		unsafe { Self::from_create_info(device, &create_info, host_memory_allocator) }
+		unsafe { Self::from_create_info(device, create_info, host_memory_allocator) }
 	}
 
 	pub unsafe fn from_create_info(

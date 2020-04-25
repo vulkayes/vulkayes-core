@@ -2,10 +2,12 @@ use std::{fmt, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::prelude::{Device, HasHandle, HostMemoryAllocator, Vrc};
+use crate::{
+	descriptor::layout::DescriptorSetLayout,
+	prelude::{Device, HasHandle, HostMemoryAllocator, Vrc}
+};
 
 use super::error::PipelineLayoutError;
-use crate::descriptor::layout::DescriptorSetLayout;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct PushConstantRange {

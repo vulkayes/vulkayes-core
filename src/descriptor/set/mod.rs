@@ -75,8 +75,8 @@ impl DescriptorSet {
 	) {
 		unsafe {
 			self.pool.device().update_descriptor_sets(
-				Transparent::transmute_slice(Transparent::transmute_slice(writes)),
-				Transparent::transmute_slice(Transparent::transmute_slice(copies))
+				Transparent::transmute_slice_twice(writes),
+				Transparent::transmute_slice_twice(copies)
 			)
 		}
 	}

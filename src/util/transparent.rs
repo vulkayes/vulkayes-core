@@ -33,6 +33,14 @@ pub unsafe trait Transparent {
 		unsafe { std::mem::transmute(me) }
 	}
 
+	fn transmute_slice_twice(me: &[Self]) -> &[<Self::Target as Transparent>::Target]
+	where
+		Self: Sized,
+		Self::Target: Transparent + Sized
+	{
+		Transparent::transmute_slice(Transparent::transmute_slice(me))
+	}
+
 	fn transmute_slice_mut(me: &mut [Self]) -> &mut [Self::Target]
 	where
 		Self: Sized

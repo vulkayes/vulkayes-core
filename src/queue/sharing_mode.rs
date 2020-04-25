@@ -1,6 +1,5 @@
-use thiserror::Error;
-
 use ash::vk;
+use thiserror::Error;
 
 use crate::queue::Queue;
 

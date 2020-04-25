@@ -1,5 +1,6 @@
 use std::fmt::{Debug, Display, Formatter, Result};
 
+#[macro_export]
 macro_rules! log_trace_common {
 	(
 		$title: literal,

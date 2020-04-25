@@ -1,3 +1,5 @@
+//! Macros galore!
+
 /// Generates a private enum and a public newtype struct that only has that enum as a value.
 /// Also generated constructors on the struct that match the enum variants.
 ///
@@ -68,25 +70,25 @@
 macro_rules! unsafe_enum_variants {
 	(
 		$(#[$attribute: meta])*
-		enum $inner_name: ident $([ $($gen_def_tt: tt)+ ])? {
+		enum $inner_name: ident $([ $($generic_bounds: tt)+ ])? {
 			$(
 				$(#[$variant_attribute: meta])*
 				$({$safety: tt})? $v: vis $variant: ident $({
 					 $($variant_name: ident: $variant_type: ty),+ $(,)?
 				})? => { $($into_code: tt)+ }
 			),+ $(,)?
-		} as pub $name: ident $([ $($gen_usage_tt: tt)+ ])? impl Into<$into_type: ty>
+		} as pub $name: ident $([ $($generic_params: tt)+ ])? impl Into<$into_type: ty>
 	) => {
 		unsafe_enum_variants!(
 			$(#[$attribute])*
-			enum $inner_name $([ $($gen_def_tt)+ ])? {
+			enum $inner_name $([ $($generic_bounds)+ ])? {
 				$(
 					$(#[$variant_attribute])*
 					$({$safety})? $v $variant $({ $($variant_name: $variant_type),+ })?
 				),+
-			} as pub $name $([ $($gen_usage_tt)+ ])?
+			} as pub $name $([ $($generic_params)+ ])?
 		);
-		impl $(< $($gen_def_tt)+ >)? Into<$into_type> for $name $(< $($gen_usage_tt)+ >)? {
+		impl $(< $($generic_bounds)+ >)? Into<$into_type> for $name $(< $($generic_params)+ >)? {
 			fn into(self) -> $into_type {
 				#[allow(unused_doc_comments)]
 				match self.0 {
@@ -101,17 +103,17 @@ macro_rules! unsafe_enum_variants {
 
 	(
 		$(#[$attribute: meta])*
-		enum $inner_name: ident $([ $($gen_def_tt: tt)+ ])? {
+		enum $inner_name: ident $([ $($generic_bounds: tt)+ ])? {
 			$(
 				$(#[$variant_attribute: meta])*
 				$({$safety: tt})? $v: vis $variant: ident $({
 					 $($variant_name: ident: $variant_type: ty),+ $(,)?
 				})?
 			),+ $(,)?
-		} as pub $name: ident $([ $($gen_usage_tt: tt)+ ])?
+		} as pub $name: ident $([ $($generic_params: tt)+ ])?
 	) => {
 		$(#[$attribute])*
-		enum $inner_name $(< $($gen_def_tt)+ >)? {
+		enum $inner_name $(< $($generic_bounds)+ >)? {
 			$(
 				$(#[$variant_attribute])*
 				$variant $({
@@ -120,8 +122,8 @@ macro_rules! unsafe_enum_variants {
 			),+
 		}
 		$(#[$attribute])*
-		pub struct $name $(< $($gen_def_tt)+ >)? ($inner_name $(< $($gen_usage_tt)+ >)?);
-		impl $(< $($gen_def_tt)+ >)? $name $(< $($gen_usage_tt)+ >)? {
+		pub struct $name $(< $($generic_bounds)+ >)? ($inner_name $(< $($generic_params)+ >)?);
+		impl $(< $($generic_bounds)+ >)? $name $(< $($generic_params)+ >)? {
 			$(
 				$(#[$variant_attribute])*
 				#[allow(non_snake_case)]
@@ -135,6 +137,144 @@ macro_rules! unsafe_enum_variants {
 			)*
 		}
 	};
+}
+
+/// Wraps an ash builder in a `#[repr(transparent)]` struct.
+///
+/// Usage:
+/// ```
+/// # use vulkayes_core::vk_builder_wrap;
+/// # #[repr(transparent)]
+/// # pub struct BuilderType<'a>(BuilderTargetType, std::marker::PhantomData<&'a ()>);
+/// # impl<'a> std::ops::Deref for BuilderType<'a> { type Target = BuilderTargetType; fn deref(&self) -> &Self::Target { &self.0 } }
+/// # #[derive(Debug)]
+/// # pub struct BuilderTargetType(u32);
+///
+/// vk_builder_wrap! {
+/// 	/// Doc comment
+/// 	pub struct Foo ['a] {
+/// 		// the `=> BuilderTargetType` part is optional and generates an additional Transparent unsafe impl
+/// 		builder: BuilderType<'a> => BuilderTargetType
+/// 	}
+/// 	impl ['a] {
+/// 		pub fn new(param: &'a u32) -> Self {
+/// 			todo!()
+/// 		}
+/// 	}
+/// }
+/// ```
+///
+/// expands to:
+/// ```
+/// # #[repr(transparent)]
+/// # pub struct BuilderType<'a>(BuilderTargetType, std::marker::PhantomData<&'a ()>);
+/// # impl<'a> std::ops::Deref for BuilderType<'a> { type Target = BuilderTargetType; fn deref(&self) -> &Self::Target { &self.0 } }
+/// # #[derive(Debug)]
+/// # pub struct BuilderTargetType(u32);
+///
+/// #[doc = r###"Doc comment"###]
+/// #[repr(transparent)]
+/// pub struct Foo<'a> {
+/// 	builder: BuilderType<'a>
+/// }
+/// impl<'a> Foo<'a> {
+/// 	pub const unsafe fn from_raw(
+/// 		builder: BuilderType<'a>
+/// 	) -> Self {
+/// 		Foo {
+/// 			builder
+/// 		}
+/// 	}
+///
+/// 	pub fn new(param: &'a u32) -> Self { todo!() }
+/// }
+/// impl<'a> std::ops::Deref for Foo<'a> {
+/// 	type Target = BuilderType<'a>;
+///
+/// 	fn deref(&self) -> &Self::Target {
+/// 		&self.builder
+/// 	}
+/// }
+/// impl<'a> std::ops::DerefMut for Foo<'a> {
+/// 	fn deref_mut(&mut self) -> &mut Self::Target {
+/// 		&mut self.builder
+/// 	}
+/// }
+/// unsafe impl<'a> vulkayes_core::util::transparent::Transparent for Foo<'a> {
+/// 	type Target = BuilderType<'a>;
+/// }
+/// // This is optional
+/// unsafe impl<'a> vulkayes_core::util::transparent::Transparent for BuilderType<'a> {
+/// 	type Target = BuilderTargetType
+/// 	;
+/// }
+/// impl<'a> std::fmt::Debug for Foo<'a> {
+/// 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+/// 		f.debug_struct(stringify!( Foo ))
+/// 			.field("self.builder.deref()", std::ops::Deref::deref(&self.builder))
+/// 			.finish()
+/// 	}
+/// }
+/// ```
+#[macro_export]
+macro_rules! vk_builder_wrap {
+	(
+		$(#[$attribute: meta])*
+		pub struct $name: ident $([ $($generic_bounds: tt)+ ])? {
+			builder: $target: ty $(=> $vk_target: ty)?
+		}
+		impl $([ $($generic_params: tt)+ ])? {
+			$(
+				$impl_code: tt
+			)+
+		}
+	) => {
+		$(#[$attribute])*
+		#[repr(transparent)]
+		pub struct $name $(< $($generic_bounds)+ >)? {
+			builder: $target
+		}
+		impl $(< $($generic_bounds)+ >)? $name $(< $($generic_params)+ >)? {
+			pub const unsafe fn from_raw(
+				builder: $target
+			) -> Self {
+				$name {
+					builder
+				}
+			}
+
+			$(
+				$impl_code
+			)+
+		}
+		impl $(< $($generic_bounds)+ >)? std::ops::Deref for $name $(< $($generic_params)+ >)? {
+			type Target = $target;
+
+			fn deref(&self) -> &Self::Target {
+				&self.builder
+			}
+		}
+		impl $(< $($generic_bounds)+ >)? std::ops::DerefMut for $name $(< $($generic_params)+ >)? {
+			fn deref_mut(&mut self) -> &mut Self::Target {
+				&mut self.builder
+			}
+		}
+		unsafe impl $(< $($generic_bounds)+ >)? $crate::util::transparent::Transparent for $name $(< $($generic_params)+ >)? {
+			type Target = $target;
+		}
+		$(
+			unsafe impl<'a> $crate::util::transparent::Transparent for $target {
+				type Target = $vk_target;
+			}
+		)?
+		impl $(< $($generic_bounds)+ >)? std::fmt::Debug for $name $(< $($generic_params)+ >)? {
+			fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+				f.debug_struct(stringify!($name))
+					.field("self.builder.deref()", std::ops::Deref::deref(&self.builder))
+				.finish()
+			}
+		}
+	}
 }
 
 /// Generates a public enum that derives `thiserror::Error` with `VkResult` variants and their `From` impls.
@@ -793,6 +933,7 @@ macro_rules! deref_enum_dispatch {
 /// ```
 /// # use vulkayes_core::vk_enum_subset;
 /// # mod vk {
+/// # 	#[derive(Debug, Eq, PartialEq)]
 /// # 	pub struct MainEnum(i32);
 /// # 	impl MainEnum {
 /// # 		pub const FOO: Self = MainEnum(0);
@@ -818,6 +959,7 @@ macro_rules! deref_enum_dispatch {
 /// expands to:
 /// ```
 /// # mod vk {
+/// # 	#[derive(Debug, Eq, PartialEq)]
 /// # 	pub struct MainEnum(i32);
 /// # 	impl MainEnum {
 /// # 		pub const FOO: Self = MainEnum(0);
@@ -842,6 +984,23 @@ macro_rules! deref_enum_dispatch {
 /// impl Into<vk::MainEnum> for SubsetEnum {
 /// 	fn into(self) -> vk::MainEnum {
 /// 		<vk::MainEnum>::from_raw(self as i32)
+/// 	}
+/// }
+/// impl std::convert::TryFrom<vk::MainEnum> for SubsetEnum {
+/// 	type Error = String;
+///
+/// 	fn try_from(value: vk::MainEnum) -> Result<Self, Self::Error> {
+/// 		match value {
+/// 			vk::MainEnum::FOO => Ok(SubsetEnum::FOO),
+/// 			vk::MainEnum::BAR => Ok(SubsetEnum::BAR),
+/// 			vk::MainEnum::BAZ => Ok(SubsetEnum::BAZ),
+/// 			_ => Err(
+/// 				format!(
+/// 					concat!("Cannot convert from ", stringify!(vk::MainEnum), "::{:?} to ", stringify!(SubsetEnum)),
+/// 					value
+/// 				)
+/// 			)
+/// 		}
 /// 	}
 /// }
 /// ```
@@ -869,6 +1028,21 @@ macro_rules! vk_enum_subset {
 		impl Into<$vk_enum> for $name {
 			fn into(self) -> $vk_enum {
 				<$vk_enum>::from_raw(self as i32)
+			}
+		}
+		impl std::convert::TryFrom<$vk_enum> for $name {
+			type Error = String;
+
+			fn try_from(value: $vk_enum) -> Result<Self, Self::Error> {
+				match value {
+					$( <$vk_enum>::$variant => Ok($name::$variant), )+
+					_ => Err(
+						format!(
+							concat!("Cannot convert from ", stringify!($vk_enum), "::{:?} to ", stringify!($name)),
+							value
+						)
+					)
+				}
 			}
 		}
 	}

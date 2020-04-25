@@ -24,7 +24,6 @@ unsafe_enum_variants! {
 				.min_lod(0.0).max_lod(0.0)
 				.compare_enable(false)
 				.unnormalized_coordinates(true)
-			.build()
 		},
 
 		pub Subsampled {
@@ -41,7 +40,6 @@ unsafe_enum_variants! {
 				.min_lod(0.0).max_lod(0.0)
 				.compare_enable(false)
 				.unnormalized_coordinates(false)
-			.build()
 		},
 
 		pub Generic {
@@ -77,9 +75,7 @@ unsafe_enum_variants! {
 				builder = builder.compare_enable(true).compare_op(compare_op);
 			}
 
-			builder.build()
+			builder
 		}
-	} as pub SamplerCreateInfo impl Into<vk::SamplerCreateInfo>
-	// TODO: the builder for this doesn't need a lifetime, but it has one,
-	// 	so we couldn't use it without phantom data
+	} as pub SamplerCreateInfo impl Into<vk::SamplerCreateInfoBuilder<'static>>
 }

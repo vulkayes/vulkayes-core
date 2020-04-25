@@ -1,60 +1,48 @@
-use std::num::NonZeroU64;
+use std::{num::NonZeroU64, ops::DerefMut};
 
 use ash::vk;
 
-use crate::prelude::{Buffer, HasHandle, ImageView, SafeHandle, Sampler};
+use crate::prelude::{Buffer, HasHandle, ImageView, SafeHandle, Sampler, Transparent};
 
 use super::error::{DescriptorImageInfoError, DescriptorInlineUniformBlockInfoError};
-use crate::util::transparent::Transparent;
-use std::ops::{Deref, DerefMut};
 
-/// Transparent wrapper struct over `DescriptorImageInfoBuilder` that guarantees validity of handles.
-#[repr(transparent)]
-pub struct DescriptorImageInfo<'a> {
-	#[allow(dead_code)] // used through the Transparent trait
-	builder: vk::DescriptorImageInfoBuilder<'a>
-}
-impl<'a> DescriptorImageInfo<'a> {
-	pub const unsafe fn from_raw(builder: vk::DescriptorImageInfoBuilder<'a>) -> Self {
-		DescriptorImageInfo { builder }
+vk_builder_wrap! {
+	/// Transparent wrapper struct over `DescriptorImageInfoBuilder`.
+	pub struct DescriptorImageInfo ['a] {
+		builder: vk::DescriptorImageInfoBuilder<'a> => vk::DescriptorImageInfo
 	}
+	impl ['a] {
+		pub fn new(
+			sampler: &'a Sampler,
+			image_view: &'a ImageView,
+			image_layout: vk::ImageLayout
+		) -> Result<Self, DescriptorImageInfoError> {
+			#[cfg(feature = "runtime_implicit_validations")]
+			{
+				if sampler.device() != image_view.image().device() {
+					return Err(DescriptorImageInfoError::SamplerImageViewDeviceMismatch)
+				}
+			}
 
-	pub fn new(
-		sampler: &'a Sampler,
-		image_view: &'a ImageView,
-		image_layout: vk::ImageLayout
-	) -> Result<Self, DescriptorImageInfoError> {
-		#[cfg(feature = "runtime_implicit_validations")]
-		{
-			if sampler.device() != image_view.image().device() {
-				return Err(DescriptorImageInfoError::SamplerImageViewDeviceMismatch)
+			Ok(Self {
+				builder: vk::DescriptorImageInfo::builder()
+					.sampler(sampler.handle())
+					.image_view(image_view.handle())
+					.image_layout(image_layout)
+			})
+		}
+
+		pub fn with_immutable_sampler(
+			image_view: &'a ImageView,
+			image_layout: vk::ImageLayout
+		) -> Self {
+			Self {
+				builder: vk::DescriptorImageInfo::builder()
+					.image_view(image_view.handle())
+					.image_layout(image_layout)
 			}
 		}
-
-		Ok(Self {
-			builder: vk::DescriptorImageInfo::builder()
-				.sampler(sampler.handle())
-				.image_view(image_view.handle())
-				.image_layout(image_layout)
-		})
 	}
-
-	pub fn with_immutable_sampler(
-		image_view: &'a ImageView,
-		image_layout: vk::ImageLayout
-	) -> Self {
-		Self {
-			builder: vk::DescriptorImageInfo::builder()
-				.image_view(image_view.handle())
-				.image_layout(image_layout)
-		}
-	}
-}
-unsafe impl<'a> Transparent for DescriptorImageInfo<'a> {
-	type Target = vk::DescriptorImageInfoBuilder<'a>;
-}
-unsafe impl<'a> Transparent for vk::DescriptorImageInfoBuilder<'a> {
-	type Target = vk::DescriptorImageInfo;
 }
 vk_enum_subset! {
 	pub enum DescriptorTypeImage {
@@ -66,35 +54,21 @@ vk_enum_subset! {
 	} impl Into<vk::DescriptorType>
 }
 
-/// Transparent wrapper struct over `DescriptorBufferInfoBuilder` that guarantees validity of handles.
-#[repr(transparent)]
-pub struct DescriptorBufferInfo<'a> {
-	#[allow(dead_code)] // used through the Transparent trait
-	builder: vk::DescriptorBufferInfoBuilder<'a>
-}
-impl<'a> DescriptorBufferInfo<'a> {
-	pub const unsafe fn from_raw(builder: vk::DescriptorBufferInfoBuilder<'a>) -> Self {
-		DescriptorBufferInfo { builder }
+vk_builder_wrap! {
+	/// Transparent wrapper struct over `DescriptorBufferInfoBuilder`.
+	pub struct DescriptorBufferInfo ['a] {
+		builder: vk::DescriptorBufferInfoBuilder<'a> => vk::DescriptorBufferInfo
 	}
-
-	pub fn new(buffer: &'a Buffer, offset: vk::DeviceSize, range: NonZeroU64) -> Self {
-		DescriptorBufferInfo {
-			builder: vk::DescriptorBufferInfo::builder()
-				.buffer(buffer.handle())
-				.offset(offset)
-				.range(range.get())
+	impl ['a] {
+		pub fn new(buffer: &'a Buffer, offset: vk::DeviceSize, range: NonZeroU64) -> Self {
+			DescriptorBufferInfo {
+				builder: vk::DescriptorBufferInfo::builder()
+					.buffer(buffer.handle())
+					.offset(offset)
+					.range(range.get())
+			}
 		}
 	}
-
-	pub fn transmute_slice(me: &[Self]) -> &[vk::DescriptorBufferInfoBuilder<'a>] {
-		unsafe { std::mem::transmute(me) }
-	}
-}
-unsafe impl<'a> Transparent for DescriptorBufferInfo<'a> {
-	type Target = vk::DescriptorBufferInfoBuilder<'a>;
-}
-unsafe impl<'a> Transparent for vk::DescriptorBufferInfoBuilder<'a> {
-	type Target = vk::DescriptorBufferInfo;
 }
 vk_enum_subset! {
 	pub enum DescriptorTypeBuffer {
@@ -112,54 +86,30 @@ vk_enum_subset! {
 	} impl Into<vk::DescriptorType>
 }
 
-/// Transparent wrapper struct over `WriteDescriptorSetInlineUniformBlockEXT` that guarantees validity of handles.
-#[repr(transparent)]
-pub struct DescriptorInlineUniformBlockInfo<'a> {
-	builder: vk::WriteDescriptorSetInlineUniformBlockEXTBuilder<'a>
-}
-impl<'a> DescriptorInlineUniformBlockInfo<'a> {
-	pub const unsafe fn from_raw(
-		builder: vk::WriteDescriptorSetInlineUniformBlockEXTBuilder<'a>
-	) -> Self {
-		DescriptorInlineUniformBlockInfo { builder }
+vk_builder_wrap! {
+	/// Transparent wrapper struct over `WriteDescriptorSetInlineUniformBlockEXT`.
+	pub struct DescriptorInlineUniformBlockInfo ['a] {
+		builder: vk::WriteDescriptorSetInlineUniformBlockEXTBuilder<'a> => vk::WriteDescriptorSetInlineUniformBlockEXT
 	}
+	impl ['a] {
+		pub fn new(data: &'a [u8]) -> Result<Self, DescriptorInlineUniformBlockInfoError> {
+			#[cfg(feature = "runtime_implicit_validations")]
+			{
+				if data.len() == 0 {
+					return Err(DescriptorInlineUniformBlockInfoError::DataEmpty)
+				}
 
-	pub fn new(data: &'a [u8]) -> Result<Self, DescriptorInlineUniformBlockInfoError> {
-		#[cfg(feature = "runtime_implicit_validations")]
-		{
-			if data.len() == 0 {
-				return Err(DescriptorInlineUniformBlockInfoError::DataEmpty)
+				if data.len() % 4 != 0 {
+					return Err(DescriptorInlineUniformBlockInfoError::SizeNotMultipleOfFour)
+				}
 			}
 
-			if data.len() % 4 != 0 {
-				return Err(DescriptorInlineUniformBlockInfoError::SizeNotMultipleOfFour)
-			}
+			Ok(DescriptorInlineUniformBlockInfo {
+				builder: vk::WriteDescriptorSetInlineUniformBlockEXT::builder().data(data)
+			})
 		}
-
-		Ok(DescriptorInlineUniformBlockInfo {
-			builder: vk::WriteDescriptorSetInlineUniformBlockEXT::builder().data(data)
-		})
 	}
 }
-impl<'a> Deref for DescriptorInlineUniformBlockInfo<'a> {
-	type Target = vk::WriteDescriptorSetInlineUniformBlockEXTBuilder<'a>;
-
-	fn deref(&self) -> &Self::Target {
-		&self.builder
-	}
-}
-impl<'a> DerefMut for DescriptorInlineUniformBlockInfo<'a> {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.builder
-	}
-}
-unsafe impl<'a> Transparent for DescriptorInlineUniformBlockInfo<'a> {
-	type Target = vk::WriteDescriptorSetInlineUniformBlockEXTBuilder<'a>;
-}
-unsafe impl<'a> Transparent for vk::WriteDescriptorSetInlineUniformBlockEXTBuilder<'a> {
-	type Target = vk::WriteDescriptorSetInlineUniformBlockEXT;
-}
-
 /// This is a hack. Waiting on `const_mut_refs` but it works like this on stable.
 pub struct DescriptorInlineUniformBlockInfoRefMut<'a>(
 	pub &'a mut DescriptorInlineUniformBlockInfo<'a>
@@ -174,9 +124,7 @@ unsafe_enum_variants! {
 			vk::WriteDescriptorSet::builder()
 				.descriptor_type(descriptor_type.into())
 				.image_info(
-					Transparent::transmute_slice(
-						Transparent::transmute_slice(image_infos)
-					)
+					Transparent::transmute_slice_twice(image_infos)
 				)
 		},
 
@@ -187,9 +135,7 @@ unsafe_enum_variants! {
 			vk::WriteDescriptorSet::builder()
 				.descriptor_type(descriptor_type.into())
 				.buffer_info(
-					Transparent::transmute_slice(
-						Transparent::transmute_slice(buffer_infos)
-					)
+					Transparent::transmute_slice_twice(buffer_infos)
 				)
 		},
 
@@ -219,72 +165,60 @@ unsafe_enum_variants! {
 	} as pub DescriptorSetWriteData ['a] impl Into<vk::WriteDescriptorSetBuilder<'a>>
 }
 
-/// Wrapper struct that is transparent `vk::WriteDescriptorSetBuilder`, but contains validations.
-#[repr(transparent)]
-pub struct DescriptorSetWrite<'a> {
-	#[allow(dead_code)] // Used through Transparent trait
-	builder: vk::WriteDescriptorSetBuilder<'a>
-}
-impl<'a> DescriptorSetWrite<'a> {
-	pub fn new(
-		descriptor_set: SafeHandle<'a, vk::DescriptorSet>,
-		binding: u32,
-		array_element: u32,
-		data: DescriptorSetWriteData<'a>
-	) -> Result<Self, super::error::DescriptorSetWriteError> {
-		let builder = Into::<vk::WriteDescriptorSetBuilder>::into(data)
-			.dst_set(descriptor_set.into_handle())
-			.dst_binding(binding)
-			.dst_array_element(array_element);
+vk_builder_wrap! {
+	/// Wrapper struct that is transparent `vk::WriteDescriptorSetBuilder`.
+	pub struct DescriptorSetWrite ['a] {
+		builder: vk::WriteDescriptorSetBuilder<'a> => vk::WriteDescriptorSet
+	}
+	impl ['a] {
+		pub fn new(
+			descriptor_set: SafeHandle<'a, vk::DescriptorSet>,
+			binding: u32,
+			array_element: u32,
+			data: DescriptorSetWriteData<'a>
+		) -> Result<Self, super::error::DescriptorSetWriteError> {
+			let builder = Into::<vk::WriteDescriptorSetBuilder>::into(data)
+				.dst_set(descriptor_set.into_handle())
+				.dst_binding(binding)
+				.dst_array_element(array_element);
 
-		#[cfg(feature = "runtime_implicit_validations")]
-		{
-			if builder.descriptor_count == 0 {
-				return Err(super::error::DescriptorSetWriteError::ZeroCount)
+			#[cfg(feature = "runtime_implicit_validations")]
+			{
+				if builder.descriptor_count == 0 {
+					return Err(super::error::DescriptorSetWriteError::ZeroCount)
+				}
+			}
+
+			Ok(DescriptorSetWrite { builder })
+		}
+	}
+}
+
+vk_builder_wrap! {
+	/// Wrapper struct that is transparent `vk::WriteDescriptorSetBuilder`.
+	pub struct DescriptorSetCopy ['a] {
+		builder: vk::CopyDescriptorSetBuilder<'a> => vk::CopyDescriptorSet
+	}
+	impl ['a] {
+		pub fn new(
+			source_set: SafeHandle<'a, vk::DescriptorSet>,
+			source_binding: u32,
+			source_array_element: u32,
+			destination_set: SafeHandle<'a, vk::DescriptorSet>,
+			destination_binding: u32,
+			destination_array_element: u32,
+			count: u32
+		) -> Self {
+			DescriptorSetCopy {
+				builder: vk::CopyDescriptorSet::builder()
+					.src_set(source_set.into_handle())
+					.src_binding(source_binding)
+					.src_array_element(source_array_element)
+					.dst_set(destination_set.into_handle())
+					.dst_binding(destination_binding)
+					.dst_array_element(destination_array_element)
+					.descriptor_count(count)
 			}
 		}
-
-		Ok(DescriptorSetWrite { builder })
 	}
-}
-unsafe impl<'a> Transparent for DescriptorSetWrite<'a> {
-	type Target = vk::WriteDescriptorSetBuilder<'a>;
-}
-unsafe impl<'a> Transparent for vk::WriteDescriptorSetBuilder<'a> {
-	type Target = vk::WriteDescriptorSet;
-}
-
-/// Wrapper struct that is transparent `vk::WriteDescriptorSetBuilder`, but contains validations.
-#[repr(transparent)]
-pub struct DescriptorSetCopy<'a> {
-	#[allow(dead_code)] // Used through Transparent trait
-	builder: vk::CopyDescriptorSetBuilder<'a>
-}
-impl<'a> DescriptorSetCopy<'a> {
-	pub fn new(
-		source_set: SafeHandle<'a, vk::DescriptorSet>,
-		source_binding: u32,
-		source_array_element: u32,
-		destination_set: SafeHandle<'a, vk::DescriptorSet>,
-		destination_binding: u32,
-		destination_array_element: u32,
-		count: u32
-	) -> Self {
-		DescriptorSetCopy {
-			builder: vk::CopyDescriptorSet::builder()
-				.src_set(source_set.into_handle())
-				.src_binding(source_binding)
-				.src_array_element(source_array_element)
-				.dst_set(destination_set.into_handle())
-				.dst_binding(destination_binding)
-				.dst_array_element(destination_array_element)
-				.descriptor_count(count)
-		}
-	}
-}
-unsafe impl<'a> Transparent for DescriptorSetCopy<'a> {
-	type Target = vk::CopyDescriptorSetBuilder<'a>;
-}
-unsafe impl<'a> Transparent for vk::CopyDescriptorSetBuilder<'a> {
-	type Target = vk::CopyDescriptorSet;
 }

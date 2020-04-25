@@ -7,6 +7,7 @@ use crate::{prelude::Vrc, swapchain::image::SwapchainImage};
 pub mod error;
 
 pub mod image;
+pub mod layout;
 pub mod params;
 pub mod view;
 
