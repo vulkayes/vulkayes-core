@@ -61,6 +61,7 @@ pub mod command;
 pub mod descriptor;
 pub mod device;
 pub mod entry;
+pub mod framebuffer;
 pub mod instance;
 pub mod memory;
 pub mod physical_device;

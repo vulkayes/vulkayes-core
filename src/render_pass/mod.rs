@@ -95,6 +95,10 @@ impl RenderPass {
 			host_memory_allocator
 		}))
 	}
+
+	pub const fn device(&self) -> &Vrc<Device> {
+		&self.device
+	}
 }
 impl_common_handle_traits! {
 	impl HasHandle<vk::RenderPass>, Deref, Borrow, Eq, Hash, Ord for RenderPass {
