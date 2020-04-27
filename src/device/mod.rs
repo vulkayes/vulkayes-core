@@ -1,6 +1,6 @@
 //! A device represents an instance of connection to a physical device.
 
-use std::{ffi::CString, fmt::Debug, ops::Deref, os::raw::c_char};
+use std::{ffi::CStr, fmt::Debug, ops::Deref, os::raw::c_char};
 
 use ash::{
 	version::{DeviceV1_0, InstanceV1_0},
@@ -42,8 +42,8 @@ impl Device {
 	pub fn new<'a, P: AsRef<[f32]> + Debug>(
 		physical_device: PhysicalDevice,
 		queues: impl AsRef<[QueueCreateInfo<P>]>,
-		layers: impl IntoIterator<Item = &'a str>,
-		extensions: impl IntoIterator<Item = &'a str>,
+		layers: impl IntoIterator<Item = &'a CStr> + std::fmt::Debug,
+		extensions: impl IntoIterator<Item = &'a CStr> + std::fmt::Debug,
 		features: vk::PhysicalDeviceFeatures,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<DeviceData, error::DeviceError> {
@@ -62,7 +62,7 @@ impl Device {
 			}
 		}
 
-		// create infos pointer are valid because they are kept alive by queues argument
+		// create info pointers are valid because they are kept alive by queues argument
 		let queue_create_infos: Vec<_> = queues
 			.iter()
 			.map(|q| {
@@ -73,26 +73,16 @@ impl Device {
 			})
 			.collect();
 
-		let cstr_layers = layers
-			.into_iter()
-			.map(CString::new)
-			.collect::<Result<Vec<_>, _>>()?;
-		let ptr_layers: Vec<*const c_char> = cstr_layers.iter().map(|cstr| cstr.as_ptr()).collect();
-
-		let cstr_extensions = extensions
-			.into_iter()
-			.map(CString::new)
-			.collect::<Result<Vec<_>, _>>()?;
-		let ptr_extensions: Vec<*const c_char> =
-			cstr_extensions.iter().map(|cstr| cstr.as_ptr()).collect();
-
 		log::debug!(
 			"Device create info {:#?} {:#?} {:#?} {:#?}",
 			queues,
-			cstr_layers,
-			cstr_extensions,
+			layers,
+			extensions,
 			features
 		);
+
+		let ptr_layers: Vec<*const c_char> = layers.into_iter().map(CStr::as_ptr).collect();
+		let ptr_extensions: Vec<*const c_char> = extensions.into_iter().map(CStr::as_ptr).collect();
 		let create_info = vk::DeviceCreateInfo::builder()
 			.queue_create_infos(&queue_create_infos)
 			.enabled_layer_names(ptr_layers.as_slice())

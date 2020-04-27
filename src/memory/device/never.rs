@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use ash::vk;
 
 use super::{
@@ -38,19 +36,6 @@ unsafe impl BufferMemoryAllocator for NeverDeviceAllocator {
 		_: vk::Buffer,
 		_: Self::AllocationRequirements
 	) -> Result<DeviceMemoryAllocation, Self::Error> {
-		unreachable!()
-	}
-}
-
-/// Device memory allocation that is statically impossible.
-///
-/// This is the return type of the `NeverDeviceAllocator::allocate` methods.
-#[derive(Debug)]
-pub enum NeverMemoryAllocation {}
-impl Deref for NeverMemoryAllocation {
-	type Target = vk::DeviceMemory;
-
-	fn deref(&self) -> &Self::Target {
 		unreachable!()
 	}
 }

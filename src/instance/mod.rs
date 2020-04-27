@@ -1,7 +1,7 @@
 //! An instance represents an instance of Vulkan application.
 
 use std::{
-	ffi::CString,
+	ffi::{CString, CStr},
 	fmt::{Debug, Error, Formatter},
 	ops::Deref,
 	os::raw::c_char
@@ -63,8 +63,8 @@ impl Instance {
 	pub fn new<'a>(
 		entry: Entry,
 		application_info: ApplicationInfo,
-		layers: impl IntoIterator<Item = &'a str>,
-		extensions: impl IntoIterator<Item = &'a str>,
+		layers: impl IntoIterator<Item = &'a CStr> + std::fmt::Debug,
+		extensions: impl IntoIterator<Item = &'a CStr> + std::fmt::Debug,
 		host_memory_allocator: HostMemoryAllocator,
 		debug_callback: debug::DebugCallback
 	) -> Result<Vrc<Self>, error::InstanceError> {
@@ -80,25 +80,15 @@ impl Instance {
 			.engine_version(application_info.engine_version.0)
 			.api_version(application_info.api_version.0);
 
-		let cstr_layers = layers
-			.into_iter()
-			.map(CString::new)
-			.collect::<Result<Vec<_>, _>>()?;
-		let ptr_layers: Vec<*const c_char> = cstr_layers.iter().map(|cstr| cstr.as_ptr()).collect();
-
-		let cstr_extensions = extensions
-			.into_iter()
-			.map(CString::new)
-			.collect::<Result<Vec<_>, _>>()?;
-		let ptr_extensions: Vec<*const c_char> =
-			cstr_extensions.iter().map(|cstr| cstr.as_ptr()).collect();
-
 		log::debug!(
 			"Instance create info {:#?} {:#?} {:#?}",
 			application_info,
-			cstr_layers,
-			cstr_extensions
+			layers,
+			extensions
 		);
+
+		let ptr_layers: Vec<*const c_char> = layers.into_iter().map(CStr::as_ptr).collect();
+		let ptr_extensions: Vec<*const c_char> = extensions.into_iter().map(CStr::as_ptr).collect();
 		let create_info = vk::InstanceCreateInfo::builder()
 			.application_info(&app_info)
 			.enabled_layer_names(ptr_layers.as_slice())

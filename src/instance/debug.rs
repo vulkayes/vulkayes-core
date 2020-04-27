@@ -39,7 +39,7 @@ impl Default for DebugCallback {
 /// Final message will look like this:
 ///
 /// `{PERF} PREFIX (LOCATION:CODE) <OBJ_TYPE OBJ> MESSAGE`
-unsafe extern "system" fn default_debug_callback(
+pub unsafe extern "system" fn default_debug_callback(
 	flags: DebugReportFlagsEXT,
 	object_type: DebugReportObjectTypeEXT,
 	object: u64,
@@ -78,10 +78,13 @@ unsafe extern "system" fn default_debug_callback(
 
 		DebugReportFlagsEXT::PERFORMANCE_WARNING => log::warn!("{}", message),
 
-		_ => log::error!(
-			"Message has multiple DebugReportFlagsEXT bits set: {}",
-			message
-		) // This should be unreachable
+		_ => {
+			log::error!(
+				"Message has multiple DebugReportFlagsEXT bits set: {}",
+				message
+			);
+			unreachable!() // hopefully
+		}
 	}
 
 	vk::FALSE
