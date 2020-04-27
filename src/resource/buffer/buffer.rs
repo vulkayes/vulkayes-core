@@ -31,7 +31,7 @@ impl Buffer {
 		size: NonZeroU64,
 		usage: vk::BufferUsageFlags,
 		sharing_mode: SharingMode<impl AsRef<[u32]>>,
-		allocator_params: params::AllocatorParams<A>,
+		allocator_params: params::BufferAllocatorParams<A>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::BufferError<A::Error>> {
 		#[cfg(feature = "runtime_implicit_validations")]
@@ -60,7 +60,7 @@ impl Buffer {
 	pub unsafe fn from_create_info<A: BufferMemoryAllocator>(
 		device: Vrc<Device>,
 		create_info: impl Deref<Target = vk::BufferCreateInfo>,
-		allocator_params: params::AllocatorParams<A>,
+		allocator_params: params::BufferAllocatorParams<A>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::BufferError<A::Error>> {
 		let c_info = create_info.deref();
@@ -75,7 +75,7 @@ impl Buffer {
 		let buffer = device.create_buffer(c_info, host_memory_allocator.as_ref())?;
 
 		let memory = match allocator_params {
-			params::AllocatorParams::Some {
+			params::BufferAllocatorParams::Some {
 				allocator,
 				requirements
 			} => {
@@ -93,7 +93,7 @@ impl Buffer {
 				device.bind_buffer_memory(buffer, *memory.deref(), memory.bind_offset())?;
 				Some(memory)
 			}
-			params::AllocatorParams::None => None
+			params::BufferAllocatorParams::None => None
 		};
 
 		let size = NonZeroU64::new_unchecked(create_info.size);

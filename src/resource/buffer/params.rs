@@ -1,15 +1,15 @@
 use crate::memory::device::{allocator::BufferMemoryAllocator, never::NeverDeviceAllocator};
 
 #[derive(Debug)]
-pub enum AllocatorParams<'a, A: BufferMemoryAllocator = NeverDeviceAllocator> {
+pub enum BufferAllocatorParams<'a, A: BufferMemoryAllocator = NeverDeviceAllocator> {
 	None,
 	Some {
 		allocator: &'a A,
 		requirements: A::AllocationRequirements
 	}
 }
-impl Default for AllocatorParams<'static> {
+impl Default for BufferAllocatorParams<'static> {
 	fn default() -> Self {
-		AllocatorParams::None
+		BufferAllocatorParams::None
 	}
 }

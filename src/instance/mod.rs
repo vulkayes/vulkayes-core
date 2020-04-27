@@ -1,7 +1,7 @@
 //! An instance represents an instance of Vulkan application.
 
 use std::{
-	ffi::{CString, CStr},
+	ffi::{CStr, CString},
 	fmt::{Debug, Error, Formatter},
 	ops::Deref,
 	os::raw::c_char
@@ -179,7 +179,7 @@ impl Deref for Instance {
 }
 impl Drop for Instance {
 	fn drop(&mut self) {
-		log_trace_common!("Dropping", self);
+		log_trace_common!(info; "Dropping", self);
 
 		unsafe {
 			if let Some(debug) = self.debug.as_mut() {

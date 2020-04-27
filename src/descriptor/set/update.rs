@@ -4,7 +4,11 @@ use ash::vk;
 
 use crate::prelude::{Buffer, HasHandle, ImageView, SafeHandle, Sampler, Transparent};
 
-use super::error::{DescriptorImageInfoError, DescriptorInlineUniformBlockInfoError};
+use super::super::error::{
+	DescriptorImageInfoError,
+	DescriptorInlineUniformBlockInfoError,
+	DescriptorSetWriteError
+};
 
 vk_builder_wrap! {
 	/// Transparent wrapper struct over `DescriptorImageInfoBuilder`.
@@ -176,7 +180,7 @@ vk_builder_wrap! {
 			binding: u32,
 			array_element: u32,
 			data: DescriptorSetWriteData<'a>
-		) -> Result<Self, super::error::DescriptorSetWriteError> {
+		) -> Result<Self, DescriptorSetWriteError> {
 			let builder = Into::<vk::WriteDescriptorSetBuilder>::into(data)
 				.dst_set(descriptor_set.into_handle())
 				.dst_binding(binding)
@@ -185,7 +189,7 @@ vk_builder_wrap! {
 			#[cfg(feature = "runtime_implicit_validations")]
 			{
 				if builder.descriptor_count == 0 {
-					return Err(super::error::DescriptorSetWriteError::ZeroCount)
+					return Err(DescriptorSetWriteError::ZeroCount)
 				}
 			}
 

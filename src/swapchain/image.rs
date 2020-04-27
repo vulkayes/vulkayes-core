@@ -3,7 +3,7 @@ use std::{mem::ManuallyDrop, num::NonZeroU32, ops::Deref};
 use ash::vk;
 
 use crate::{
-	prelude::Vrc,
+	prelude::{Device, Vrc},
 	resource::image::{
 		params::{ImageSize, ImageSize2D},
 		Image
@@ -71,5 +71,17 @@ impl Deref for SwapchainImage {
 
 	fn deref(&self) -> &Self::Target {
 		&self.image
+	}
+}
+impl Drop for SwapchainImage {
+	fn drop(&mut self) {
+		// Don't do this at home:
+		// `image` contains a `Vrc<Device>`, which needs to be dropped, but also
+		// `vk::Image`, which can't. Here we do an ugly trick by dropping the
+		// `&Vrc<Device>` returned by `image` in place. Since we don't touch it
+		// and it's wrapped in `ManuallyDrop` already, it's not UB.
+		unsafe {
+			std::ptr::drop_in_place(self.image.device() as *const Vrc<Device> as *mut Vrc<Device>)
+		}
 	}
 }

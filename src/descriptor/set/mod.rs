@@ -6,10 +6,7 @@ use crate::prelude::{DescriptorPool, DescriptorSetLayout, Transparent, Vrc, Vute
 
 use super::error::DescriptorSetError;
 
-#[macro_use]
 pub mod update;
-
-pub mod error;
 
 pub struct DescriptorSet {
 	pool: Vrc<DescriptorPool>,

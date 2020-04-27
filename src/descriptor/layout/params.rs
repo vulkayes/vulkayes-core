@@ -27,7 +27,7 @@ unsafe_enum_variants! {
 		pub ImmutableSamplers {
 			combined: bool,
 			stage_flags: vk::ShaderStageFlags,
-			samplers: &'a [crate::util::handle::SafeHandle<'a, vk::Sampler>]
+			samplers: &'a [crate::util::handle::SafeHandle<'a, vk::Sampler>] // TODO: Switch to owned to keep it alive?
 		} => {
 			vk::DescriptorSetLayoutBinding::builder()
 				.descriptor_type(

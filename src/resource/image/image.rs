@@ -29,7 +29,7 @@ impl Image {
 		tiling_and_layout: params::ImageTilingAndLayout,
 		usage: vk::ImageUsageFlags,
 		sharing_mode: SharingMode<impl AsRef<[u32]>>,
-		allocator_param: params::AllocatorParams<A>,
+		allocator_param: params::ImageAllocatorParams<A>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::ImageError<A::Error>> {
 		#[cfg(feature = "runtime_implicit_validations")]
@@ -69,7 +69,7 @@ impl Image {
 	pub unsafe fn from_create_info<A: ImageMemoryAllocator>(
 		device: Vrc<Device>,
 		create_info: impl Deref<Target = vk::ImageCreateInfo>,
-		allocator_params: params::AllocatorParams<A>,
+		allocator_params: params::ImageAllocatorParams<A>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::ImageError<A::Error>> {
 		let c_info = create_info.deref();
@@ -84,7 +84,7 @@ impl Image {
 		let image = device.create_image(c_info, host_memory_allocator.as_ref())?;
 
 		let memory = match allocator_params {
-			params::AllocatorParams::Some {
+			params::ImageAllocatorParams::Some {
 				allocator,
 				requirements
 			} => {
@@ -102,7 +102,7 @@ impl Image {
 				device.bind_image_memory(image, *memory.deref(), memory.bind_offset())?;
 				Some(memory)
 			}
-			params::AllocatorParams::None => None
+			params::ImageAllocatorParams::None => None
 		};
 
 		let size = params::ImageSize::from_image_create_info(c_info);

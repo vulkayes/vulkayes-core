@@ -70,6 +70,7 @@ pub mod prelude;
 pub mod queue;
 pub mod render_pass;
 pub mod resource;
+pub mod shader;
 pub mod surface;
 pub mod swapchain;
 pub mod sync;

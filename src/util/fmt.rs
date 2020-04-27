@@ -8,7 +8,23 @@ macro_rules! log_trace_common {
 			$log_item: expr
 		),*
 	) => {
-		log::trace!(
+		log_trace_common!(
+			trace;
+			$title,
+			$(
+				$log_item
+			),*
+		)
+	};
+
+	(
+		$not_trace: ident;
+		$title: literal,
+		$(
+			$log_item: expr
+		),*
+	) => {
+		log::$not_trace!(
 			concat!(
 				$title,
 				$(
@@ -19,7 +35,7 @@ macro_rules! log_trace_common {
 				$log_item
 			),*
 		)
-	}
+	};
 }
 
 /// Formats Vulkan handle as `<ObjectType $raw>`.

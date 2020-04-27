@@ -74,9 +74,24 @@ impl From<bool> for QueuePresentResultValue {
 }
 pub type QueuePresentResult = Result<QueuePresentResultValue, QueuePresentError>;
 #[derive(Debug)]
-pub enum QueuePresentMultipleResult<A: AsRef<[QueuePresentResult]>> {
+pub enum QueuePresentMultipleResult<A: AsRef<[QueuePresentResult]> = [QueuePresentResult; 0]> {
 	Single(QueuePresentResult),
 	Multiple(A)
+}
+impl<A: AsRef<[QueuePresentResult]>> QueuePresentMultipleResult<A> {
+	pub fn try_into_single(self) -> Option<QueuePresentResult> {
+		match self {
+			QueuePresentMultipleResult::Single(v) => Some(v),
+			_ => None
+		}
+	}
+
+	pub fn try_into_multiple(self) -> Option<A> {
+		match self {
+			QueuePresentMultipleResult::Multiple(v) => Some(v),
+			_ => None
+		}
+	}
 }
 impl<A: AsRef<[QueuePresentResult]>> From<QueuePresentResult> for QueuePresentMultipleResult<A> {
 	fn from(value: QueuePresentResult) -> Self {

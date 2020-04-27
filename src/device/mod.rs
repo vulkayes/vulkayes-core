@@ -170,7 +170,7 @@ impl Deref for Device {
 }
 impl Drop for Device {
 	fn drop(&mut self) {
-		log_trace_common!("Dropping", self);
+		log_trace_common!(info; "Dropping", self);
 
 		unsafe {
 			// Ensure all work is done

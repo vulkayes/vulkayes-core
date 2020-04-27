@@ -2,35 +2,42 @@ use std::{fmt, num::NonZeroU32, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::prelude::{HasHandle, HostMemoryAllocator, RenderPass, SafeHandle, Transparent, Vrc};
+use crate::prelude::{HasHandle, HostMemoryAllocator, ImageView, RenderPass, Vrc};
 
 pub mod error;
 
 pub struct Framebuffer {
 	render_pass: Vrc<RenderPass>,
+	attachments: Vec<Vrc<ImageView>>,
 	framebuffer: vk::Framebuffer,
 	host_memory_allocator: HostMemoryAllocator
 }
 impl Framebuffer {
 	pub fn new(
 		render_pass: Vrc<RenderPass>,
-		attachments: &[SafeHandle<vk::ImageView>],
+		attachments: impl Iterator<Item = Vrc<ImageView>>,
 		dimensions: [NonZeroU32; 2],
 		layers: NonZeroU32,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::FramebufferError> {
+		let attachments = collect_iter_faster!(attachments, 8);
+		let attachment_handles = collect_iter_faster!(attachments.iter().map(|a| a.handle()), 8);
+
 		let create_info = vk::FramebufferCreateInfo::builder()
 			.render_pass(render_pass.handle())
-			.attachments(Transparent::transmute_slice(attachments))
+			.attachments(&attachment_handles)
 			.width(dimensions[0].get())
 			.height(dimensions[1].get())
 			.layers(layers.get());
 
-		unsafe { Self::from_create_info(render_pass, create_info, host_memory_allocator) }
+		unsafe {
+			Self::from_create_info(render_pass, attachments, create_info, host_memory_allocator)
+		}
 	}
 
 	pub unsafe fn from_create_info(
 		render_pass: Vrc<RenderPass>,
+		attachments: Vec<Vrc<ImageView>>,
 		create_info: impl Deref<Target = vk::FramebufferCreateInfo>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::FramebufferError> {
@@ -47,6 +54,7 @@ impl Framebuffer {
 
 		Ok(Vrc::new(Framebuffer {
 			render_pass,
+			attachments,
 			framebuffer,
 			host_memory_allocator
 		}))
@@ -54,6 +62,10 @@ impl Framebuffer {
 
 	pub const fn render_pass(&self) -> &Vrc<RenderPass> {
 		&self.render_pass
+	}
+
+	pub const fn attachments(&self) -> &Vec<Vrc<ImageView>> {
+		&self.attachments
 	}
 }
 impl_common_handle_traits! {
@@ -76,6 +88,7 @@ impl fmt::Debug for Framebuffer {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		f.debug_struct("Framebuffer")
 			.field("render_pass", &self.render_pass)
+			.field("attachments", &self.attachments)
 			.field("framebuffer", &self.safe_handle())
 			.field("host_memory_allocator", &self.host_memory_allocator)
 			.finish()

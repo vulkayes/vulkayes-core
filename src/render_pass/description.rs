@@ -4,6 +4,8 @@
 /// ```
 /// # use vulkayes_core::render_pass_description;
 /// # use vulkayes_core::render_pass::params::{AttachmentOps, AttachmentDescription, SubpassDescriptionHolder, AttachmentReference};
+/// # use vulkayes_core::prelude::{ImageLayoutAttachment, ImageLayoutFinal};
+/// # use vulkayes_core::ash::vk;
 ///
 /// let attachments: [AttachmentDescription; 2];
 /// let holders: (SubpassDescriptionHolder<[AttachmentReference; 1], [AttachmentReference; 1], [u32; 1]>);
@@ -15,25 +17,25 @@
 ///
 /// 		// name of the attachment, has to be unique across the whole macro to avoid collisions inside the macro
 /// 		Foo {
-/// 			format = R8_UINT, // any associated constant of vk::Format
+/// 			format = vk::Format::R8_UINT, // any associated constant of vk::Format
 /// 			ops = AttachmentOps::Color {
 /// 				load: vk::AttachmentLoadOp::CLEAR,
 /// 				store: vk::AttachmentStoreOp::DONT_CARE
 /// 			},
-/// 			layouts = UNDEFINED => COLOR_ATTACHMENT_OPTIMAL, // initial layout (vk::ImageLayout) and final layout (ImageLayoutFinal)
-/// 			samples = TYPE_2, // optional, any associated constant of vk::SampleCountFlags
+/// 			layouts = vk::ImageLayout::UNDEFINED => ImageLayoutFinal::COLOR_ATTACHMENT_OPTIMAL, // initial layout (vk::ImageLayout) and final layout (ImageLayoutFinal)
+/// 			samples = vk::SampleCountFlags::TYPE_2, // optional, any associated constant of vk::SampleCountFlags
 /// 			may_alias = true // optional, controls the vk::AttachmentDescriptionFlags::MAY_ALIAS flag
 /// 		}
 ///
 /// 		Bar {
-/// 			format = D16_UNORM_S8_UINT,
+/// 			format = vk::Format::D16_UNORM_S8_UINT,
 /// 			ops = AttachmentOps::DepthStencil {
 /// 				depth_load: vk::AttachmentLoadOp::CLEAR,
 /// 				depth_store: vk::AttachmentStoreOp::DONT_CARE,
-/// 					stencil_load: vk::AttachmentLoadOp::LOAD,
+/// 				stencil_load: vk::AttachmentLoadOp::LOAD,
 /// 				stencil_store: vk::AttachmentStoreOp::STORE
 /// 			},
-/// 			layouts = UNDEFINED => DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+/// 			layouts = vk::ImageLayout::UNDEFINED => ImageLayoutFinal::DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 /// 		}
 ///
 /// 		// etc.
@@ -48,7 +50,7 @@
 ///
 /// 			// optional, specifies color attachments
 /// 			color = [
-/// 				@Foo<GENERAL> // uses with layout GENERAL
+/// 				@Foo{ImageLayoutAttachment::GENERAL} // uses with layout GENERAL
 /// 			]
 ///
 /// 			// optional, can only be specified if color attachments are also specified,
@@ -58,7 +60,7 @@
 /// 			]
 ///
 /// 			// optional, specifies depth stencil attachment with layout DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-/// 			depth_stencil = @Bar<DEPTH_STENCIL_ATTACHMENT_OPTIMAL>
+/// 			depth_stencil = @Bar{ImageLayoutAttachment::DEPTH_STENCIL_ATTACHMENT_OPTIMAL}
 ///
 /// 			// optional, specifies attachments to preserve
 /// 			preserve = [
@@ -77,10 +79,10 @@ macro_rules! render_pass_description {
 			$unused: ident,
 			$(
 				$att_name: ident {
-					format = $format: ident,
+					format = $format: expr,
 					ops = $ops: expr,
-					layouts = $initial_layout: ident => $final_layout: ident
-					$(, samples = $samples: ident)?
+					layouts = $initial_layout: expr => $final_layout: expr
+					$(, samples = $samples: expr)?
 					$(, may_alias = $may_alias: expr)?
 					$(,)?
 				}
@@ -92,26 +94,26 @@ macro_rules! render_pass_description {
 					$(
 						input = [
 							$(
-								@$input_name: ident $(<$input_layout: ident>)?
+								@$input_name: ident $({$input_layout: expr})?
 							),+ $(,)?
 						]
 					)?
 					$(
 						color = [
 							$(
-								@$color_name: ident $(<$color_layout: ident>)?
+								@$color_name: ident $({$color_layout: expr})?
 							),+ $(,)?
 						]
 						$(
 							resolve = [
 								$(
-									@$resolve_name: ident $(<$resolve_layout: ident>)?
+									@$resolve_name: ident $({$resolve_layout: expr})?
 								),+ $(,)?
 							]
 						)?
 					)?
 					$(
-						depth_stencil = @$ds_name: ident $(<$ds_layout: ident>)?
+						depth_stencil = @$ds_name: ident $({$ds_layout: expr})?
 					)?
 					$(
 						preserve = [
@@ -154,17 +156,17 @@ macro_rules! render_pass_description {
 
 					#[allow(unused_variables)]
 					let samples = vk::SampleCountFlags::TYPE_1;
-					$(let samples = vk::SampleCountFlags::$samples;)?
+					$(let samples: vk::SampleCountFlags = $samples;)?
 
 					(
 						Some(counter),
 						AttachmentDescription::new(
 							may_alias,
-							vk::Format::$format,
+							$format,
 							samples,
 							$ops,
-							vk::ImageLayout::$initial_layout,
-							ImageLayoutFinal::$final_layout
+							$initial_layout,
+							$final_layout
 						)
 					)
 				};
@@ -176,28 +178,60 @@ macro_rules! render_pass_description {
 			$(
 				#[allow(non_snake_case)]
 				let $sub_name: SubpassDescriptionHolder<_, _, _> = {
-					let input_attachments = render_pass_description!(
-						__INNER_attachment_references
+					let input_attachments = {
+						#[allow(unused_variables)]
+						let attachments: Option<[AttachmentReference; 0]> = None;
 						$(
-							$($input_name $($input_layout)?),+
+							let attachments = Some([
+								$(
+									render_pass_description!(
+										__INNER_attachment_reference
+										$input_name $($input_layout)?
+									)
+								),+
+							]);
 						)?
-					);
 
-					let color_attachments = render_pass_description!(
-						__INNER_attachment_references
-						$(
-							$($color_name $($color_layout)?),+
-						)?
-					);
-					let resolve_attachments = render_pass_description!(
-						__INNER_attachment_references
-						$(
+						attachments
+					};
+
+					#[allow(unused_variables)]
+					let color_resolve_attachments: Option<([AttachmentReference; 0], Option<[AttachmentReference; 0]>)> = None;
+					$(
+						let color_attachments = [
 							$(
-								$($resolve_name $($resolve_layout)?),+
-							)?
+								render_pass_description!(
+									__INNER_attachment_reference
+									$color_name $($color_layout)?
+								)
+							),+
+						];
+
+						fn typecheck_hack<T>(t: T) -> Option<(T, Option<T>)> {
+							Some(
+								(t, None)
+							)
+						}
+						#[allow(unused_variables)]
+						let color_resolve_attachments = typecheck_hack(color_attachments);
+
+						$(
+							let resolve_attachments = Some([
+								$(
+									render_pass_description!(
+										__INNER_attachment_reference
+										$resolve_name $($resolve_layout)?
+									)
+								),+
+							]);
+							let color_resolve_attachments = Some(
+								(
+									color_resolve_attachments.unwrap().0,
+									resolve_attachments
+								)
+							);
 						)?
-					);
-					let color_resolve_attachments = color_attachments.map(|c| (c, resolve_attachments));
+					)?
 
 					#[allow(unused_variables)]
 					let depth_stencil_attachment: Option<AttachmentReference> = None;
@@ -237,34 +271,8 @@ macro_rules! render_pass_description {
 	};
 
 	(
-		__INNER_attachment_references
-		$(
-			$(
-				$name: ident $($layout: ident)?
-			),+
-		)?
-	) => {
-		{
-			#[allow(unused_variables)]
-			let attachments: Option<[AttachmentReference; 0]> = None;
-			$(
-				let attachments = Some([
-					$(
-						render_pass_description!(
-							__INNER_attachment_reference
-							$name $($layout)?
-						)
-					),+
-				]);
-			)?
-
-			attachments
-		}
-	};
-
-	(
 		__INNER_attachment_reference
-		$name: ident $($layout: ident)?
+		$name: ident $($layout: expr)?
 	) => {
 		{
 			#[allow(unused_variables)]
@@ -273,7 +281,7 @@ macro_rules! render_pass_description {
 				let layout: Result<
 					ImageLayoutAttachment,
 					<ImageLayoutAttachment as std::convert::TryFrom<vk::ImageLayout>>::Error
-				> = Ok(ImageLayoutAttachment::$layout);
+				> = Ok($layout);
 			)?
 			let layout: ImageLayoutAttachment = match layout {
 				Ok(v) => v,
@@ -300,43 +308,44 @@ mod test {
 			Attachments {
 				UNUSED,
 				Foo {
-					format = R8_UNORM,
+					format = vk::Format::R8_UNORM,
 					ops = AttachmentOps::Color {
 						load: vk::AttachmentLoadOp::CLEAR,
 						store: vk::AttachmentStoreOp::DONT_CARE
 					},
-					layouts = UNDEFINED => COLOR_ATTACHMENT_OPTIMAL,
-					samples = TYPE_2,
+					layouts = vk::ImageLayout::UNDEFINED => ImageLayoutFinal::COLOR_ATTACHMENT_OPTIMAL,
+					samples = vk::SampleCountFlags::TYPE_2,
 					may_alias = true
 				}
 				Bar {
-					format = R8_UINT,
+					format = vk::Format::R8_UINT,
 					ops = AttachmentOps::Color {
 						load: vk::AttachmentLoadOp::CLEAR,
 						store: vk::AttachmentStoreOp::DONT_CARE
 					},
-					layouts = PREINITIALIZED => SHADER_READ_ONLY_OPTIMAL,
-					samples = TYPE_1
+					layouts = vk::ImageLayout::PREINITIALIZED => ImageLayoutFinal::SHADER_READ_ONLY_OPTIMAL,
+					samples = vk::SampleCountFlags::TYPE_1
 				}
 				Baz {
-					format = D16_UNORM_S8_UINT,
+					format = vk::Format::D16_UNORM_S8_UINT,
 					ops = AttachmentOps::DepthStencil {
 						depth_load: vk::AttachmentLoadOp::CLEAR,
 						depth_store: vk::AttachmentStoreOp::DONT_CARE,
 						stencil_load: vk::AttachmentLoadOp::LOAD,
 						stencil_store: vk::AttachmentStoreOp::STORE
 					},
-					layouts = UNDEFINED => DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+					layouts = vk::ImageLayout::UNDEFINED => ImageLayoutFinal::DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 				}
 			}
 			Subpasses {
 				First {
 					color = [@Foo, @UNUSED]
-					resolve = [@Bar<GENERAL>, @UNUSED]
-					depth_stencil = @Baz<DEPTH_STENCIL_ATTACHMENT_OPTIMAL>
+					resolve = [@Bar{ImageLayoutAttachment::GENERAL}, @UNUSED]
+					depth_stencil = @Baz{ImageLayoutAttachment::DEPTH_STENCIL_ATTACHMENT_OPTIMAL}
 				}
 				Second {
-					input = [@Bar<COLOR_ATTACHMENT_OPTIMAL>]
+					input = [@Bar{ImageLayoutAttachment::COLOR_ATTACHMENT_OPTIMAL}]
+					color = [@UNUSED]
 					preserve = [@Foo]
 				}
 			}

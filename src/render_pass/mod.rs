@@ -9,7 +9,6 @@ use crate::prelude::{Device, HasHandle, HostMemoryAllocator, Transparent, Vrc};
 pub mod error;
 pub mod params;
 
-#[macro_use]
 pub mod description;
 
 pub struct RenderPass {

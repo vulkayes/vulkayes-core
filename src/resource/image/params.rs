@@ -1,20 +1,23 @@
-use std::{borrow::Borrow, num::NonZeroU32};
+use std::num::NonZeroU32;
 
 use ash::vk;
 
-use crate::memory::device::{allocator::ImageMemoryAllocator, never::NeverDeviceAllocator};
+use crate::{
+	memory::device::{allocator::ImageMemoryAllocator, never::NeverDeviceAllocator},
+	util::transparent::Transparent
+};
 
 #[derive(Debug)]
-pub enum AllocatorParams<'a, A: ImageMemoryAllocator = NeverDeviceAllocator> {
+pub enum ImageAllocatorParams<'a, A: ImageMemoryAllocator = NeverDeviceAllocator> {
 	None,
 	Some {
 		allocator: &'a A,
 		requirements: A::AllocationRequirements
 	}
 }
-impl Default for AllocatorParams<'static> {
+impl Default for ImageAllocatorParams<'static> {
 	fn default() -> Self {
-		AllocatorParams::None
+		ImageAllocatorParams::None
 	}
 }
 
@@ -236,10 +239,15 @@ impl From<ImageSize3D> for ImageSize {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct ImageSize1D(ImageSize);
-impl Borrow<ImageSize> for ImageSize1D {
-	fn borrow(&self) -> &ImageSize {
+impl std::ops::Deref for ImageSize1D {
+	type Target = ImageSize;
+
+	fn deref(&self) -> &Self::Target {
 		&self.0
 	}
+}
+unsafe impl Transparent for ImageSize1D {
+	type Target = ImageSize;
 }
 
 /// Transparent image size wrapper that is guaranteed to be 2D.
@@ -251,20 +259,30 @@ impl From<ImageSizeCubeCompatible> for ImageSize2D {
 		value.0
 	}
 }
-impl Borrow<ImageSize> for ImageSize2D {
-	fn borrow(&self) -> &ImageSize {
+impl std::ops::Deref for ImageSize2D {
+	type Target = ImageSize;
+
+	fn deref(&self) -> &Self::Target {
 		&self.0
 	}
+}
+unsafe impl Transparent for ImageSize2D {
+	type Target = ImageSize;
 }
 
 /// Transparent image size wrapper that is guaranteed to be 3D.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct ImageSize3D(ImageSize);
-impl Borrow<ImageSize> for ImageSize3D {
-	fn borrow(&self) -> &ImageSize {
+impl std::ops::Deref for ImageSize3D {
+	type Target = ImageSize;
+
+	fn deref(&self) -> &Self::Target {
 		&self.0
 	}
+}
+unsafe impl Transparent for ImageSize3D {
+	type Target = ImageSize;
 }
 
 /// Wrapper around `ImageSize` that is also guaranteed to be cube-compatible.
@@ -274,6 +292,7 @@ impl Borrow<ImageSize> for ImageSize3D {
 /// in Valid Usage section of <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkImageCreateInfo.html>
 /// concerning `CUBE_COMPATIBLE_BIT`.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[repr(transparent)]
 pub struct ImageSizeCubeCompatible(ImageSize2D);
 impl ImageSizeCubeCompatible {
 	/// Creates a new `CubeCompatibleImageSize`.
@@ -293,10 +312,15 @@ impl ImageSizeCubeCompatible {
 		))
 	}
 }
-impl Borrow<ImageSize2D> for ImageSizeCubeCompatible {
-	fn borrow(&self) -> &ImageSize2D {
+impl std::ops::Deref for ImageSizeCubeCompatible {
+	type Target = ImageSize2D;
+
+	fn deref(&self) -> &Self::Target {
 		&self.0
 	}
+}
+unsafe impl Transparent for ImageSizeCubeCompatible {
+	type Target = ImageSize2D;
 }
 
 unsafe_enum_variants! {
@@ -468,6 +492,16 @@ pub struct ImageSubresourceRange {
 	pub array_layers: NonZeroU32
 }
 impl ImageSubresourceRange {
+	// pub fn whole_image(image: &Image, aspect_mask: vk::ImageAspectFlags) -> Self {
+	// 	ImageSubresourceRange {
+	// 		aspect_mask,
+	// 		mipmap_levels_base: 0,
+	// 		mipmap_levels: image.size().mipmap_levels(),
+	// 		array_layers_base: 0,
+	// 		array_layers: image.size().array_layers()
+	// 	}
+	// }
+
 	/// ### Safety
 	///
 	/// * `info.subresource_range.level_count` must be non-zero

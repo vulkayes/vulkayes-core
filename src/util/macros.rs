@@ -701,7 +701,7 @@ macro_rules! offsetable_struct {
 
 				$(
 					let $field = $crate::util::align_up(current_offset, std::mem::align_of::<$ftype>());
-					let current_offset = current_offset + std::mem::size_of::<$ftype>();
+					let current_offset = $field + std::mem::size_of::<$ftype>();
 				)*
 
 				$offsets_name {
@@ -1149,4 +1149,23 @@ macro_rules! collect_iter_faster {
 			),+
 		);
 	};
+}
+
+
+#[cfg(test)]
+mod test {
+	#[test]
+	fn test_offsetable_struct() {
+		offsetable_struct! {
+			pub struct Foo {
+				pub a: f32,
+				pub b: f64,
+				pub c: [f32; 4]
+			} repr(C) as FooOffsets
+		}
+
+		assert_eq!(Foo::offsets().a, 0);
+		assert_eq!(Foo::offsets().b, 8);
+		assert_eq!(Foo::offsets().c, 16);
+	}
 }
