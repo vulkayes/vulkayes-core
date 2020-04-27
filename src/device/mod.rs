@@ -148,6 +148,10 @@ impl Device {
 		result
 	}
 
+	pub fn wait_idle(&self) -> Result<(), error::DeviceWaitError> {
+		unsafe { self.device.device_wait_idle().map_err(Into::into) }
+	}
+
 	pub const fn physical_device(&self) -> &PhysicalDevice {
 		&self.physical_device
 	}
@@ -172,14 +176,9 @@ impl Drop for Device {
 	fn drop(&mut self) {
 		log_trace_common!(info; "Dropping", self);
 
+		let _ = self.wait_idle();
 		unsafe {
-			// Ensure all work is done
-			self.device
-				.device_wait_idle()
-				.expect("Could not wait for device");
-
-			self.device
-				.destroy_device(self.host_memory_allocator.as_ref());
+			self.device.destroy_device(self.host_memory_allocator.as_ref());
 		}
 	}
 }
