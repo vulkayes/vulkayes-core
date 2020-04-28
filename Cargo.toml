@@ -11,7 +11,7 @@ default = [
     "naive_device_allocator",
     "log_release_max_level_off",
     "rust_host_allocator",
-    "parking_lot",
+    "multi_thread",
     "insecure_hash"
 ]
 
@@ -25,7 +25,7 @@ naive_device_allocator = []
 # enable multi thread support by using Arc<T> and Mutex<T> instead of Rc<T> and RefCell<T>
 multi_thread = []
 # use synchronization primitived from the parking_lot crate instead of the stdlib
-parking_lot_vutex = ["parking_lot", "multi_thread"]
+#parking_lot_vutex = ["parking_lot", "multi_thread"] TODO: Fix Mutex.lock() not returning a result
 
 # use cryptographically insecure HashMap and HashSet for better peformance
 insecure_hash = ["rustc-hash"]

@@ -38,6 +38,7 @@ mod inner {
 		/// A type alias to `MutexGuard`.
 		pub type VutexGuard<'a, T> = std::sync::MutexGuard<'a, T>;
 	}
+	pub use vutex::*;
 }
 
 #[macro_use]
@@ -103,7 +104,7 @@ mod inner {
 #[cfg(feature = "multi_thread")]
 mod test {
 	#[allow(unused_imports)] // It is actually used
-	use crate::Vrc;
+	use crate::prelude::Vrc;
 
 	macro_rules! test_send_sync {
 		(
