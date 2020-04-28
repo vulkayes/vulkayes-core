@@ -99,6 +99,7 @@ impl Image {
 					}
 				}
 
+				// TODO: Error here leaks buffer
 				device.bind_image_memory(image, *memory.deref(), memory.bind_offset())?;
 				Some(memory)
 			}

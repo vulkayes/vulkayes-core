@@ -62,6 +62,10 @@ impl RustHostMemoryAllocator {
 	}
 
 	unsafe fn dealloc(&mut self, ptr: *mut u8) {
+		if ptr == null_mut() {
+			return
+		}
+
 		let layout = match self.ptr_map.remove(&ptr) {
 			None => unreachable!(),
 			Some(layout) => layout

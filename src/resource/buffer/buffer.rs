@@ -90,6 +90,7 @@ impl Buffer {
 					}
 				}
 
+				// TODO: Error here leaks buffer
 				device.bind_buffer_memory(buffer, *memory.deref(), memory.bind_offset())?;
 				Some(memory)
 			}

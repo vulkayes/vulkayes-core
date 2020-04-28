@@ -7,12 +7,12 @@ edition = "2018"
 [features]
 default = [
     "vulkan1_2",
-    "runtime_implicit_validations",
+    # "runtime_implicit_validations",
     "naive_device_allocator",
     "log_release_max_level_off",
-    "rust_host_allocator",
-    "multi_thread",
-    "insecure_hash"
+    # "rust_host_allocator",
+    # "multi_thread",
+    # "insecure_hash"
 ]
 
 # enables host allocator Custom variant, making it a sized type
