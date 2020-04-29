@@ -6,6 +6,9 @@ use crate::{command::pool::CommandPool, prelude::Vrc, util::sync::Vutex};
 
 use super::error::CommandBufferError;
 
+pub mod recording;
+pub mod clear_commands;
+
 pub struct CommandBuffer {
 	pool: Vrc<CommandPool>,
 	command_buffer: Vutex<vk::CommandBuffer>
@@ -58,6 +61,13 @@ impl CommandBuffer {
 			pool,
 			command_buffer: Vutex::new(command_buffer)
 		}
+	}
+
+	/// ### Panic
+	///
+	/// This function will panic of the vutex cannot be locked.
+	pub fn lock_recording(&self) -> recording::CommandBufferRecordingLock {
+		recording::CommandBufferRecordingLock::new(self)
 	}
 
 	pub const fn pool(&self) -> &Vrc<CommandPool> {

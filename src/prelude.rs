@@ -39,7 +39,7 @@ pub use crate::{
 	resource::{
 		buffer::{params::BufferAllocatorParams, view::BufferView, Buffer},
 		image::{
-			layout::{ImageLayoutAttachment, ImageLayoutFinal},
+			layout::{ImageLayoutAttachment, ImageLayoutFinal, ImageLayoutClearColorImage},
 			params::{
 				ImageAllocatorParams,
 				ImageSize,

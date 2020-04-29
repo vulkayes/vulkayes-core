@@ -48,3 +48,12 @@ vk_enum_subset! {
 		FRAGMENT_DENSITY_MAP_OPTIMAL_EXT
 	} impl Into<vk::ImageLayout>
 }
+
+vk_enum_subset! {
+	/// Enum for image layout that can be used in clear color image command.
+	pub enum ImageLayoutClearColorImage {
+		GENERAL,
+		TRANSFER_DST_OPTIMAL,
+		SHARED_PRESENT_KHR
+	} impl Into<vk::ImageLayout>
+}

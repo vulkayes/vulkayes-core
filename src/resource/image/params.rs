@@ -516,14 +516,27 @@ impl ImageSubresourceRange {
 		}
 	}
 }
-impl Into<vk::ImageSubresourceRange> for ImageSubresourceRange {
-	fn into(self) -> vk::ImageSubresourceRange {
+impl Into<vk::ImageSubresourceRangeBuilder<'static>> for ImageSubresourceRange {
+	fn into(self) -> vk::ImageSubresourceRangeBuilder<'static> {
 		vk::ImageSubresourceRange::builder()
 			.aspect_mask(self.aspect_mask)
 			.layer_count(self.array_layers.get())
 			.base_array_layer(self.array_layers_base)
 			.level_count(self.mipmap_levels.get())
 			.base_mip_level(self.mipmap_levels_base)
-			.build()
+	}
+}
+
+vk_builder_wrap! {
+	/// Transparent wrapper over `vk::ImageSubresourceRangeBuilder`.
+	pub struct ImageSubresourceRangeTransparent {
+		builder: vk::ImageSubresourceRangeBuilder<'static> => vk::ImageSubresourceRange
+	}
+	impl {
+		pub fn new(range: ImageSubresourceRange) -> Self {
+			ImageSubresourceRangeTransparent {
+				builder: range.into()
+			}
+		}
 	}
 }

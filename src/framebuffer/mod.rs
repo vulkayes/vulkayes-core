@@ -21,6 +21,18 @@ impl Framebuffer {
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, error::FramebufferError> {
 		let attachments = collect_iter_faster!(attachments, 8);
+
+		#[cfg(feature = "runtime_implicit_validations")]
+		{
+			if !crate::util::validations::validate_all_match(
+				std::iter::once(render_pass.device()).chain(
+					attachments.iter().map(|a| a.image().device())
+				)
+			) {
+				return Err(error::FramebufferError::RenderPassAttachmentsDeviceMismatch)
+			}
+		};
+
 		let attachment_handles = collect_iter_faster!(attachments.iter().map(|a| a.handle()), 8);
 
 		let create_info = vk::FramebufferCreateInfo::builder()
