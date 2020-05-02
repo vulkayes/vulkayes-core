@@ -148,14 +148,20 @@ impl<'a> DeviceMemoryMappingAccess<'a> {
 			"Writing slice to mapped memory:",
 			bytes.as_ptr(),
 			stride,
-			count
+			count,
+			SliceWriteStride::Implicit.for_t::<T>(),
+			std::mem::align_of::<T>()
 		);
 
 		if stride == SliceWriteStride::Implicit.for_t::<T>() {
 			// This can be done using copy_nonoverlapping because the stride is the implicit stride
-			// It also doesn't matter here that the destination pointer might be unaligned because copy_nonoverlapping internally works with bytes.
+			// It also doesn't matter here that the destination pointer might be unaligned because we switched to bytes.
 			unsafe {
-				std::ptr::copy_nonoverlapping(data.as_ptr(), bytes.as_mut_ptr() as *mut T, count);
+				std::ptr::copy_nonoverlapping(
+					data.as_ptr() as *const u8,
+					bytes.as_mut_ptr(),
+					count * std::mem::size_of::<T>()
+				);
 			}
 		} else if stride % std::mem::align_of::<T>() == 0
 			&& bytes.as_mut_ptr() as usize % std::mem::align_of::<T>() == 0
@@ -165,7 +171,7 @@ impl<'a> DeviceMemoryMappingAccess<'a> {
 			for index in 0 .. count {
 				unsafe {
 					std::ptr::write(
-						bytes.as_mut_ptr().offset((index * stride) as isize) as *mut T,
+						bytes.as_mut_ptr().add(index * stride) as *mut T,
 						data[index]
 					);
 				}
@@ -175,7 +181,7 @@ impl<'a> DeviceMemoryMappingAccess<'a> {
 			for index in 0 .. count {
 				unsafe {
 					std::ptr::write_unaligned(
-						bytes.as_mut_ptr().offset((index * stride) as isize) as *mut T,
+						bytes.as_mut_ptr().add(index * stride) as *mut T,
 						data[index]
 					);
 				}

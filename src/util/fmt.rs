@@ -38,6 +38,29 @@ macro_rules! log_trace_common {
 	};
 }
 
+pub fn log_vulkayes_debug_info() {
+	log::debug!(
+"Enabled features:
+	host_allocator: {}
+	rust_host_allocator: {}
+	naive_device_allocator: {}
+	multi_thread: {}
+	insecure_hash: {}
+	runtime_implicit_validations: {}
+	vulkan1_1: {}
+	vulkan1_2: {}
+",
+	cfg!(feature = "host_allocator"),
+	cfg!(feature = "rust_host_allocator"),
+	cfg!(feature = "naive_device_allocator"),
+	cfg!(feature = "multi_thread"),
+	cfg!(feature = "insecure_hash"),
+	cfg!(feature = "runtime_implicit_validations"),
+	cfg!(feature = "vulkan1_1"),
+	cfg!(feature = "vulkan1_2"),
+	);
+}
+
 /// Formats Vulkan handle as `<ObjectType $raw>`.
 pub fn format_handle<H: ash::vk::Handle>(handle: H) -> impl Debug + Display {
 	struct Inner {
