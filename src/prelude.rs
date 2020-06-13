@@ -1,5 +1,5 @@
 pub use crate::{
-	command::{buffer::CommandBuffer, pool::CommandPool},
+	command::{buffer::{CommandBuffer, recording::CommandBufferRecordingLock}, pool::CommandPool},
 	descriptor::{
 		layout::{
 			params::{DescriptorSetLayoutBinding, DescriptorSetLayoutBindingGenericType},
@@ -43,6 +43,8 @@ pub use crate::{
 			params::{
 				ImageAllocatorParams,
 				ImageSize,
+				ImageSize1D,
+				ImageSize2D,
 				ImageSizeInfo,
 				ImageSubresourceRange,
 				ImageTilingAndLayout,
@@ -69,7 +71,7 @@ pub use crate::{
 	util::{
 		fmt::VkVersion,
 		handle::{HasHandle, HasSynchronizedHandle, SafeHandle},
-		sync::{Vrc, Vutex},
+		sync::{Vrc, Vutex, VutexGuard},
 		transparent::Transparent
 	}
 };

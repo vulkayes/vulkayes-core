@@ -1,3 +1,5 @@
+use std::ops::{Deref};
+
 use ash::vk;
 
 use crate::prelude::HasSynchronizedHandle;
@@ -22,5 +24,14 @@ impl<'a> CommandBufferRecordingLock<'a> {
 			lock: command_buffer.lock_handle(),
 			buffer: command_buffer
 		}
+	}
+
+	pub fn buffer(&self) -> &'a CommandBuffer {
+		self.buffer
+	}
+}
+impl_common_handle_traits! {
+	impl HasHandle<vk::CommandBuffer>, Deref, Borrow, Eq, Hash, Ord for CommandBufferRecordingLock<'_> {
+		target = { lock.deref() }
 	}
 }
