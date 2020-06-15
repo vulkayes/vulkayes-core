@@ -24,6 +24,9 @@ impl ShaderModule {
 		unsafe { Self::from_create_info(device, create_info, host_memory_allocator) }
 	}
 
+	/// ### Safety
+	///
+	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCreateShaderModule.html>.
 	pub unsafe fn from_create_info(
 		device: Vrc<Device>,
 		create_info: impl Deref<Target = vk::ShaderModuleCreateInfo>,
@@ -45,6 +48,24 @@ impl ShaderModule {
 
 			host_memory_allocator
 		}))
+	}
+
+	/// Returns a shader stage create info builder filled with parameters.
+	pub fn stage_create_info<'a>(
+		&'a self,
+		shader_type: vk::ShaderStageFlags,
+		entry_name: params::ShaderEntryPoint<'a>,
+		specialization_info: Option<&'a vk::SpecializationInfoBuilder<'a>>
+	) -> vk::PipelineShaderStageCreateInfoBuilder<'a> {
+		let mut builder = vk::PipelineShaderStageCreateInfo::builder()
+			.module(self.handle())
+			.name(entry_name.to_cstr())
+			.stage(shader_type);
+		if let Some(spec_info) = specialization_info {
+			builder = builder.specialization_info(spec_info);
+		}
+
+		builder
 	}
 
 	pub const fn device(&self) -> &Vrc<Device> {

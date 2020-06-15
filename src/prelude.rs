@@ -1,5 +1,8 @@
 pub use crate::{
-	command::{buffer::{CommandBuffer, recording::CommandBufferRecordingLock}, pool::CommandPool},
+	command::{
+		buffer::{recording::CommandBufferRecordingLock, CommandBuffer},
+		pool::CommandPool
+	},
 	descriptor::{
 		layout::{
 			params::{DescriptorSetLayoutBinding, DescriptorSetLayoutBindingGenericType},
@@ -29,7 +32,8 @@ pub use crate::{
 	physical_device::PhysicalDevice,
 	pipeline::{
 		graphics::GraphicsPipeline,
-		layout::{PipelineLayout, PushConstantRange}
+		layout::{PipelineLayout, PushConstantRange},
+		params::{DepthBias, DepthBoundsTest, DepthTest, PolygonMode, StencilTest}
 	},
 	queue::{sharing_mode::SharingMode, Queue},
 	render_pass::{
@@ -39,7 +43,7 @@ pub use crate::{
 	resource::{
 		buffer::{params::BufferAllocatorParams, view::BufferView, Buffer},
 		image::{
-			layout::{ImageLayoutAttachment, ImageLayoutFinal, ImageLayoutClearColorImage},
+			layout::{ImageLayoutAttachment, ImageLayoutClearColorImage, ImageLayoutFinal},
 			params::{
 				ImageAllocatorParams,
 				ImageSize,
@@ -56,7 +60,7 @@ pub use crate::{
 			MixedDynImage
 		}
 	},
-	shader::ShaderModule,
+	shader::{params::ShaderEntryPoint, ShaderModule},
 	surface::Surface,
 	swapchain::{
 		image::{SwapchainCreateImageInfo, SwapchainImage},

@@ -1,20 +1,57 @@
+use std::ffi::CStr;
+
+#[derive(Debug, Copy, Clone)]
+pub enum ShaderEntryPoint<'a> {
+	/// Most common "main" entry point name.
+	Main,
+	/// Custom entry point name.
+	Custom(&'a CStr)
+}
+impl Default for ShaderEntryPoint<'static> {
+	fn default() -> Self {
+		ShaderEntryPoint::Main
+	}
+}
+impl<'a> ShaderEntryPoint<'a> {
+	pub fn to_cstr(self) -> &'a CStr {
+		match self {
+			ShaderEntryPoint::Main => unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") },
+			ShaderEntryPoint::Custom(v) => v
+		}
+	}
+}
+
+/// Utility macro that can resolve GLSL shader types into Rust primitive types and Vulkan format values.
+///
+/// Usage:
+/// ```
+/// # use vulkayes_core::shader_util_macro;
+/// # use vulkayes_core::ash::vk;
+/// let shader_bool: shader_util_macro!(resolve_shader_type bool); // u32
+/// let shader_mat4: shader_util_macro!(resolve_shader_type mat4); // [[f32; 4]; 4]
+/// let shader_dmat2x3: shader_util_macro!(resolve_shader_type dmat2x3); // [[f64; 2]; 3]
+///
+/// let shader_bool_format: vk::Format = shader_util_macro!(resolve_shader_type_format bool); // R32_UINT
+/// let shader_vec4_format: vk::Format = shader_util_macro!(resolve_shader_type_format vec4); // R32G32_SFLOAT
+/// let shader_dvec2_format: vk::Format = shader_util_macro!(resolve_shader_type_format dvec3); // R64G64_SFLOAT
+/// ```
 #[macro_export]
 macro_rules! shader_util_macro {
 	// Types
 	(resolve_shader_type bool) => {
-			u32
+		u32
 	};
 	(resolve_shader_type int) => {
-			i32
+		i32
 	};
 	(resolve_shader_type uint) => {
-			u32
+		u32
 	};
 	(resolve_shader_type float) => {
-			f32
+		f32
 	};
 	(resolve_shader_type double) => {
-			f64
+		f64
 	};
 
 	(resolve_shader_type bvec2) => {
@@ -65,6 +102,85 @@ macro_rules! shader_util_macro {
 	};
 	(resolve_shader_type dvec4) => {
 		[f64; 4]
+	};
+
+	// matrices
+	(resolve_shader_type mat2) => {
+		$crate::shader_util_macro!(resolve_shader_type mat2x2)
+	};
+	(resolve_shader_type mat2x2) => {
+		[[f32; 2]; 2]
+	};
+	(resolve_shader_type mat2x3) => {
+		[[f32; 2]; 3]
+	};
+	(resolve_shader_type mat2x4) => {
+		[[f32; 2]; 4]
+	};
+
+	(resolve_shader_type mat3) => {
+		$crate::shader_util_macro!(resolve_shader_type mat3x3)
+	};
+	(resolve_shader_type mat3x2) => {
+		[[f32; 3]; 2]
+	};
+	(resolve_shader_type mat3x3) => {
+		[[f32; 3]; 3]
+	};
+	(resolve_shader_type mat3x4) => {
+		[[f32; 3]; 4]
+	};
+
+	(resolve_shader_type mat4) => {
+		$crate::shader_util_macro!(resolve_shader_type mat4x4)
+	};
+	(resolve_shader_type mat4x2) => {
+		[[f32; 4]; 2]
+	};
+	(resolve_shader_type mat4x3) => {
+		[[f32; 4]; 3]
+	};
+	(resolve_shader_type mat4x4) => {
+		[[f32; 4]; 4]
+	};
+
+	(resolve_shader_type dmat2) => {
+		$crate::shader_util_macro!(resolve_shader_type dmat2x2)
+	};
+	(resolve_shader_type dmat2x2) => {
+		[[f64; 2]; 2]
+	};
+	(resolve_shader_type dmat2x3) => {
+		[[f64; 2]; 3]
+	};
+	(resolve_shader_type dmat2x4) => {
+		[[f64; 2]; 4]
+	};
+
+	(resolve_shader_type dmat3) => {
+		$crate::shader_util_macro!(resolve_shader_type dmat3x3)
+	};
+	(resolve_shader_type dmat3x2) => {
+		[[f64; 3]; 2]
+	};
+	(resolve_shader_type dmat3x3) => {
+		[[f64; 3]; 3]
+	};
+	(resolve_shader_type dmat3x4) => {
+		[[f64; 3]; 4]
+	};
+
+	(resolve_shader_type dmat4) => {
+		$crate::shader_util_macro!(resolve_shader_type dmat4x4)
+	};
+	(resolve_shader_type dmat4x2) => {
+		[[f64; 4]; 2]
+	};
+	(resolve_shader_type dmat4x3) => {
+		[[f64; 4]; 3]
+	};
+	(resolve_shader_type dmat4x4) => {
+		[[f64; 4]; 4]
 	};
 
 	// Formats
@@ -144,16 +260,15 @@ macro_rules! shader_specialization_constants {
 			)+
 		}
 	) => {
-		#[repr(C)]
-			$crate::offsetable_struct! {
-				#[derive(Debug, Copy, Clone)]
-				pub struct $name {
-					$(
-						pub $var: $crate::shader_util_macro!(resolve_shader_type $ty)
-					),+
-				} repr(C) as Offsets // hidden by hygiene
-			}
-			impl $name {
+		$crate::offsetable_struct! {
+			#[derive(Debug, Copy, Clone)]
+			pub struct $name {
+				$(
+					pub $var: $crate::shader_util_macro!(resolve_shader_type $ty)
+				),+
+			} repr(C) as Offsets // hidden by hygiene
+		}
+		impl $name {
 				pub const fn specialization_map_entries() -> &'static [$crate::ash::vk::SpecializationMapEntry] {
 					const ENTRIES: &'static [$crate::ash::vk::SpecializationMapEntry] = &[
 						$(
@@ -184,46 +299,106 @@ macro_rules! shader_specialization_constants {
 	}
 }
 
+/// Generates input binding descriptions and input attribute descriptions for pipeline shaders.
+///
+/// Usage:
+/// ```
+/// # use vulkayes_core::ash::vk;
+/// # use vulkayes_core::vertex_input_description;
+/// vulkayes_core::offsetable_struct! {
+/// 		struct Vertex {
+/// 		position: [f32; 3],
+/// 		normal: [f32; 3]
+/// 	} repr(C) as VertexOffsets
+/// }
+/// // `{.position}` part is optional, and if not present then offset is set to 0 and the input structure  doesn't have to be offsetable struct.
+/// vertex_input_description!(
+/// 	[0] Vertex{.position} {@vk::VertexInputRate::VERTEX} => layout(location = 0) in vec3 position;
+/// 	[0] Vertex{.normal} => layout(location = 1) in vec3 normal;
+/// );
+/// ```
 #[macro_export]
-macro_rules! vertex_input_attributes {
+macro_rules! vertex_input_description {
 	(
 		$(
-			layout(location = $location: expr $(, binding = $binding: expr)? $(, offset = $offset: expr)?) in $ty: ident $($name: ident)?;
-		)+
+			[$binding: expr] $struct_type: ty $({. $struct_field: ident })? $({@ $rate: expr })?
+			=> layout(location = $location: expr) in $shader_type: ident $($name: ident)?;
+		)*
 	) => {
-		[
-			$(
-				{
-					let location: u32 = $location;
-					let input_type = $crate::shader_util_macro!(resolve_shader_type_format $ty);
+		{
+			let input_bindings = [
+				$(
+					{
+						#[allow(unused_variables)]
+						let input_rate = $crate::ash::vk::VertexInputRate::VERTEX;
+						$(
+							let input_rate = $rate;
+						)?
 
-					#[allow(unused_variables)]
-					let binding: u32 = 0;
-					$(
-						let binding: u32 = $binding;
-					)?
-
-					#[allow(unused_variables)]
-					let offset: u32 = 0;
-					$(
-						let offset: u32 = $offset;
-					)?
-
-					$crate::ash::vk::VertexInputAttributeDescription {
-						location,
-						binding,
-						format: input_type,
-						offset
+						$crate::ash::vk::VertexInputBindingDescription {
+							binding: $binding,
+							stride: std::mem::size_of::<$struct_type>() as u32,
+							input_rate
+						}
 					}
-				}
+				),*
+			];
+			let _: &[$crate::ash::vk::VertexInputBindingDescription] = &input_bindings;
+
+			let input_attributes = [
+				$(
+					{
+						let location: u32 = $location;
+						let input_type = $crate::shader_util_macro!(resolve_shader_type_format $shader_type);
+						#[allow(unused_variables)]
+						let offset: u32 = 0;
+						$(
+							let offset: u32 = <$struct_type>::offsets().$struct_field as u32;
+						)?
+
+						$crate::ash::vk::VertexInputAttributeDescription {
+							location,
+							binding: $binding,
+							format: input_type,
+							offset
+						}
+					}
+				),*
+			];
+			let _: &[$crate::ash::vk::VertexInputAttributeDescription] = &input_attributes;
+
+			(input_bindings, input_attributes)
+		}
+	}
+}
+
+#[macro_export]
+/// Creates a struct that is layout-compatible with glsl shader struct/block definition.
+macro_rules! shader_block_struct {
+	(
+		$( #[$attribute: meta] )*
+		$vv: vis struct $struct_name: ident {
+			$(
+				$ty: ident $name: ident;
+			)+
+		}
+	) => {
+		#[repr(C)]
+		#[derive(Debug, Copy, Clone, Default)]
+		#[repr(align(4))]
+		$( #[$attribute] )*
+		$vv struct $struct_name {
+			$(
+				pub $name: $crate::shader_util_macro!(resolve_shader_type $ty)
 			),+
-		]
+		}
 	}
 }
 
 #[cfg(test)]
 mod test {
 	#[test]
+	#[ignore]
 	fn test_shader_params() {
 		shader_specialization_constants! {
 			pub struct VertexShaderSpecializationConstants {
@@ -233,18 +408,10 @@ mod test {
 			}
 		}
 
-		let attributes = vertex_input_attributes! {
-			layout(location = 0, binding = 0) in vec3;
-			layout(location = 1) in vec4;
-			layout(location = 1, binding = 0, offset = 12) in double;
-		};
-
 		eprintln!("{:#?}", VertexShaderSpecializationConstants::offsets());
 		eprintln!(
 			"{:#?}",
 			VertexShaderSpecializationConstants::specialization_map_entries()
 		);
-
-		eprintln!("{:#?}", attributes);
 	}
 }
