@@ -178,7 +178,8 @@ impl Drop for Device {
 
 		let _ = self.wait_idle();
 		unsafe {
-			self.device.destroy_device(self.host_memory_allocator.as_ref());
+			self.device
+				.destroy_device(self.host_memory_allocator.as_ref());
 		}
 	}
 }

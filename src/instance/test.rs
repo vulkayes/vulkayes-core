@@ -2,7 +2,7 @@
 #[test]
 fn create_instance_rust_host_allocator() {
 	use crate::{entry, instance, memory::host::HostMemoryAllocator, util::fmt::VkVersion};
-	
+
 	crate::test::setup_testing_logger();
 
 	instance::Instance::new(

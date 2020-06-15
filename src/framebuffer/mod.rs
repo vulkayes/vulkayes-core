@@ -25,9 +25,8 @@ impl Framebuffer {
 		#[cfg(feature = "runtime_implicit_validations")]
 		{
 			if !crate::util::validations::validate_all_match(
-				std::iter::once(render_pass.device()).chain(
-					attachments.iter().map(|a| a.image().device())
-				)
+				std::iter::once(render_pass.device())
+					.chain(attachments.iter().map(|a| a.image().device()))
 			) {
 				return Err(error::FramebufferError::RenderPassAttachmentsDeviceMismatch)
 			}

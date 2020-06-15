@@ -6,8 +6,8 @@ use crate::{command::pool::CommandPool, prelude::Vrc, util::sync::Vutex};
 
 use super::error::CommandBufferError;
 
-pub mod recording;
 pub mod clear_commands;
+pub mod recording;
 
 pub struct CommandBuffer {
 	pool: Vrc<CommandPool>,

@@ -1,7 +1,6 @@
-use ash::vk;
-use ash::version::DeviceV1_0;
+use ash::{version::DeviceV1_0, vk};
 
-use crate::prelude::{Image, ImageLayoutClearColorImage, Transparent, HasHandle};
+use crate::prelude::{HasHandle, Image, ImageLayoutClearColorImage, Transparent};
 
 use crate::resource::image::params::ImageSubresourceRangeTransparent;
 

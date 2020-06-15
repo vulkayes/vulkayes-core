@@ -1,9 +1,8 @@
-use std::ops::{Deref};
+use std::ops::Deref;
 
 use ash::vk;
 
-use crate::prelude::HasSynchronizedHandle;
-use crate::util::sync::VutexGuard;
+use crate::{prelude::HasSynchronizedHandle, util::sync::VutexGuard};
 
 use super::CommandBuffer;
 
