@@ -283,7 +283,7 @@ macro_rules! viewport_scissor_expr {
 
 			let scissors = [
 				$(
-					$crate::viewport_scissor_expr!([0.0, 0.0] @ [$sc_left, $sc_top, $sc_width, $sc_height]).1;
+					$crate::viewport_scissor_expr!([0.0, 0.0] @ [$sc_left, $sc_top, $sc_width, $sc_height]).1
 				),+
 			];
 
@@ -1115,8 +1115,7 @@ mod test {
 			Viewport {
 				viewports: {
 					[
-						[100.0, 200.0] + [1.0, 2.0] : [0.5, 0.9] @ [1, 2, 10, 20],
-						[10.0, 20.0]
+						dynamic @ [0, 0, i32::MAX as u32, i32::MAX as u32]
 					]
 				}
 			}
