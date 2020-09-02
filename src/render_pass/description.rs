@@ -64,7 +64,7 @@
 ///
 /// 			// optional, specifies attachments to preserve
 /// 			preserve = [
-/// 				@Foo // not valid
+/// 				@Foo // Foo is not valid here, this is only for demonstration
 /// 			]
 /// 		}
 ///
@@ -207,6 +207,10 @@ macro_rules! render_pass_description {
 							),+
 						];
 
+						// The type of `color_resolve_attachments` needs to be
+						// `Option<(T, Option<T>)>` but we cannot just write that after
+						// `let color_resolve_attachments: ` because we can't express the concrete
+						// `T` (it's built by this macro)
 						fn typecheck_hack<T>(t: T) -> Option<(T, Option<T>)> {
 							Some(
 								(t, None)

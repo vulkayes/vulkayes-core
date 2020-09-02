@@ -2,6 +2,7 @@ vk_result_error! {
 	#[derive(Debug)]
 	pub enum QueueSubmitError {
 		vk {
+			NOT_READY,
 			ERROR_OUT_OF_HOST_MEMORY,
 			ERROR_OUT_OF_DEVICE_MEMORY,
 			ERROR_DEVICE_LOST

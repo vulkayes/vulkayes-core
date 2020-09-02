@@ -306,12 +306,12 @@ macro_rules! shader_specialization_constants {
 /// # use vulkayes_core::ash::vk;
 /// # use vulkayes_core::vertex_input_description;
 /// vulkayes_core::offsetable_struct! {
-/// 		struct Vertex {
+/// 	struct Vertex {
 /// 		position: [f32; 3],
 /// 		normal: [f32; 3]
 /// 	} repr(C) as VertexOffsets
 /// }
-/// // `{.position}` part is optional, and if not present then offset is set to 0 and the input structure  doesn't have to be offsetable struct.
+/// // `{.position}` part is optional, and if not present then offset is set to 0 and the input structure doesn't have to be an offsetable struct.
 /// vertex_input_description!(
 /// 	[0] Vertex{.position} {@vk::VertexInputRate::VERTEX} => layout(location = 0) in vec3 position;
 /// 	[0] Vertex{.normal} => layout(location = 1) in vec3 normal;
@@ -374,6 +374,29 @@ macro_rules! vertex_input_description {
 
 #[macro_export]
 /// Creates a struct that is layout-compatible with glsl shader struct/block definition.
+///
+/// Usage:
+/// ```
+/// # use vulkayes_core::shader_block_struct;
+/// shader_block_struct! {
+/// 	#[derive(PartialEq)]
+/// 	pub struct Foo {
+/// 		vec4 color;
+/// 		// glsl struct member definitions...
+/// 	}
+/// }
+/// ```
+///
+/// Generates:
+/// ```
+/// #[repr(C)]
+/// #[derive(Debug, Copy, Clone, Default)]
+/// #[repr(align(4))]
+/// #[derive(PartialEq)]
+/// pub struct Foo {
+/// 	pub color: [f32; 4]
+/// }
+/// ```
 macro_rules! shader_block_struct {
 	(
 		$( #[$attribute: meta] )*
