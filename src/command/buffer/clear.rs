@@ -12,6 +12,10 @@ impl<'a> super::recording::CommandBufferRecordingLock<'a> {
 		clear_color_value: &vk::ClearColorValue,
 		ranges: &[ImageSubresourceRangeTransparent]
 	) {
+		// log_trace_common!(
+			
+		// );
+		todo!();
 		unsafe {
 			self.buffer.pool().device().cmd_clear_color_image(
 				*self.lock,
