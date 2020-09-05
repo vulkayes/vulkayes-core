@@ -28,7 +28,7 @@ macro_rules! log_trace_common {
 			concat!(
 				$title,
 				$(
-					concat!(" ", stringify!($log_item), " = ", "{:?}")
+					concat!("\n\t", stringify!($log_item), " = ", "{:?}")
 				),*
 			),
 			$(

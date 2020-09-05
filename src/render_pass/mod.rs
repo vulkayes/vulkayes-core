@@ -53,12 +53,19 @@ impl RenderPass {
 		create_info: impl Deref<Target = vk::RenderPassCreateInfo>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, RenderPassError> {
-		log_trace_common!(
-			"Creating render pass:",
-			device,
-			create_info.deref(),
-			host_memory_allocator
-		);
+		{
+			let attachments = std::slice::from_raw_parts(create_info.p_attachments, create_info.attachment_count as usize);
+			let subpasses = std::slice::from_raw_parts(create_info.p_subpasses, create_info.subpass_count as usize);
+			let dependencies = std::slice::from_raw_parts(create_info.p_dependencies, create_info.dependency_count as usize);
+			log_trace_common!(
+				"Creating render pass:",
+				device,
+				attachments,
+				subpasses,
+				dependencies,
+				host_memory_allocator
+			);
+		}
 
 		let render_pass =
 			device.create_render_pass(create_info.deref(), host_memory_allocator.as_ref())?;

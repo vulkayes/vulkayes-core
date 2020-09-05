@@ -113,7 +113,7 @@ vk_builder_wrap! {
 			let mut builder = vk::SubpassDescription::builder();
 
 			if let Some(input_attachments) = input_attachments {
-				builder = builder.resolve_attachments(
+				builder = builder.input_attachments(
 					Transparent::transmute_slice_twice(input_attachments)
 				);
 			}

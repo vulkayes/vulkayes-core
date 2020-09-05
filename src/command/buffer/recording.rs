@@ -17,7 +17,7 @@ pub struct CommandBufferRecordingLock<'a> {
 impl<'a> CommandBufferRecordingLock<'a> {
 	/// ### Panic
 	///
-	/// This function will panic of the command buffer vutex cannot be locked.
+	/// This function will panic if the command buffer vutex cannot be locked.
 	pub fn new(command_buffer: &'a CommandBuffer) -> Self {
 		CommandBufferRecordingLock {
 			lock: command_buffer.lock_handle(),
@@ -25,6 +25,9 @@ impl<'a> CommandBufferRecordingLock<'a> {
 		}
 	}
 
+	/// Returns a reference to the locked command buffer.
+	///
+	/// Attempting to lock it again will result in a deadlock.
 	pub fn buffer(&self) -> &'a CommandBuffer {
 		self.buffer
 	}
