@@ -1096,9 +1096,13 @@ mod test {
 			Shaders {
 				stages: []
 				input: {
-					[0] Vertex => layout(location = 0) in vec3 position;
-					[1] Normal => layout(location = 1) in vec3 normal;
-					[0] Vertex{.color} => layout(location = 2) in int color;
+					Vertex {
+						.position => layout(location = 0) in vec3 position;
+						.color => layout(location = 2) in int color;
+					}
+					Normal {
+						=> layout(location = 1) in vec3 normal;
+					}
 				}
 				topology: vvk::PrimitiveTopology::TRIANGLE_LIST
 			}
@@ -1200,7 +1204,7 @@ mod test {
 			create_info;
 
 			p_stages[0],
-			p_vertex_input_state[1]{p_vertex_binding_descriptions[3],p_vertex_attribute_descriptions[3]},
+			p_vertex_input_state[1]{p_vertex_binding_descriptions[2],p_vertex_attribute_descriptions[3]},
 			p_input_assembly_state[1],
 
 			p_tessellation_state[1],

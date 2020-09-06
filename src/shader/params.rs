@@ -308,26 +308,63 @@ macro_rules! shader_specialization_constants {
 /// vulkayes_core::offsetable_struct! {
 /// 	struct Vertex {
 /// 		position: [f32; 3],
-/// 		normal: [f32; 3]
+/// 		color: [f32; 3]
 /// 	} repr(C) as VertexOffsets
 /// }
-/// // `{.position}` part is optional, and if not present then offset is set to 0 and the input structure doesn't have to be an offsetable struct.
-/// vertex_input_description!(
-/// 	[0] Vertex{.position} {@vk::VertexInputRate::VERTEX} => layout(location = 0) in vec3 position;
-/// 	[0] Vertex{.normal} => layout(location = 1) in vec3 normal;
+/// vulkayes_core::offsetable_struct! {
+/// 	struct Normal {
+/// 		Value: [f32; 3]
+/// 	} repr(C) as NormalOffsets
+/// }
+/// let (bindings, attributes) = vertex_input_description!(
+/// 	Vertex {@vk::VertexInputRate::VERTEX} {
+/// 		 => layout(location = 0) in vec3 position; // Leaving out the field name defaults the offset to 0
+/// 		.color => layout(location = 2) in vec3 color;
+/// 	}
+/// 	Normal {
+/// 		=> layout(location = 1) in vec3 normal;
+/// 	}
 /// );
+///
+/// assert_eq!(bindings[0].binding, 0);
+/// assert_eq!(bindings[0].stride, std::mem::size_of::<Vertex>() as u32);
+/// assert_eq!(bindings[0].input_rate, vk::VertexInputRate::VERTEX);
+///
+/// assert_eq!(bindings[1].binding, 1);
+/// assert_eq!(bindings[1].stride, std::mem::size_of::<Normal>() as u32);
+/// assert_eq!(bindings[1].input_rate, vk::VertexInputRate::VERTEX);
+///
+/// assert_eq!(attributes[0].location, 0);
+/// assert_eq!(attributes[0].binding, 0);
+/// assert_eq!(attributes[0].format, vk::Format::R32G32B32_SFLOAT);
+/// assert_eq!(attributes[0].offset, 0);
+///
+/// assert_eq!(attributes[1].location, 2);
+/// assert_eq!(attributes[1].binding, 0);
+/// assert_eq!(attributes[1].format, vk::Format::R32G32B32_SFLOAT);
+/// assert_eq!(attributes[1].offset, 12);
+///
+/// assert_eq!(attributes[2].location, 1);
+/// assert_eq!(attributes[2].binding, 1);
+/// assert_eq!(attributes[2].format, vk::Format::R32G32B32_SFLOAT);
+/// assert_eq!(attributes[2].offset, 0);
 /// ```
 #[macro_export]
 macro_rules! vertex_input_description {
 	(
 		$(
-			[$binding: expr] $struct_type: ty $({. $struct_field: ident })? $({@ $rate: expr })?
-			=> layout(location = $location: expr) in $shader_type: ident $($name: ident)?;
+			$struct_type: ty $({@ $rate: expr })? {
+				$(
+					$(.$struct_field: ident)? => layout(location = $location: expr) in $shader_type: ident $($name: ident)?;
+				)+
+			}
 		)*
 	) => {
 		{
+			let mut binding_number = 0;
 			let input_bindings = [
 				$(
+					#[allow(unused_assignments)]
 					{
 						#[allow(unused_variables)]
 						let input_rate = $crate::ash::vk::VertexInputRate::VERTEX;
@@ -335,36 +372,49 @@ macro_rules! vertex_input_description {
 							let input_rate = $rate;
 						)?
 
-						$crate::ash::vk::VertexInputBindingDescription {
-							binding: $binding,
+						let desc = $crate::ash::vk::VertexInputBindingDescription {
+							binding: binding_number,
 							stride: std::mem::size_of::<$struct_type>() as u32,
 							input_rate
-						}
+						};
+
+						binding_number += 1;
+
+						desc
 					}
 				),*
 			];
-			let _: &[$crate::ash::vk::VertexInputBindingDescription] = &input_bindings;
 
+			let mut binding_number = 0;
 			let input_attributes = [
 				$(
-					{
-						let location: u32 = $location;
-						let input_type = $crate::shader_util_macro!(resolve_shader_type_format $shader_type);
-						#[allow(unused_variables)]
-						let offset: u32 = 0;
-						$(
-							let offset: u32 = <$struct_type>::offsets().$struct_field as u32;
-						)?
-
-						$crate::ash::vk::VertexInputAttributeDescription {
-							location,
-							binding: $binding,
-							format: input_type,
-							offset
-						}
-					}
-				),*
+					// This hack 2000 doesn't interfere with the multiple-item-expansion inner macro while allowing
+					// `binding_number += 1` to be executed in the outer repetition only.
+					if { binding_number += 1; false } { unsafe { std::hint::unreachable_unchecked() } } else 
+					$(
+						{
+							let location: u32 = $location;
+							let input_type = $crate::shader_util_macro!(resolve_shader_type_format $shader_type);
+							
+							#[allow(unused_variables)]
+							let offset: u32 = 0;
+							$(
+								let offset: u32 = <$struct_type>::offsets().$struct_field as u32;
+							)?
+	
+							$crate::ash::vk::VertexInputAttributeDescription {
+								location,
+								binding: binding_number - 1,
+								format: input_type,
+								offset
+							}
+						},
+					)+
+				)*
 			];
+
+			// Ensure correct types in case of empty arrays
+			let _: &[$crate::ash::vk::VertexInputBindingDescription] = &input_bindings;
 			let _: &[$crate::ash::vk::VertexInputAttributeDescription] = &input_attributes;
 
 			(input_bindings, input_attributes)
