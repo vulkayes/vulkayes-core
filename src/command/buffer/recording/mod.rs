@@ -1,7 +1,9 @@
-use ash::vk;
-use ash::version::DeviceV1_0;
+use ash::{version::DeviceV1_0, vk};
 
-use crate::{prelude::{HasHandle, HasSynchronizedHandle, Device, Vrc, RenderPass, Framebuffer}, util::sync::VutexGuard};
+use crate::{
+	prelude::{Device, Framebuffer, HasHandle, HasSynchronizedHandle, RenderPass, Vrc},
+	util::sync::VutexGuard
+};
 
 use super::{CommandBuffer, CommandBufferError};
 
@@ -71,19 +73,17 @@ impl<'a> CommandBufferRecordingLock<'a> {
 
 		let command_buffer_begin_info: vk::CommandBufferBeginInfoBuilder = info.into();
 		unsafe {
-			command_buffer.pool().device().begin_command_buffer(
-				*lock,
-				&command_buffer_begin_info
-			)?;
+			command_buffer
+				.pool()
+				.device()
+				.begin_command_buffer(*lock, &command_buffer_begin_info)?;
 		}
 
-		Ok(
-			CommandBufferRecordingLock {
-				pool_lock,
-				lock,
-				buffer: command_buffer
-			}
-		)
+		Ok(CommandBufferRecordingLock {
+			pool_lock,
+			lock,
+			buffer: command_buffer
+		})
 	}
 
 	/// Returns a reference to the locked command buffer.
@@ -119,8 +119,7 @@ impl<'a> CommandBufferRecordingLock<'a> {
 			.render_pass(render_pass.handle())
 			.framebuffer(framebuffer.handle())
 			.render_area(render_area)
-			.clear_values(clear_values.as_ref())
-		;
+			.clear_values(clear_values.as_ref());
 
 		let contents = if contents_inline {
 			vk::SubpassContents::INLINE
@@ -137,16 +136,11 @@ impl<'a> CommandBufferRecordingLock<'a> {
 			contents
 		);
 		unsafe {
-			self.device().cmd_begin_render_pass(
-				self.handle(),
-				&create_info,
-				contents
-			);
+			self.device()
+				.cmd_begin_render_pass(self.handle(), &create_info, contents);
 		}
 
-		CommandBufferRecordingLockInsideRenderPass {
-			inner: Some(self)
-		}
+		CommandBufferRecordingLockInsideRenderPass { inner: Some(self) }
 	}
 
 	/// This consumes the recording object, dropping the held locks and ending the recording.
@@ -159,16 +153,16 @@ impl<'a> CommandBufferRecordingLock<'a> {
 			"Ending command buffer:",
 			crate::util::fmt::format_handle(self.handle())
 		);
-		self.device().end_command_buffer(
-			self.handle()
-		).map_err(CommandBufferError::from)
+		self.device()
+			.end_command_buffer(self.handle())
+			.map_err(CommandBufferError::from)
 	}
 
 	pub fn end(self) -> Result<(), CommandBufferError> {
 		// Prevent dropping because that would call `end_command_buffer` twice!
 		// We need to call `end_mut` manually to return the result.
 		let mut dont_drop = std::mem::ManuallyDrop::new(self);
-		
+
 		unsafe { dont_drop.end_mut() }
 	}
 }
@@ -199,10 +193,7 @@ impl<'a> CommandBufferRecordingCommon for CommandBufferRecordingLockInsideRender
 	}
 }
 impl<'a> CommandBufferRecordingLockInsideRenderPass<'a> {
-	pub fn next_subpass(
-		&self,
-		contents_inline: bool
-	) {
+	pub fn next_subpass(&self, contents_inline: bool) {
 		let contents = if contents_inline {
 			vk::SubpassContents::INLINE
 		} else {
@@ -214,32 +205,21 @@ impl<'a> CommandBufferRecordingLockInsideRenderPass<'a> {
 			crate::util::fmt::format_handle(self.handle()),
 			contents
 		);
-		unsafe {
-			self.device().cmd_next_subpass(
-				self.handle(),
-				contents
-			)
-		}
+		unsafe { self.device().cmd_next_subpass(self.handle(), contents) }
 	}
 
 	/// ### Safety
 	///
 	/// Must only be called once.
-	unsafe fn end_render_pass_mut(
-		&mut self
-	) {
+	unsafe fn end_render_pass_mut(&mut self) {
 		log_trace_common!(
 			"Recording EndRenderPass:",
 			crate::util::fmt::format_handle(self.handle())
 		);
-		self.device().cmd_end_render_pass(
-			self.handle()
-		);
+		self.device().cmd_end_render_pass(self.handle());
 	}
 
-	pub fn end_render_pass(
-		mut self
-	) -> CommandBufferRecordingLock<'a> {
+	pub fn end_render_pass(mut self) -> CommandBufferRecordingLock<'a> {
 		self.inner.take().unwrap()
 		// Drop takes care of ending the render pass
 	}

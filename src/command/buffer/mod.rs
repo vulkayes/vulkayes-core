@@ -1,9 +1,12 @@
 use std::{fmt::Debug, ops::Deref};
 
-use ash::vk;
-use ash::version::DeviceV1_0;
+use ash::{version::DeviceV1_0, vk};
 
-use crate::{command::pool::CommandPool, prelude::{Vrc, HasSynchronizedHandle}, util::sync::Vutex};
+use crate::{
+	command::pool::CommandPool,
+	prelude::{HasSynchronizedHandle, Vrc},
+	util::sync::Vutex
+};
 
 use super::error::CommandBufferError;
 
@@ -72,23 +75,23 @@ impl CommandBuffer {
 	/// This function will panic if the vutex cannot be locked.
 	pub fn reset(&self, release_resource: bool) -> Result<(), CommandBufferError> {
 		let handle = self.lock_handle();
-		
+
 		let flags = if release_resource {
 			vk::CommandBufferResetFlags::RELEASE_RESOURCES
 		} else {
 			vk::CommandBufferResetFlags::empty()
 		};
-		
+
 		log_trace_common!(
 			"Resetting command buffer:",
 			crate::util::fmt::format_handle(*handle),
 			flags
 		);
 		unsafe {
-			self.pool().device().reset_command_buffer(
-				*handle,
-				flags
-			).map_err(CommandBufferError::from)
+			self.pool()
+				.device()
+				.reset_command_buffer(*handle, flags)
+				.map_err(CommandBufferError::from)
 		}
 	}
 

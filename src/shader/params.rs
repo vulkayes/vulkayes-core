@@ -390,18 +390,18 @@ macro_rules! vertex_input_description {
 				$(
 					// This hack 2000 doesn't interfere with the multiple-item-expansion inner macro while allowing
 					// `binding_number += 1` to be executed in the outer repetition only.
-					if { binding_number += 1; false } { unsafe { std::hint::unreachable_unchecked() } } else 
+					if { binding_number += 1; false } { unsafe { std::hint::unreachable_unchecked() } } else
 					$(
 						{
 							let location: u32 = $location;
 							let input_type = $crate::shader_util_macro!(resolve_shader_type_format $shader_type);
-							
+
 							#[allow(unused_variables)]
 							let offset: u32 = 0;
 							$(
 								let offset: u32 = <$struct_type>::offsets().$struct_field as u32;
 							)?
-	
+
 							$crate::ash::vk::VertexInputAttributeDescription {
 								location,
 								binding: binding_number - 1,

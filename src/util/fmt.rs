@@ -96,7 +96,7 @@ macro_rules! debugize_struct {
 					.finish()
 				}
 			}
-			
+
 			Debugizer {
 				$(
 					$field: $crate::debugize_struct!(

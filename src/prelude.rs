@@ -41,7 +41,7 @@ pub use crate::{
 	pipeline::{
 		graphics::GraphicsPipeline,
 		layout::{PipelineLayout, PushConstantRange},
-		params::{DepthBias, DepthBoundsTest, DepthTest, PolygonMode, StencilTest, BlendLogicOp}
+		params::{BlendLogicOp, DepthBias, DepthBoundsTest, DepthTest, PolygonMode, StencilTest}
 	},
 	queue::{sharing_mode::SharingMode, Queue},
 	render_pass::{
