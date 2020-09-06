@@ -159,11 +159,9 @@ impl<'a> CommandBufferRecordingLock<'a> {
 			"Ending command buffer:",
 			crate::util::fmt::format_handle(self.handle())
 		);
-		unsafe {
-			self.device().end_command_buffer(
-				self.handle()
-			).map_err(CommandBufferError::from)
-		}
+		self.device().end_command_buffer(
+			self.handle()
+		).map_err(CommandBufferError::from)
 	}
 
 	pub fn end(self) -> Result<(), CommandBufferError> {
@@ -234,11 +232,9 @@ impl<'a> CommandBufferRecordingLockInsideRenderPass<'a> {
 			"Recording EndRenderPass:",
 			crate::util::fmt::format_handle(self.handle())
 		);
-		unsafe {
-			self.device().cmd_end_render_pass(
-				self.handle()
-			);
-		}
+		self.device().cmd_end_render_pass(
+			self.handle()
+		);
 	}
 
 	pub fn end_render_pass(

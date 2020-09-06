@@ -48,21 +48,30 @@ impl RenderPass {
 		unsafe { Self::from_create_info(device, create_info, host_memory_allocator) }
 	}
 
+	/// ### Safety
+	///
+	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCreateRenderPass.html>.
 	pub unsafe fn from_create_info(
 		device: Vrc<Device>,
 		create_info: impl Deref<Target = vk::RenderPassCreateInfo>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, RenderPassError> {
-		{
-			let attachments = std::slice::from_raw_parts(create_info.p_attachments, create_info.attachment_count as usize);
-			let subpasses = std::slice::from_raw_parts(create_info.p_subpasses, create_info.subpass_count as usize);
-			let dependencies = std::slice::from_raw_parts(create_info.p_dependencies, create_info.dependency_count as usize);
+		if log::log_enabled!(log::Level::Trace) {
+			let create_info = debugize_struct!(
+				create_info;
+				{
+					attachments: *[attachment_count] p_attachments;
+					subpasses: *[subpass_count] p_subpasses;
+					dependencies: *[dependency_count] p_dependencies;
+				}
+			);
 			log_trace_common!(
 				"Creating render pass:",
 				device,
-				attachments,
-				subpasses,
-				dependencies,
+				create_info.attachments,
+				create_info.subpasses,
+				create_info.dependencies,
+				create_info,
 				host_memory_allocator
 			);
 		}

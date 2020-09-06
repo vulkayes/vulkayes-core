@@ -253,14 +253,9 @@ impl Into<(bool, vk::LogicOp)> for BlendLogicOp {
 /// Example:
 /// ```
 /// # use vulkayes_core::viewport_scissor_expr;
-/// // Tuple of two elements, the viewport and the scissor
 /// viewport_scissor_expr!(
 /// 	[100.0, 200.0] + [10.0, 20.0] : [0.0, 1.0] @ [0, 0, 100, 200]
-/// )
-/// // Tuple of four elements, the viewports, scissors, dynamic viewports flag and dynamic scissors flag
-/// viewport_scissor_expr!(
-/// 	dynamic[2]
-/// )
+/// );
 /// ```
 #[macro_export]
 macro_rules! viewport_scissor_expr {
@@ -456,17 +451,17 @@ macro_rules! viewport_scissor_expr {
 /// 	(S * SRC_ALPHA) ADD (D * ONE_MINUS_SRC_ALPHA)
 /// 		: (S * ONE) SUBTRACT (D * ZERO)
 /// 		& vk::ColorComponentFlags::all()
-/// )
+/// );
 /// // Disables blending, doesn't mask anything
 /// color_blend_state_expr!(
 /// 	disabled & vk::ColorComponentFlags::all()
-/// )
+/// );
 /// // Same as the first one, but variables are expressions instead of identifiers.
 /// color_blend_state_expr!(
 /// 	(S * vk::BlendFactor::SRC_ALPHA) {vk::BlendOp::ADD} (D * vk::BlendFactor::ONE_MINUS_SRC_ALPHA)
 /// 		: (S * vk::BlendFactor::ONE) {vk::BlendOp::SUBTRACT} (D * vk::BlendFactor::ZERO)
 /// 		& vk::ColorComponentFlags::all()
-/// )
+/// );
 /// ```
 #[macro_export]
 macro_rules! color_blend_state_expr {
