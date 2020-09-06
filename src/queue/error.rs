@@ -80,14 +80,14 @@ pub enum QueuePresentMultipleResult<A: AsRef<[QueuePresentResult]> = [QueuePrese
 	Multiple(A)
 }
 impl<A: AsRef<[QueuePresentResult]>> QueuePresentMultipleResult<A> {
-	pub fn try_into_single(self) -> Option<QueuePresentResult> {
+	pub fn get_single(self) -> Option<QueuePresentResult> {
 		match self {
 			QueuePresentMultipleResult::Single(v) => Some(v),
 			_ => None
 		}
 	}
 
-	pub fn try_into_multiple(self) -> Option<A> {
+	pub fn get_multiple(self) -> Option<A> {
 		match self {
 			QueuePresentMultipleResult::Multiple(v) => Some(v),
 			_ => None

@@ -1,15 +1,17 @@
 use std::{fmt::Debug, ops::Deref};
 
 use ash::vk;
+use ash::version::DeviceV1_0;
 
-use crate::{command::pool::CommandPool, prelude::Vrc, util::sync::Vutex};
+use crate::{command::pool::CommandPool, prelude::{Vrc, HasSynchronizedHandle}, util::sync::Vutex};
 
 use super::error::CommandBufferError;
 
 pub mod recording;
-pub mod clear;
-pub mod control;
-pub mod render_pass;
+// pub mod clear;
+// pub mod control;
+// pub mod render_pass;
+// pub mod bind;
 
 pub struct CommandBuffer {
 	pool: Vrc<CommandPool>,
@@ -67,9 +69,39 @@ impl CommandBuffer {
 
 	/// ### Panic
 	///
-	/// This function will panic of the vutex cannot be locked.
-	pub fn lock_recording(&self) -> recording::CommandBufferRecordingLock {
-		recording::CommandBufferRecordingLock::new(self)
+	/// This function will panic if the vutex cannot be locked.
+	pub fn reset(&self, release_resource: bool) -> Result<(), CommandBufferError> {
+		let handle = self.lock_handle();
+		
+		let flags = if release_resource {
+			vk::CommandBufferResetFlags::RELEASE_RESOURCES
+		} else {
+			vk::CommandBufferResetFlags::empty()
+		};
+		
+		log_trace_common!(
+			"Resetting command buffer:",
+			crate::util::fmt::format_handle(*handle),
+			flags
+		);
+		unsafe {
+			self.pool().device().reset_command_buffer(
+				*handle,
+				flags
+			).map_err(CommandBufferError::from)
+		}
+	}
+
+	/// Equivalent to calling `CommandBufferRecordingLock::new(self)`
+	///
+	/// ### Panic
+	///
+	/// This function will panic if the pool or the buffer vutex cannot be locked.
+	pub fn begin_recording(
+		&self,
+		info: recording::CommandBufferBeginInfo
+	) -> Result<recording::CommandBufferRecordingLock, CommandBufferError> {
+		recording::CommandBufferRecordingLock::new(self, info)
 	}
 
 	pub const fn pool(&self) -> &Vrc<CommandPool> {

@@ -1,6 +1,14 @@
 pub use crate::{
 	command::{
-		buffer::{recording::CommandBufferRecordingLock, CommandBuffer},
+		buffer::{
+			recording::{
+				CommandBufferBeginInfo,
+				CommandBufferRecordingCommon,
+				CommandBufferRecordingLock,
+				CommandBufferRecordingLockInsideRenderPass
+			},
+			CommandBuffer
+		},
 		pool::CommandPool
 	},
 	descriptor::{
@@ -33,7 +41,7 @@ pub use crate::{
 	pipeline::{
 		graphics::GraphicsPipeline,
 		layout::{PipelineLayout, PushConstantRange},
-		params::{DepthBias, DepthBoundsTest, DepthTest, PolygonMode, StencilTest}
+		params::{DepthBias, DepthBoundsTest, DepthTest, PolygonMode, StencilTest, BlendLogicOp}
 	},
 	queue::{sharing_mode::SharingMode, Queue},
 	render_pass::{
