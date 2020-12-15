@@ -160,7 +160,7 @@ macro_rules! const_queue_present {
 			// Choose any swapchain, we only need it for the `present` function which uses the loader
 			let any_swapchain = $images[0].swapchain();
 
-			let indices = $crate::seq_macro::seq_expr!(
+			let indices = $crate::seq_macro::seq!(
 				N in 0 .. $count_images {
 					[ #( $images[N].index(), )* ]
 				}
@@ -177,7 +177,7 @@ macro_rules! const_queue_present {
 					;
 
 					if result_for_all {
-						// This variable should be named `results` but it breaks with `seq_expr` because of macro hygiene.
+						// This variable should be named `results` but it breaks with `seq` because of macro hygiene.
 						let mut $name = [vk::Result::SUCCESS; $count_images];
 						let present_info = present_info.results(&mut $name);
 						let _ = unsafe {
@@ -187,7 +187,7 @@ macro_rules! const_queue_present {
 							)
 						};
 
-						let result_values: [QueuePresentResult; $count_images] = $crate::seq_macro::seq_expr!(
+						let result_values: [QueuePresentResult; $count_images] = $crate::seq_macro::seq!(
 							N in 0 .. $count_images {
 								[
 									#(

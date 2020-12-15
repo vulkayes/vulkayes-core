@@ -2,10 +2,10 @@ pub use crate::{
 	command::{
 		buffer::{
 			recording::{
+				common::CommandBufferRecordingLockCommon,
 				CommandBufferBeginInfo,
-				CommandBufferRecordingCommon,
-				CommandBufferRecordingLock,
-				CommandBufferRecordingLockInsideRenderPass
+				CommandBufferRecordingLockInsideRenderPass,
+				CommandBufferRecordingLockOutsideRenderPass
 			},
 			CommandBuffer
 		},
@@ -68,7 +68,7 @@ pub use crate::{
 			MixedDynImage
 		}
 	},
-	shader::{params::ShaderEntryPoint, ShaderModule},
+	shader::{params::{ShaderEntryPoint, PushConstantsTrait}, ShaderModule},
 	surface::Surface,
 	swapchain::{
 		image::{SwapchainCreateImageInfo, SwapchainImage},

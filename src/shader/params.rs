@@ -1,5 +1,9 @@
 use std::ffi::CStr;
 
+use ash::vk;
+
+use crate::pipeline::layout::PushConstantRange;
+
 #[derive(Debug, Copy, Clone)]
 pub enum ShaderEntryPoint<'a> {
 	/// Most common "main" entry point name.
@@ -17,6 +21,83 @@ impl<'a> ShaderEntryPoint<'a> {
 		match self {
 			ShaderEntryPoint::Main => unsafe { CStr::from_bytes_with_nul_unchecked(b"main\0") },
 			ShaderEntryPoint::Custom(v) => v
+		}
+	}
+}
+
+/// Trait for values that are to be used as push constants.
+pub unsafe trait PushConstantsTrait: Sized + std::fmt::Debug {
+	const STAGE_FLAGS: vk::ShaderStageFlags;
+	const OFFSET_DIV_FOUR: u32;
+	// TODO: Is there any way to force `Self` to **not** be a ZST?
+	const SIZE_DIV_FOUR: u32 = (std::mem::size_of::<Self>() / 4) as u32;
+
+	fn layout_range() -> PushConstantRange {
+		PushConstantRange {
+			stage_flags: Self::STAGE_FLAGS,
+			offset_div_four: Self::OFFSET_DIV_FOUR,
+			size_div_four: std::num::NonZeroU32::new(Self::SIZE_DIV_FOUR).expect("Push constants block struct must have size of at least 4 bytes")
+		}
+	}
+
+	// Returns self as an array of bytes.
+	fn as_bytes(&self) -> &[u8] {
+		unsafe {
+			std::slice::from_raw_parts(
+				self as *const Self as *const u8,
+				Self::SIZE_DIV_FOUR as usize * 4
+			)
+		}
+	}
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Default, Debug)]
+pub struct AlignedMatrix2<T: Copy + Default> {
+	pub data: [[T; 4]; 2]
+}
+impl<T: Copy + Default> From<[[T; 3]; 2]> for AlignedMatrix2<T> {
+	fn from(arr: [[T; 3]; 2]) -> Self {
+		AlignedMatrix2 {
+			data: [
+				[arr[0][0], arr[0][1], arr[0][2], T::default()],
+				[arr[1][0], arr[1][1], arr[0][1], T::default()],
+			]
+		}
+	}
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Default, Debug)]
+pub struct AlignedMatrix3<T: Copy + Default> {
+	pub data: [[T; 4]; 3]
+}
+impl<T: Copy + Default> From<[[T; 3]; 3]> for AlignedMatrix3<T> {
+	fn from(arr: [[T; 3]; 3]) -> Self {
+		AlignedMatrix3 {
+			data: [
+				[arr[0][0], arr[0][1], arr[0][2], T::default()],
+				[arr[1][0], arr[1][1], arr[1][2], T::default()],
+				[arr[2][0], arr[2][1], arr[2][2], T::default()],
+			]
+		}
+	}
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone, Default, Debug)]
+pub struct AlignedMatrix4<T: Copy + Default> {
+	pub data: [[T; 4]; 4]
+}
+impl<T: Copy + Default> From<[[T; 3]; 4]> for AlignedMatrix4<T> {
+	fn from(arr: [[T; 3]; 4]) -> Self {
+		AlignedMatrix4 {
+			data: [
+				[arr[0][0], arr[0][1], arr[0][2], T::default()],
+				[arr[1][0], arr[1][1], arr[1][2], T::default()],
+				[arr[2][0], arr[2][1], arr[2][2], T::default()],
+				[arr[3][0], arr[3][1], arr[3][2], T::default()],
+			]
 		}
 	}
 }
@@ -112,33 +193,33 @@ macro_rules! shader_util_macro {
 		[[f32; 2]; 2]
 	};
 	(resolve_shader_type mat2x3) => {
-		[[f32; 2]; 3]
+		$crate::shader::params::AlignedMatrix2<f32>
 	};
 	(resolve_shader_type mat2x4) => {
-		[[f32; 2]; 4]
+		[[f32; 4]; 2]
 	};
 
 	(resolve_shader_type mat3) => {
 		$crate::shader_util_macro!(resolve_shader_type mat3x3)
 	};
 	(resolve_shader_type mat3x2) => {
-		[[f32; 3]; 2]
+		[[f32; 2]; 3]
 	};
 	(resolve_shader_type mat3x3) => {
-		[[f32; 3]; 3]
+		$crate::shader::params::AlignedMatrix3<f32>
 	};
 	(resolve_shader_type mat3x4) => {
-		[[f32; 3]; 4]
+		[[f32; 4]; 3]
 	};
 
 	(resolve_shader_type mat4) => {
 		$crate::shader_util_macro!(resolve_shader_type mat4x4)
 	};
 	(resolve_shader_type mat4x2) => {
-		[[f32; 4]; 2]
+		[[f32; 2]; 4]
 	};
 	(resolve_shader_type mat4x3) => {
-		[[f32; 4]; 3]
+		$crate::shader::params::AlignedMatrix4<f32>
 	};
 	(resolve_shader_type mat4x4) => {
 		[[f32; 4]; 4]
@@ -151,33 +232,33 @@ macro_rules! shader_util_macro {
 		[[f64; 2]; 2]
 	};
 	(resolve_shader_type dmat2x3) => {
-		[[f64; 2]; 3]
+		$crate::shader::params::AlignedMatrix2<f64>
 	};
 	(resolve_shader_type dmat2x4) => {
-		[[f64; 2]; 4]
+		[[f64; 4]; 2]
 	};
 
 	(resolve_shader_type dmat3) => {
 		$crate::shader_util_macro!(resolve_shader_type dmat3x3)
 	};
 	(resolve_shader_type dmat3x2) => {
-		[[f64; 3]; 2]
+		[[f64; 2]; 3]
 	};
 	(resolve_shader_type dmat3x3) => {
-		[[f64; 3]; 3]
+		$crate::shader::params::AlignedMatrix3<f64>
 	};
 	(resolve_shader_type dmat3x4) => {
-		[[f64; 3]; 4]
+		[[f64; 4]; 3]
 	};
 
 	(resolve_shader_type dmat4) => {
 		$crate::shader_util_macro!(resolve_shader_type dmat4x4)
 	};
 	(resolve_shader_type dmat4x2) => {
-		[[f64; 4]; 2]
+		[[f64; 2]; 4]
 	};
 	(resolve_shader_type dmat4x3) => {
-		[[f64; 4]; 3]
+		$crate::shader::params::AlignedMatrix4<f64>
 	};
 	(resolve_shader_type dmat4x4) => {
 		[[f64; 4]; 4]

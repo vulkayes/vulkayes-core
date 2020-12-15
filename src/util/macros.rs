@@ -774,7 +774,7 @@ macro_rules! lock_and_deref_closure {
 	) => {
 		{
 			$(
-				let ($locks, $derefs) = $crate::seq_macro::seq_expr!(
+				let ($locks, $derefs) = $crate::seq_macro::seq!(
 					N in 0 .. $count {
 						{
 							let locks $(: $l_type)? = [ #( $ex[N] $($lock_code)+, )* ];
@@ -1045,6 +1045,44 @@ macro_rules! vk_enum_subset {
 				}
 			}
 		}
+	}
+}
+
+
+/// Creates a chain of `std::iter::once` wrapper values.
+///
+/// Usage:
+/// ```
+/// # use vulkayes_core::iter_once_chain;
+/// iter_once_chain!(
+/// 	1,
+/// 	2,
+/// 	3
+/// );
+/// ```
+///
+/// expands to:
+/// ```
+/// # use vulkayes_core::iter_once_chain;
+/// std::iter::once(1).chain(
+/// 	std::iter::once(2)
+/// ).chain(
+/// 	std::iter::once(3)
+/// );
+/// ```
+#[macro_export]
+macro_rules! iter_once_chain {
+	(
+		$first_value: expr
+		$(
+			, $rest_value: expr
+		)*
+		$(,)?
+	) => {
+		std::iter::once($first_value)
+		$(
+			.chain(std::iter::once($rest_value))
+		)*
 	}
 }
 

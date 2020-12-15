@@ -1,17 +1,16 @@
+use std::ops::Deref;
+
 use ash::{version::DeviceV1_0, vk};
 
-use crate::{
-	prelude::{Device, Framebuffer, HasHandle, HasSynchronizedHandle, RenderPass, Vrc},
-	util::sync::VutexGuard
-};
+use crate::prelude::{Framebuffer, HasHandle, RenderPass};
 
-use super::{CommandBuffer, CommandBufferError};
+use super::CommandBufferError;
 
 pub mod common;
-// pub mod inside_render_pass;
-// pub mod outside_render_pass;
+pub mod inside_render_pass;
+pub mod outside_render_pass;
 
-pub use common::CommandBufferRecordingCommon;
+pub use common::CommandBufferRecordingLockCommon;
 
 #[derive(Debug)]
 pub enum CommandBufferBeginInfo {
@@ -49,64 +48,35 @@ impl Into<vk::CommandBufferBeginInfoBuilder<'static>> for CommandBufferBeginInfo
 /// This structure will panic on `drop` if an error occurs with the `end_command_buffer` command.
 /// It is recommended to call `end` instead.
 #[derive(Debug)]
-pub struct CommandBufferRecordingLock<'a> {
-	pub(super) lock: VutexGuard<'a, vk::CommandBuffer>,
-	pub(super) pool_lock: VutexGuard<'a, vk::CommandPool>,
-	pub(super) buffer: &'a CommandBuffer
-}
-impl<'a> CommandBufferRecordingLock<'a> {
-	/// ### Panic
-	///
-	/// This function will panic if the pool or the buffer vutex cannot be locked.
+pub struct CommandBufferRecordingLockOutsideRenderPass<'a>(CommandBufferRecordingLockCommon<'a>);
+impl<'a> CommandBufferRecordingLockOutsideRenderPass<'a> {
 	pub fn new(
-		command_buffer: &'a CommandBuffer,
+		lock: CommandBufferRecordingLockCommon<'a>,
 		info: CommandBufferBeginInfo
 	) -> Result<Self, CommandBufferError> {
-		let pool_lock = command_buffer.pool().lock_handle();
-		let lock = command_buffer.lock_handle();
-
 		log_trace_common!(
 			"Beginning command buffer:",
-			crate::util::fmt::format_handle(*lock),
+			crate::util::fmt::format_handle(lock.handle()),
 			info
 		);
 
 		let command_buffer_begin_info: vk::CommandBufferBeginInfoBuilder = info.into();
 		unsafe {
-			command_buffer
-				.pool()
-				.device()
-				.begin_command_buffer(*lock, &command_buffer_begin_info)?;
+			lock.device()
+				.begin_command_buffer(lock.handle(), &command_buffer_begin_info)?;
 		}
 
-		Ok(CommandBufferRecordingLock {
-			pool_lock,
-			lock,
-			buffer: command_buffer
-		})
-	}
-
-	/// Returns a reference to the locked command buffer.
-	///
-	/// Attempting to lock it again will result in a deadlock.
-	pub fn buffer(&self) -> &'a CommandBuffer {
-		self.buffer
+		Ok(CommandBufferRecordingLockOutsideRenderPass(lock))
 	}
 }
-impl CommandBufferRecordingCommon for CommandBufferRecordingLock<'_> {
-	fn handle(&self) -> vk::CommandBuffer {
-		*self.lock
-	}
+impl<'a> Deref for CommandBufferRecordingLockOutsideRenderPass<'a> {
+	type Target = CommandBufferRecordingLockCommon<'a>;
 
-	fn pool_handle(&self) -> vk::CommandPool {
-		*self.pool_lock
-	}
-
-	fn device(&self) -> &Vrc<Device> {
-		self.buffer.pool().device()
+	fn deref(&self) -> &Self::Target {
+		&self.0
 	}
 }
-impl<'a> CommandBufferRecordingLock<'a> {
+impl<'a> CommandBufferRecordingLockOutsideRenderPass<'a> {
 	pub fn begin_render_pass(
 		self,
 		render_pass: &RenderPass,
@@ -140,10 +110,10 @@ impl<'a> CommandBufferRecordingLock<'a> {
 				.cmd_begin_render_pass(self.handle(), &create_info, contents);
 		}
 
-		CommandBufferRecordingLockInsideRenderPass { inner: Some(self) }
+		CommandBufferRecordingLockInsideRenderPass(self)
 	}
 
-	/// This consumes the recording object, dropping the held locks and ending the recording.
+	/// Ends the recording.
 	///
 	/// ### Safety
 	///
@@ -158,15 +128,26 @@ impl<'a> CommandBufferRecordingLock<'a> {
 			.map_err(CommandBufferError::from)
 	}
 
-	pub fn end(self) -> Result<(), CommandBufferError> {
-		// Prevent dropping because that would call `end_command_buffer` twice!
-		// We need to call `end_mut` manually to return the result.
+	/// Ends the recording and returns the lock.
+	pub fn end(self) -> Result<CommandBufferRecordingLockCommon<'a>, CommandBufferError> {
+		// Prevent drop so we don't call `end_command_buffer` twice
 		let mut dont_drop = std::mem::ManuallyDrop::new(self);
 
-		unsafe { dont_drop.end_mut() }
+		// Need to call `end_mut` manually to return the result.
+		let result = unsafe { dont_drop.end_mut() };
+
+		// Move the lock out, this is safe because drop is prevented
+		let lock = unsafe {
+			std::ptr::read(&dont_drop.0)
+		};
+
+		match result {
+			Ok(()) => Ok(lock),
+			Err(err) => Err(err)
+		}
 	}
 }
-impl Drop for CommandBufferRecordingLock<'_> {
+impl Drop for CommandBufferRecordingLockOutsideRenderPass<'_> {
 	fn drop(&mut self) {
 		unsafe { self.end_mut().expect("Could not end command buffer") }
 	}
@@ -174,22 +155,16 @@ impl Drop for CommandBufferRecordingLock<'_> {
 
 /// ### Panic
 ///
-/// This structure will panic on `drop` if the inner `CommandBufferRecordingLock` panics on drop.
+/// This structure will panic on `drop` if the inner `CommandBufferRecordingLockOutsideRenderPass` panics on drop.
 /// It is recommended to call `end_render_pass` and retrieve the inner lock instead.
-pub struct CommandBufferRecordingLockInsideRenderPass<'a> {
-	inner: Option<CommandBufferRecordingLock<'a>>
-}
-impl<'a> CommandBufferRecordingCommon for CommandBufferRecordingLockInsideRenderPass<'_> {
-	fn handle(&self) -> vk::CommandBuffer {
-		self.inner.as_ref().unwrap().handle()
-	}
+pub struct CommandBufferRecordingLockInsideRenderPass<'a>(
+	CommandBufferRecordingLockOutsideRenderPass<'a>
+);
+impl<'a> Deref for CommandBufferRecordingLockInsideRenderPass<'a> {
+	type Target = CommandBufferRecordingLockCommon<'a>;
 
-	fn pool_handle(&self) -> vk::CommandPool {
-		self.inner.as_ref().unwrap().pool_handle()
-	}
-
-	fn device(&self) -> &Vrc<Device> {
-		self.inner.as_ref().unwrap().device()
+	fn deref(&self) -> &Self::Target {
+		self.0.deref()
 	}
 }
 impl<'a> CommandBufferRecordingLockInsideRenderPass<'a> {
@@ -219,9 +194,19 @@ impl<'a> CommandBufferRecordingLockInsideRenderPass<'a> {
 		self.device().cmd_end_render_pass(self.handle());
 	}
 
-	pub fn end_render_pass(mut self) -> CommandBufferRecordingLock<'a> {
-		self.inner.take().unwrap()
-		// Drop takes care of ending the render pass
+	/// Consumes this struct, ends the render pass and returns the `CommandBufferRecordingLockOutsideRenderPass`.
+	pub fn end_render_pass(self) -> CommandBufferRecordingLockOutsideRenderPass<'a> {
+		// Prevent drop so we don't call `cmd_end_render_pass` twice.
+		let mut dont_drop = std::mem::ManuallyDrop::new(self);
+
+		// Need to call `end_render_pass_mut` manually to "drop"
+		// Need to get the inner lock out to return it
+		unsafe {
+			dont_drop.end_render_pass_mut();
+
+			// Safe because drop is prevented
+			std::ptr::read(&dont_drop.0)
+		}
 	}
 }
 impl Drop for CommandBufferRecordingLockInsideRenderPass<'_> {

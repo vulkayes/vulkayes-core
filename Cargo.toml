@@ -53,13 +53,11 @@ log_max_level_trace = ["log/max_level_trace"]
 
 [dependencies]
 # core
-# A forked git repository is used during development
-# ash = { git = "https://github.com/vulkayes/ash" }
 ash = "0.31"
 
 # utility
 arrayvec = "0.5"
-seq-macro = { git = "https://github.com/ametisf/seq-macro/" }
+seq-macro = "0.2.1"
 
 # performance
 rustc-hash = { version = "1", optional = true }

@@ -53,7 +53,7 @@ macro_rules! impl_allocate_command_buffers_array {
 				}
 			}
 
-			let layout_handles: [vk::DescriptorSetLayout; $size] = $crate::seq_macro::seq_expr!(
+			let layout_handles: [vk::DescriptorSetLayout; $size] = $crate::seq_macro::seq!(
 				N in 0 .. $size {
 					[
 						#(

@@ -103,8 +103,10 @@ impl CommandBuffer {
 	pub fn begin_recording(
 		&self,
 		info: recording::CommandBufferBeginInfo
-	) -> Result<recording::CommandBufferRecordingLock, CommandBufferError> {
-		recording::CommandBufferRecordingLock::new(self, info)
+	) -> Result<recording::CommandBufferRecordingLockOutsideRenderPass, CommandBufferError> {
+		let lock = recording::common::CommandBufferRecordingLockCommon::new(self);
+
+		recording::CommandBufferRecordingLockOutsideRenderPass::new(lock, info)
 	}
 
 	pub const fn pool(&self) -> &Vrc<CommandPool> {
