@@ -3,7 +3,6 @@
 * vkCmdExecuteCommands
 * vkCmdSetDeviceMask
 * vkCmdWaitEvents
-* vkCmdPipelineBarrier
 
 * ~~vkCmdBindPipeline~~
 * vkCmdBindPipelineShaderGroupNV
@@ -73,7 +72,7 @@
 
 ## Outside render pass
 
-* vkCmdPipelineBarrier - dependent
+* ~~vkCmdPipelineBarrier~~
 * vkCmdEndConditionalRenderingEXT - dependent
 
 * vkCmdSetEvent
@@ -92,7 +91,7 @@
 
 * vkCmdCopyBuffer
 * vkCmdCopyImage
-* vkCmdCopyBufferToImage
+* ~~vkCmdCopyBufferToImage~~
 * vkCmdCopyImageToBuffer
 * vkCmdBlitImage
 * vkCmdResolveImage
@@ -115,6 +114,8 @@
 * vkCmdCopyMemoryToAccelerationStructureKHR
 
 ## Inside render pass
+
+* vkCmdPipelineBarrier
 
 * ~~vkCmdNextSubpass~~
 * vkCmdNextSubpass2

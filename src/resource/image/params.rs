@@ -571,14 +571,14 @@ impl ImageSubresourceRange {
 		}
 	}
 }
-impl Into<vk::ImageSubresourceRangeBuilder<'static>> for ImageSubresourceRange {
-	fn into(self) -> vk::ImageSubresourceRangeBuilder<'static> {
+impl From<ImageSubresourceRange> for vk::ImageSubresourceRangeBuilder<'static> {
+	fn from(value: ImageSubresourceRange) -> vk::ImageSubresourceRangeBuilder<'static> {
 		vk::ImageSubresourceRange::builder()
-			.aspect_mask(self.aspect_mask)
-			.layer_count(self.array_layers.get())
-			.base_array_layer(self.array_layers_base)
-			.level_count(self.mipmap_levels.get())
-			.base_mip_level(self.mipmap_levels_base)
+			.aspect_mask(value.aspect_mask)
+			.layer_count(value.array_layers.get())
+			.base_array_layer(value.array_layers_base)
+			.level_count(value.mipmap_levels.get())
+			.base_mip_level(value.mipmap_levels_base)
 	}
 }
 

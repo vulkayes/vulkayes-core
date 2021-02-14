@@ -1,4 +1,4 @@
-/// Trait indicating that the implementor is `#[repr(transparent)]` other the `Target`.
+/// Trait indicating that the implementor is `#[repr(transparent)]` over the `Target`.
 ///
 /// This means the two have identical memory layouts and can safely be transmuted into each other.
 ///

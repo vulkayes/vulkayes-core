@@ -1,6 +1,6 @@
 use ash::version::DeviceV1_0;
 
-impl<'a> super::CommandBufferRecordingLockInsideRenderPass<'a> {
+impl<'a> super::super::CommandBufferRecordingLockInsideRenderPass<'a> {
 	pub fn draw(
 		&self,
 		vertex_count: u32,

@@ -1,7 +1,7 @@
 use ash::vk;
 
 vk_enum_subset! {
-	/// Enum for image layout that can be used in final layout position.
+	/// Enum for image layout that can be used in final or new layout position.
 	///
 	/// This includes all layouts but `UNDEFINED` and `PREINITIALIZED`.
 	pub enum ImageLayoutFinal {
@@ -50,10 +50,12 @@ vk_enum_subset! {
 }
 
 vk_enum_subset! {
-	/// Enum for image layout that can be used in clear color image command.
-	pub enum ImageLayoutClearColorImage {
+	/// Enum for image layout that can be used as destination of image transfer operations.
+	pub enum ImageLayoutDestination {
 		GENERAL,
 		TRANSFER_DST_OPTIMAL,
 		SHARED_PRESENT_KHR
 	} impl Into<vk::ImageLayout>
 }
+
+pub type ImageLayoutClearColorImage = ImageLayoutDestination;

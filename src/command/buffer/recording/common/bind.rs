@@ -3,55 +3,16 @@ use ash::vk;
 use ash::version::DeviceV1_0;
 
 use crate::prelude::{
-	CommandBuffer,
-	Device,
 	GraphicsPipeline,
 	PipelineLayout,
 	HasHandle,
 	SafeHandle,
-	HasSynchronizedHandle,
-	Vrc,
-	VutexGuard,
 	Transparent,
 	Buffer,
 	PushConstantsTrait
 };
 
-/// Wrapper around `VutexGuard` and `CommandBuffer` reference that provides safe command recording functions.
-#[derive(Debug)]
-pub struct CommandBufferRecordingLockCommon<'a> {
-	pub(super) lock: VutexGuard<'a, vk::CommandBuffer>,
-	pub(super) pool_lock: VutexGuard<'a, vk::CommandPool>,
-	pub(super) buffer: &'a CommandBuffer
-}
-impl<'a> CommandBufferRecordingLockCommon<'a> {
-	/// ### Panic
-	///
-	/// This function will panic if the pool or the buffer vutex cannot be locked.
-	pub fn new(command_buffer: &'a CommandBuffer) -> Self {
-		let pool_lock = command_buffer.pool().lock_handle();
-		let lock = command_buffer.lock_handle();
-
-		CommandBufferRecordingLockCommon {
-			pool_lock,
-			lock,
-			buffer: command_buffer
-		}
-	}
-
-	pub(super) fn handle(&self) -> vk::CommandBuffer {
-		*self.lock
-	}
-
-	pub(super) fn pool_handle(&self) -> vk::CommandPool {
-		*self.pool_lock
-	}
-
-	pub(super) fn device(&self) -> &Vrc<Device> {
-		self.buffer.pool().device()
-	}
-}
-impl<'a> CommandBufferRecordingLockCommon<'a> {
+impl<'a> super::CommandBufferRecordingLockCommon<'a> {
 	pub fn bind_graphics_pipeline(&self, pipeline: &GraphicsPipeline) {
 		log_trace_common!(
 			"Binding pipeline:",
@@ -164,27 +125,6 @@ impl<'a> CommandBufferRecordingLockCommon<'a> {
 				buffer.handle(),
 				offset,
 				index_type
-			)
-		}
-	}
-}
-impl<'a> CommandBufferRecordingLockCommon<'a> {
-	pub fn set_viewports(
-		&self,
-		first_viewport: u32,
-		viewports: impl AsRef<[vk::Viewport]>
-	) {
-		log_trace_common!(
-			"Setting viewports:",
-			crate::util::fmt::format_handle(self.handle()),
-			first_viewport,
-			viewports.as_ref()
-		);
-		unsafe {
-			self.device().cmd_set_viewport(
-				self.handle(),
-				first_viewport,
-				viewports.as_ref()
 			)
 		}
 	}

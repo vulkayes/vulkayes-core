@@ -5,7 +5,11 @@ pub use crate::{
 				common::CommandBufferRecordingLockCommon,
 				CommandBufferBeginInfo,
 				CommandBufferRecordingLockInsideRenderPass,
-				CommandBufferRecordingLockOutsideRenderPass
+				CommandBufferRecordingLockOutsideRenderPass,
+				outside::{
+					barrier::{MemoryBarrier, BufferMemoryBarrier, ImageMemoryBarrier},
+					copy::{BufferImageCopy, ImageSubresourceLayers}
+				}
 			},
 			CommandBuffer
 		},
@@ -51,7 +55,7 @@ pub use crate::{
 	resource::{
 		buffer::{params::BufferAllocatorParams, view::BufferView, Buffer},
 		image::{
-			layout::{ImageLayoutAttachment, ImageLayoutClearColorImage, ImageLayoutFinal},
+			layout::{ImageLayoutAttachment, ImageLayoutClearColorImage, ImageLayoutDestination, ImageLayoutFinal},
 			params::{
 				ImageAllocatorParams,
 				ImageSize,

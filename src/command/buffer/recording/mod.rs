@@ -7,8 +7,8 @@ use crate::prelude::{Framebuffer, HasHandle, RenderPass};
 use super::CommandBufferError;
 
 pub mod common;
-pub mod inside_render_pass;
-pub mod outside_render_pass;
+pub mod inside;
+pub mod outside;
 
 pub use common::CommandBufferRecordingLockCommon;
 
@@ -22,10 +22,10 @@ pub enum CommandBufferBeginInfo {
 		simultaneous: bool
 	}
 }
-impl Into<vk::CommandBufferBeginInfoBuilder<'static>> for CommandBufferBeginInfo {
-	fn into(self) -> vk::CommandBufferBeginInfoBuilder<'static> {
+impl From<CommandBufferBeginInfo> for vk::CommandBufferBeginInfoBuilder<'static> {
+	fn from(value: CommandBufferBeginInfo) -> vk::CommandBufferBeginInfoBuilder<'static> {
 		let mut builder = vk::CommandBufferBeginInfo::builder();
-		match self {
+		match value {
 			CommandBufferBeginInfo::OneTime => {
 				builder = builder.flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
 			}
