@@ -132,7 +132,7 @@ impl DeviceMemoryAllocation {
 
 	/// Provides mutable access to the mapped memory, possibly mapping it in the process.
 	///
-	/// The `accessor` parameter receives an access object into the mapped memory. If it returns `false`, the memory will be unmapped before returning.
+	/// The `accessor` parameter receives an access object into the mapped memory. If it returns `Unmap`, the memory will be unmapped before returning.
 	///
 	/// ### Panic
 	///
@@ -147,7 +147,7 @@ impl DeviceMemoryAllocation {
 			lock.map(&self.device, self.memory, self.bind_offset, self.size)?;
 		}
 
-		// SAFETY: We are under a Vutex, which
+		// SAFETY: We are under a Vutex
 		let bytes = unsafe { lock.ptr.as_mut().unwrap().as_mut() };
 		let access = DeviceMemoryMappingAccess {
 			bytes,

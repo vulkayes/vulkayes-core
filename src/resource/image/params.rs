@@ -1,6 +1,11 @@
-use std::num::NonZeroU32;
+use std::{
+	num::NonZeroU32,
+	convert::TryFrom
+};
 
 use ash::vk;
+
+use thiserror::Error;
 
 use crate::{
 	memory::device::{allocator::ImageMemoryAllocator, never::NeverDeviceAllocator},
@@ -235,6 +240,10 @@ impl From<ImageSize3D> for ImageSize {
 	}
 }
 
+#[derive(Debug, Error)]
+#[error("Invalid image size type")]
+pub struct ImageSizeTypeError;
+
 /// Transparent image size wrapper that is guaranteed to be 1D.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(transparent)]
@@ -244,6 +253,17 @@ impl std::ops::Deref for ImageSize1D {
 
 	fn deref(&self) -> &Self::Target {
 		&self.0
+	}
+}
+impl TryFrom<ImageSize> for ImageSize1D {
+	type Error = ImageSizeTypeError;
+
+	fn try_from(value: ImageSize) -> Result<Self, Self::Error> {
+		if value.image_type() == vk::ImageType::TYPE_1D {
+			Ok(ImageSize1D(value))
+		} else {
+			Err(ImageSizeTypeError)
+		}
 	}
 }
 unsafe impl Transparent for ImageSize1D {
@@ -266,6 +286,17 @@ impl std::ops::Deref for ImageSize2D {
 		&self.0
 	}
 }
+impl TryFrom<ImageSize> for ImageSize2D {
+	type Error = ImageSizeTypeError;
+
+	fn try_from(value: ImageSize) -> Result<Self, Self::Error> {
+		if value.image_type() == vk::ImageType::TYPE_2D {
+			Ok(ImageSize2D(value))
+		} else {
+			Err(ImageSizeTypeError)
+		}
+	}
+}
 unsafe impl Transparent for ImageSize2D {
 	type Target = ImageSize;
 }
@@ -279,6 +310,17 @@ impl std::ops::Deref for ImageSize3D {
 
 	fn deref(&self) -> &Self::Target {
 		&self.0
+	}
+}
+impl TryFrom<ImageSize> for ImageSize3D {
+	type Error = ImageSizeTypeError;
+
+	fn try_from(value: ImageSize) -> Result<Self, Self::Error> {
+		if value.image_type() == vk::ImageType::TYPE_3D {
+			Ok(ImageSize3D(value))
+		} else {
+			Err(ImageSizeTypeError)
+		}
 	}
 }
 unsafe impl Transparent for ImageSize3D {
@@ -317,6 +359,19 @@ impl std::ops::Deref for ImageSizeCubeCompatible {
 
 	fn deref(&self) -> &Self::Target {
 		&self.0
+	}
+}
+impl TryFrom<ImageSize> for ImageSizeCubeCompatible {
+	type Error = ImageSizeTypeError;
+
+	fn try_from(value: ImageSize) -> Result<Self, Self::Error> {
+		let value = ImageSize2D::try_from(value)?;
+		
+		if value.width() == value.height() && value.array_layers().get() >= 6 {
+			Ok(ImageSizeCubeCompatible(value))
+		} else {
+			Err(ImageSizeTypeError)
+		}
 	}
 }
 unsafe impl Transparent for ImageSizeCubeCompatible {

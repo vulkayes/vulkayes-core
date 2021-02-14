@@ -36,7 +36,7 @@ vk_builder_wrap! {
 			})
 		}
 
-		pub fn with_immutable_sampler(
+		pub fn without_sampler(
 			image_view: &'a ImageView,
 			image_layout: vk::ImageLayout
 		) -> Self {

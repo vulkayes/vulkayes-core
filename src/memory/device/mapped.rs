@@ -136,6 +136,8 @@ impl<'a> DeviceMemoryMappingAccess<'a> {
 	/// * `ptr::write_unaligned` in a loop otherwise
 	///
 	/// Number of `T`s written is the minimum of `data.len()` and `self.bytes()[offset..].len() / stride`.
+	// TODO: Is `T: Copy` sensible? What about padded types, is it okay to write the padding as well (reading it is technically UB)?
+	// Should we care about padding at all?
 	pub fn write_slice<T: Copy>(&mut self, data: &[T], offset: usize, stride: SliceWriteStride) {
 		let bytes = self.bytes_mut();
 		let offset = offset.min(bytes.len());

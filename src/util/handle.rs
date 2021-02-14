@@ -33,7 +33,7 @@ impl<'a, T: vk::Handle + Copy> VutexGuardSafeHandleBorrow<'a, T> {
 		Self { guard }
 	}
 
-	pub fn borrow_safe(&self) -> SafeHandle<'a, T> {
+	pub fn borrow_safe(&self) -> SafeHandle<'_, T> {
 		unsafe { SafeHandle::from_raw(*self.guard) }
 	}
 }
