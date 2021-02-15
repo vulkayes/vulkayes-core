@@ -30,7 +30,7 @@ unsafe_enum_variants! {
 	#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 	enum MipmapLevelsInner {
 		/// One mipmap level.
-		pub One => { Some(crate::NONZEROU32_ONE) },
+		pub One => { Some(NonZeroU32::new(1).unwrap()) },
 		/// Either `1` or `log2(max(width, height, depth)) + 1`, depending on `Image Creation Limits`.
 		pub Most => { None },
 
@@ -83,8 +83,8 @@ impl ImageSize {
 		array_layers: NonZeroU32,
 		mipmaps: MipmapLevels
 	) -> ImageSize1D {
-		let height = crate::NONZEROU32_ONE;
-		let depth = crate::NONZEROU32_ONE;
+		let height = NonZeroU32::new(1).unwrap();
+		let depth = NonZeroU32::new(1).unwrap();
 
 		let mipmap_levels: Option<NonZeroU32> = mipmaps.into();
 		let mipmap_levels = mipmap_levels
@@ -106,7 +106,7 @@ impl ImageSize {
 		array_layers: NonZeroU32,
 		mipmaps: MipmapLevels
 	) -> ImageSize2D {
-		let depth = crate::NONZEROU32_ONE;
+		let depth = NonZeroU32::new(1).unwrap();
 
 		let mipmap_levels: Option<NonZeroU32> = mipmaps.into();
 		let mipmap_levels = mipmap_levels
@@ -137,7 +137,7 @@ impl ImageSize {
 			width,
 			height,
 			depth,
-			array_layers: crate::NONZEROU32_ONE,
+			array_layers: NonZeroU32::new(1).unwrap(),
 			mipmap_levels
 		})
 	}
@@ -455,7 +455,7 @@ unsafe_enum_variants! {
 				mipmap_levels_base,
 				mipmap_levels,
 				array_layers_base,
-				array_layers: crate::NONZEROU32_ONE
+				array_layers: NonZeroU32::new(1).unwrap()
 			}
 		},
 		pub Type1DArray { mipmap_levels_base: u32, mipmap_levels: NonZeroU32, array_layers_base: u32, array_layers: NonZeroU32 } => {
@@ -474,7 +474,7 @@ unsafe_enum_variants! {
 				mipmap_levels_base,
 				mipmap_levels,
 				array_layers_base,
-				array_layers: crate::NONZEROU32_ONE
+				array_layers: NonZeroU32::new(1).unwrap()
 			}
 		},
 		pub Type2DArray { mipmap_levels_base: u32, mipmap_levels: NonZeroU32, array_layers_base: u32, array_layers: NonZeroU32 } => {
@@ -513,7 +513,7 @@ unsafe_enum_variants! {
 				mipmap_levels_base,
 				mipmap_levels,
 				array_layers_base: 0,
-				array_layers: crate::NONZEROU32_ONE
+				array_layers: NonZeroU32::new(1).unwrap()
 			}
 		},
 

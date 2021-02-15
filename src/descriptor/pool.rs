@@ -11,11 +11,11 @@ pub struct DescriptorPoolSize {
 	pub descriptor_type: vk::DescriptorType,
 	pub count: NonZeroU32
 }
-impl Into<vk::DescriptorPoolSize> for DescriptorPoolSize {
-	fn into(self) -> vk::DescriptorPoolSize {
+impl From<DescriptorPoolSize> for vk::DescriptorPoolSize {
+	fn from(value: DescriptorPoolSize) -> vk::DescriptorPoolSize {
 		vk::DescriptorPoolSize::builder()
-			.ty(self.descriptor_type)
-			.descriptor_count(self.count.get())
+			.ty(value.descriptor_type)
+			.descriptor_count(value.count.get())
 			.build()
 	}
 }
@@ -29,7 +29,7 @@ macro_rules! impl_allocate_command_buffers_array {
 		/// ### Panic
 		///
 		/// This function will panic if the pool `Vutex` is poisoned.
-		// Const generics can't come fast enough
+		// TODO: Const generics can't come fast enough
 		pub fn $name(
 			&self,
 			$layouts_name: [&DescriptorSetLayout; $size]

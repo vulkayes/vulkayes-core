@@ -50,9 +50,6 @@ pub use log;
 // Export `seq_macro` because `lock_and_deref` macro requires it.
 pub use seq_macro;
 
-/// Non zero `1u32` constant to avoid unnecessary unsafe blocks in constant contexts.
-pub const NONZEROU32_ONE: std::num::NonZeroU32 = unsafe { std::num::NonZeroU32::new_unchecked(1) };
-
 // Macros used inside and outside of the crate.
 #[macro_use]
 pub mod util;

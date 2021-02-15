@@ -10,10 +10,6 @@ pub mod update;
 
 pub struct DescriptorSet {
 	pool: Vrc<DescriptorPool>,
-
-	// TODO: Check if we need to keep this alive
-	#[allow(dead_code)]
-	layout: Vrc<DescriptorSetLayout>,
 	descriptor_set: Vutex<vk::DescriptorSet>
 }
 impl DescriptorSet {
@@ -23,44 +19,41 @@ impl DescriptorSet {
 	) -> Result<Vrc<Self>, DescriptorSetError> {
 		let [raw] = pool.allocate_descriptor_set([&layout])?;
 
-		Ok(Vrc::new(unsafe { Self::from_existing(pool, layout, raw) }))
+		Ok(Vrc::new(unsafe { Self::from_existing(pool, raw) }))
 	}
 
 	pub fn new_multiple(
 		pool: Vrc<DescriptorPool>,
 		layouts: Vec<Vrc<DescriptorSetLayout>>
 	) -> Result<Vec<Vrc<Self>>, DescriptorSetError> {
-		let raw = pool.allocate_descriptor_sets(layouts.iter().map(|l| l.deref()))?;
+		let raw = pool.allocate_descriptor_sets(
+			layouts.iter().map(|l| l.deref())
+		)?;
 
-		let sets: Vec<_> = layouts
-			.into_iter()
-			.zip(raw.into_iter())
-			.map(|(layout, descriptor_set)| {
-				Vrc::new(unsafe { Self::from_existing(pool.clone(), layout, descriptor_set) })
-			})
-			.collect();
+		let sets: Vec<_> = raw.into_iter().map(
+			|descriptor_set| {
+				Vrc::new(unsafe { Self::from_existing(pool.clone(), descriptor_set) })
+			}
+		).collect();
 
 		Ok(sets)
 	}
 
 	/// ### Safety
 	///
-	/// * `descriptor_set` must be a valid handle allocated from `pool` with `layout`.
+	/// * `descriptor_set` must be a valid handle allocated from `pool`.
 	pub unsafe fn from_existing(
 		pool: Vrc<DescriptorPool>,
-		layout: Vrc<DescriptorSetLayout>,
 		descriptor_set: vk::DescriptorSet
 	) -> Self {
 		log_trace_common!(
 			"Creating DescriptorSet from existing handle:",
 			pool,
-			layout,
 			crate::util::fmt::format_handle(descriptor_set)
 		);
 
 		Self {
 			pool,
-			layout,
 			descriptor_set: Vutex::new(descriptor_set)
 		}
 	}

@@ -21,7 +21,9 @@ unsafe_enum_variants! {
 	#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 	enum DescriptorSetLayoutBindingInner ['a] {
 		/// Binding is reserved and must not be used from shaders.
-		pub Reserved => { vk::DescriptorSetLayoutBinding::builder().descriptor_count(0) },
+		pub Reserved => {
+			vk::DescriptorSetLayoutBinding::builder().descriptor_count(0)
+		},
 
 		/// Sampler or combined image sampler with the sampler part being immutable.
 		pub ImmutableSamplers {
