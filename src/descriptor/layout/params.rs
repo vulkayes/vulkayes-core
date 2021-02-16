@@ -1,5 +1,6 @@
 use std::num::NonZeroU32;
 
+use crate::prelude::Transparent;
 use ash::vk;
 
 vk_enum_subset! {
@@ -38,7 +39,7 @@ unsafe_enum_variants! {
 				.descriptor_count(samplers.len() as u32)
 				.stage_flags(stage_flags)
 				.immutable_samplers(
-					unsafe { std::mem::transmute(samplers) }
+					Transparent::transmute_slice(samplers)
 				)
 		},
 

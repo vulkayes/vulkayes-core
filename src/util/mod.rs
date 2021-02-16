@@ -55,4 +55,16 @@ impl Default for WaitTimeout {
 /// Similar code to `std::alloc::Layout::padding_needed_for`, but without the `- base`
 pub const fn align_up(base: usize, align: usize) -> usize {
 	base.wrapping_add(align.wrapping_sub(1)) & !align.wrapping_sub(1)
+
+	// base.wrapping_add(align).wrapping_sub(1).wrapping_sub(
+	// 	base.wrapping_sub(1) % align
+	// )
+}
+
+/// Equivalent to `align_up(std::mem::size_of::<T>(), align)`.
+pub const fn aligned_size_of<T>(align: usize) -> usize {
+	align_up(
+		std::mem::size_of::<T>(),
+		align
+	)
 }

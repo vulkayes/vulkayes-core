@@ -10,7 +10,10 @@ use ash::{
 use crate::{
 	instance::Instance,
 	memory::host::HostMemoryAllocator,
-	physical_device::PhysicalDevice,
+	physical_device::{
+		PhysicalDevice,
+		enumerate::PhysicalDeviceProperties
+	},
 	prelude::Vrc,
 	queue::Queue
 };
@@ -35,6 +38,7 @@ pub struct Device {
 	device_handle: vk::Device,
 
 	physical_device: PhysicalDevice,
+	physical_properties: PhysicalDeviceProperties,
 
 	host_memory_allocator: HostMemoryAllocator
 }
@@ -117,6 +121,7 @@ impl Device {
 		let device = Vrc::new(Device {
 			device_handle: device.handle(),
 			device,
+			physical_properties: physical_device.properties(),
 			physical_device,
 			host_memory_allocator
 		});
@@ -154,6 +159,11 @@ impl Device {
 
 	pub const fn physical_device(&self) -> &PhysicalDevice {
 		&self.physical_device
+	}
+
+	/// Cached for convenience
+	pub const fn physical_properties(&self) -> &PhysicalDeviceProperties {
+		&self.physical_properties
 	}
 
 	pub const fn instance(&self) -> &Vrc<Instance> {
