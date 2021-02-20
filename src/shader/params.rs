@@ -27,17 +27,17 @@ impl<'a> ShaderEntryPoint<'a> {
 
 /// Trait for values that are to be used as push constants.
 pub unsafe trait PushConstantsTrait: Sized + std::fmt::Debug {
-	const STAGE_FLAGS: vk::ShaderStageFlags;
-	const OFFSET_DIV_FOUR: u32;
+	const STAGE_FLAGS: vk::ShaderStageFlags = vk::ShaderStageFlags::from_raw(vk::ShaderStageFlags::VERTEX.as_raw() | vk::ShaderStageFlags::FRAGMENT.as_raw());
+	const OFFSET_DIV_FOUR: u32 = 0;
 	// TODO: Is there any way to force `Self` to **not** be a ZST?
 	const SIZE_DIV_FOUR: u32 = (std::mem::size_of::<Self>() / 4) as u32;
 
 	fn layout_range() -> PushConstantRange {
-		PushConstantRange {
-			stage_flags: Self::STAGE_FLAGS,
-			offset_div_four: Self::OFFSET_DIV_FOUR,
-			size_div_four: std::num::NonZeroU32::new(Self::SIZE_DIV_FOUR).expect("Push constants block struct must have size of at least 4 bytes")
-		}
+		PushConstantRange::new(
+			Self::STAGE_FLAGS,
+			Self::OFFSET_DIV_FOUR,
+			std::num::NonZeroU32::new(Self::SIZE_DIV_FOUR).expect("Push constants block struct must have size of at least 4 bytes")
+		)
 	}
 
 	// Returns self as an array of bytes.

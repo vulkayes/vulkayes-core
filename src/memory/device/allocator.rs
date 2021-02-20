@@ -9,7 +9,7 @@ use super::DeviceMemoryAllocation;
 /// * `allocate` must return a valid `DeviceMemoryAllocation` that can be bound to the `vk::Image` passed in.
 pub unsafe trait ImageMemoryAllocator: std::fmt::Debug {
 	type AllocationRequirements: std::fmt::Debug;
-	type Error: std::error::Error;
+	type Error: std::error::Error + 'static;
 
 	fn allocate(
 		&self,
@@ -24,7 +24,7 @@ pub unsafe trait ImageMemoryAllocator: std::fmt::Debug {
 /// * `allocate` must return a valid `DeviceMemoryAllocation` that can be bound to the `vk::Buffer` passed in.
 pub unsafe trait BufferMemoryAllocator: std::fmt::Debug {
 	type AllocationRequirements: std::fmt::Debug;
-	type Error: std::error::Error;
+	type Error: std::error::Error + 'static;
 
 	fn allocate(
 		&self,

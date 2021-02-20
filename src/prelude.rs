@@ -40,7 +40,13 @@ pub use crate::{
 	entry::Entry,
 	framebuffer::Framebuffer,
 	instance::{ApplicationInfo, Instance},
-	memory::{device::MappingAccessResult, host::HostMemoryAllocator},
+	memory::{
+		device::{
+			MappingAccessResult,
+			allocator::{BufferMemoryAllocator, ImageMemoryAllocator}
+		},
+		host::HostMemoryAllocator,
+	},
 	physical_device::PhysicalDevice,
 	pipeline::{
 		graphics::GraphicsPipeline,

@@ -35,9 +35,9 @@ vk_result_error! {
 		#[error("At least one descriptor set layout must be specified")]
 		LayoutsEmpty,
 
-		#[cfg(feature = "runtime_implicit_validations")]
-		#[error("The descriptor pool and all descriptor layouts must come from the same device")]
-		DescriptorPoolLayoutsDeviceMismatch,
+		// #[cfg(feature = "runtime_implicit_validations")]
+		// #[error("The descriptor pool and all descriptor layouts must come from the same device")]
+		// DescriptorPoolLayoutsDeviceMismatch,
 	}
 }
 

@@ -37,9 +37,9 @@ impl<'a> CommandBufferRecordingLockCommon<'a> {
 		*self.lock
 	}
 
-	pub(super) fn pool_handle(&self) -> vk::CommandPool {
-		*self.pool_lock
-	}
+	// pub(super) fn pool_handle(&self) -> vk::CommandPool {
+	// 	*self.pool_lock
+	// }
 
 	pub(super) fn device(&self) -> &Vrc<Device> {
 		self.buffer.pool().device()

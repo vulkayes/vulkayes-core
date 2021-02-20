@@ -2,7 +2,7 @@ use std::{fmt, num::NonZeroU32, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::prelude::{DescriptorSetLayout, Device, HostMemoryAllocator, Vrc, Vutex};
+use crate::prelude::{Device, HostMemoryAllocator, SafeHandle, Transparent, Vrc, Vutex};
 
 use super::error::{DescriptorPoolError, DescriptorSetError};
 
@@ -30,9 +30,9 @@ macro_rules! impl_allocate_command_buffers_array {
 		///
 		/// This function will panic if the pool `Vutex` is poisoned.
 		// TODO: Const generics can't come fast enough
-		pub fn $name(
+		pub fn $name<'a>(
 			&self,
-			$layouts_name: [&DescriptorSetLayout; $size]
+			$layouts_name: [SafeHandle<'a, vk::DescriptorSetLayout>; $size]
 		) -> Result<[vk::DescriptorSet; $size], DescriptorSetError> {
 			use $crate::util::handle::HasHandle;
 
@@ -44,28 +44,20 @@ macro_rules! impl_allocate_command_buffers_array {
 					return Err(DescriptorSetError::LayoutsEmpty)
 				}
 
-				if !$crate::util::validations::validate_all_match(
-					std::iter::once(&self.device).chain(
-						$layouts_name.iter().map(|l| l.device())
-					)
-				) {
-					return Err(DescriptorSetError::DescriptorPoolLayoutsDeviceMismatch)
-				}
+				// if !$crate::util::validations::validate_all_match(
+				// 	std::iter::once(&self.device).chain(
+				// 		$layouts_name.iter().map(|l| l.device())
+				// 	)
+				// ) {
+				// 	return Err(DescriptorSetError::DescriptorPoolLayoutsDeviceMismatch)
+				// }
 			}
-
-			let layout_handles: [vk::DescriptorSetLayout; $size] = $crate::seq_macro::seq!(
-				N in 0 .. $size {
-					[
-						#(
-							($layouts_name[N]).handle(),
-						)*
-					]
-				}
-			);
 
 			let alloc_info = vk::DescriptorSetAllocateInfo::builder()
 				.descriptor_pool(*lock)
-				.set_layouts(&layout_handles)
+				.set_layouts(
+					Transparent::transmute_slice($layouts_name.as_ref())
+				)
 			;
 
 			log_trace_common!(
@@ -185,32 +177,30 @@ impl DescriptorPool {
 	/// This function will panic if the pool `Vutex` is poisoned.`
 	pub fn allocate_descriptor_sets<'a>(
 		&self,
-		layouts: impl Iterator<Item = &'a DescriptorSetLayout>
+		layouts: impl AsRef<[SafeHandle<'a, vk::DescriptorSetLayout>]>
 	) -> Result<Vec<vk::DescriptorSet>, DescriptorSetError> {
 		let lock = self.pool.lock().expect("vutex poisoned");
 
 		#[cfg(feature = "runtime_implicit_validations")]
-		let layouts = {
-			// This collect dance is unfortunate
-			let collected: Vec<_> = layouts.collect();
-			if collected.len() == 0 {
+		{
+			if layouts.as_ref().len() == 0 {
 				return Err(DescriptorSetError::LayoutsEmpty)
 			}
 
-			if !crate::util::validations::validate_all_match(
-				std::iter::once(&self.device).chain(collected.iter().map(|l| l.device()))
-			) {
-				return Err(DescriptorSetError::DescriptorPoolLayoutsDeviceMismatch)
-			}
+			// if !crate::util::validations::validate_all_match(
+			// 	std::iter::once(&self.device).chain(layouts.iter().map(|l| l.device()))
+			// ) {
+			// 	return Err(DescriptorSetError::DescriptorPoolLayoutsDeviceMismatch)
+			// }
 
-			collected.into_iter()
+			// collected.into_iter()
 		};
-
-		let layouts = collect_iter_faster!(layouts.map(|l| *l.deref()), 8);
 
 		let alloc_info = vk::DescriptorSetAllocateInfo::builder()
 			.descriptor_pool(*lock)
-			.set_layouts(&layouts);
+			.set_layouts(
+				Transparent::transmute_slice(layouts.as_ref())
+			);
 
 		log_trace_common!(
 			"Allocating descriptor sets:",

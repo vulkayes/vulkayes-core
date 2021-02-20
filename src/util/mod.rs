@@ -39,7 +39,7 @@ impl Default for WaitTimeout {
 	}
 }
 
-/// `align_up(base, align)` returns the smallest greater integer than `base` aligned to `align`.
+/// `align_up(base, align)` returns the smallest greater integer than `base` aligned to power-of-two `align`.
 ///
 /// More formally:
 /// ```text

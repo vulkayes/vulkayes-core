@@ -1083,7 +1083,11 @@ macro_rules! iter_once_chain {
 		$(
 			.chain(std::iter::once($rest_value))
 		)*
-	}
+	};
+
+	() => {
+		std::iter::empty()
+	};
 }
 
 /// Collect an iterator into a chosen type.

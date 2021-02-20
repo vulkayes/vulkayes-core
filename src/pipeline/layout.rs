@@ -2,26 +2,30 @@ use std::{fmt, ops::Deref};
 
 use ash::{version::DeviceV1_0, vk};
 
-use crate::{
-	descriptor::layout::DescriptorSetLayout,
-	prelude::{Device, HasHandle, HostMemoryAllocator, Vrc}
-};
+use crate::prelude::{Device, HasHandle, HostMemoryAllocator, SafeHandle, Transparent, Vrc};
 
 use super::error::PipelineLayoutError;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct PushConstantRange {
-	pub stage_flags: vk::ShaderStageFlags,
-	pub offset_div_four: u32,
-	pub size_div_four: std::num::NonZeroU32
-}
-impl Into<vk::PushConstantRange> for PushConstantRange {
-	fn into(self) -> vk::PushConstantRange {
-		vk::PushConstantRange::builder()
-			.stage_flags(self.stage_flags)
-			.offset(self.offset_div_four * 4)
-			.size(self.size_div_four.get() * 4)
-			.build()
+vk_builder_wrap! {
+	pub struct PushConstantRange {
+		builder: vk::PushConstantRangeBuilder<'static> => vk::PushConstantRange
+	}
+	impl {
+		pub fn new(
+			stage_flags: vk::ShaderStageFlags,
+			offset_div_four: u32,
+			size_div_four: std::num::NonZeroU32
+		) -> Self {
+			let builder = vk::PushConstantRange::builder()
+				.stage_flags(stage_flags)
+				.offset(offset_div_four * 4)
+				.size(size_div_four.get() * 4)
+			;
+
+			PushConstantRange {
+				builder
+			}
+		}
 	}
 }
 
@@ -29,29 +33,18 @@ pub struct PipelineLayout {
 	device: Vrc<Device>,
 	layout: vk::PipelineLayout,
 
-	descriptor_set_layouts: Vec<Vrc<DescriptorSetLayout>>,
-
 	host_memory_allocator: HostMemoryAllocator
 }
 impl PipelineLayout {
-	pub fn new(
+	pub fn new<'a>(
 		device: Vrc<Device>,
-		descriptor_set_layouts: impl Iterator<Item = Vrc<DescriptorSetLayout>>,
-		push_constant_ranges: impl Iterator<Item = PushConstantRange>,
+		descriptor_set_layouts: impl AsRef<[SafeHandle<'a, vk::DescriptorSetLayout>]>,
+		push_constant_ranges: impl AsRef<[PushConstantRange]>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, PipelineLayoutError> {
-		let descriptor_set_layouts: Vec<_> = collect_iter_faster!(descriptor_set_layouts, 8);
-
-		let descriptor_set_layout_handles =
-			collect_iter_faster!(descriptor_set_layouts.iter().map(|l| l.handle()), 8);
-		let push_constant_ranges = collect_iter_faster!(
-			push_constant_ranges.map(|r| Into::<vk::PushConstantRange>::into(r)),
-			4
-		);
-
 		#[cfg(feature = "runtime_implicit_validations")]
 		{
-			for range in push_constant_ranges.iter() {
+			for range in push_constant_ranges.as_ref().iter() {
 				if range.stage_flags == vk::ShaderStageFlags::empty() {
 					return Err(PipelineLayoutError::StageFlagsEmpty)
 				}
@@ -59,13 +52,20 @@ impl PipelineLayout {
 		}
 
 		let create_info = vk::PipelineLayoutCreateInfo::builder()
-			.set_layouts(&descriptor_set_layout_handles)
-			.push_constant_ranges(&push_constant_ranges);
+			.set_layouts(
+				Transparent::transmute_slice(
+					descriptor_set_layouts.as_ref()
+				)
+			)
+			.push_constant_ranges(
+				Transparent::transmute_slice_twice(
+					push_constant_ranges.as_ref()
+				)
+			);
 
 		unsafe {
 			Self::from_create_info(
 				device,
-				descriptor_set_layouts,
 				create_info,
 				host_memory_allocator
 			)
@@ -75,10 +75,8 @@ impl PipelineLayout {
 	/// ### Safety
 	///
 	/// * See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCreatePipelineLayout.html>.
-	/// * `descriptor_set_layouts` must contain the same layouts as used in `create_info`.
 	pub unsafe fn from_create_info(
 		device: Vrc<Device>,
-		descriptor_set_layouts: Vec<Vrc<DescriptorSetLayout>>,
 		create_info: impl Deref<Target = vk::PipelineLayoutCreateInfo>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, PipelineLayoutError> {
@@ -95,13 +93,8 @@ impl PipelineLayout {
 		Ok(Vrc::new(PipelineLayout {
 			device,
 			layout,
-			descriptor_set_layouts,
 			host_memory_allocator
 		}))
-	}
-
-	pub const fn descriptor_set_layouts(&self) -> &Vec<Vrc<DescriptorSetLayout>> {
-		&self.descriptor_set_layouts
 	}
 
 	pub const fn device(&self) -> &Vrc<Device> {
