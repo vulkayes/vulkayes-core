@@ -59,3 +59,19 @@ vk_enum_subset! {
 }
 
 pub type ImageLayoutClearColorImage = ImageLayoutDestination;
+
+vk_enum_subset! {
+	/// Enum for image layout that can be used as a sampled image in shaders.
+	pub enum ImageLayoutSampled {
+		GENERAL,
+		DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+		SHADER_READ_ONLY_OPTIMAL,
+
+		DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,
+		DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,
+
+		SHARED_PRESENT_KHR
+	} impl Into<vk::ImageLayout>
+}
+
+pub type ImageLayoutInputAttachment = ImageLayoutSampled;
