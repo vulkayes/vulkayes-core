@@ -11,7 +11,11 @@ use crate::{
 	device::Device,
 	memory::host::HostMemoryAllocator,
 	prelude::Vrc,
-	queue::{sharing_mode::SharingMode, Queue},
+	queue::{
+		error::{QueuePresentError, QueuePresentSuccess},
+		sharing_mode::SharingMode,
+		Queue
+	},
 	resource::image::{
 		params::{ImageSize, MipmapLevels},
 		Image
@@ -231,7 +235,7 @@ impl Swapchain {
 		&self,
 		queue: &Queue,
 		info: impl Deref<Target = vk::PresentInfoKHR>
-	) -> crate::queue::error::QueuePresentResult {
+	) -> Result<QueuePresentSuccess, QueuePresentError> {
 		let queue_lock = queue.lock().expect("queue Vutex poisoned");
 
 		log_trace_common!("Presenting on queue:", self, queue_lock, info.deref());

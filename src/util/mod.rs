@@ -63,8 +63,5 @@ pub const fn align_up(base: usize, align: usize) -> usize {
 
 /// Equivalent to `align_up(std::mem::size_of::<T>(), align)`.
 pub const fn aligned_size_of<T>(align: usize) -> usize {
-	align_up(
-		std::mem::size_of::<T>(),
-		align
-	)
+	align_up(std::mem::size_of::<T>(), align)
 }

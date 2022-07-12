@@ -1,7 +1,4 @@
-use std::{
-	num::NonZeroU32,
-	convert::TryFrom
-};
+use std::{convert::TryFrom, num::NonZeroU32};
 
 use ash::vk;
 
@@ -366,7 +363,7 @@ impl TryFrom<ImageSize> for ImageSizeCubeCompatible {
 
 	fn try_from(value: ImageSize) -> Result<Self, Self::Error> {
 		let value = ImageSize2D::try_from(value)?;
-		
+
 		if value.width() == value.height() && value.array_layers().get() >= 6 {
 			Ok(ImageSizeCubeCompatible(value))
 		} else {

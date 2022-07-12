@@ -714,84 +714,6 @@ macro_rules! offsetable_struct {
 	}
 }
 
-/// Creates two fixed-size arrays. The first one holds locks and the second one holds deref of those locks.
-///
-/// This macro uses a `proc-macro-hack` version of the `seq-macro` crate to generate the array indices.
-///
-/// Usage:
-/// ```
-/// # #[macro_use] extern crate vulkayes_core;
-/// # use vulkayes_core::util::sync::{Vutex, VutexGuard};
-/// # #[derive(Debug)]
-/// # struct Bar;
-/// let foo = [Vutex::new(0), Vutex::new(1)];
-/// let bar: [Vutex<Bar>; 0] = [];
-/// lock_and_deref_closure!(
-/// 	let [foo; 2]{.lock().unwrap()} => |foo_locks, foo_derefs|
-/// 	let [bar; 0]{.lock().unwrap()} => |bar_locks: [VutexGuard<Bar>; 0], bar_derefs|
-/// 	{
-/// # 		let bar_derefs: [&Bar; 0] = bar_derefs;
-/// 		println!("{:?} {:?}", foo_derefs, bar_derefs);
-/// 	}
-/// )
-/// ```
-///
-/// expands to:
-/// ```
-/// # use vulkayes_core::util::sync::{Vutex, VutexGuard};
-/// # #[derive(Debug)]
-/// # struct Bar;
-/// # let foo = [Vutex::new(0), Vutex::new(1)];
-/// # let bar: [Vutex<Bar>; 0] = [];
-/// {
-/// 	let (foo_locks, foo_derefs) = {
-/// 		let locks = [foo[0].lock().unwrap(), foo[1].lock().unwrap()];
-/// 		let derefs = [*locks[0], *locks[1]];
-///
-/// 		(locks, derefs)
-/// 	};
-/// 	let (bar_locks, bar_derefs) = {
-/// 		let locks: [VutexGuard<Bar>; 0] = [];
-/// 		let derefs = [];
-///
-/// 		(locks, derefs)
-/// 	};
-///
-/// 	let closure = |foo_locks: [_; 2], foo_derefs: [_; 2], bar_locks: [_; 0], bar_derefs: [_; 0]| {
-/// # 		let bar_derefs: [&Bar; 0] = bar_derefs;
-/// 		println!("{:?} {:?}", foo_derefs, bar_derefs);
-/// 	};
-/// 	closure(foo_locks, foo_derefs, bar_locks, bar_derefs)
-/// }
-/// ```
-#[macro_export]
-macro_rules! lock_and_deref_closure {
-	(
-		$(
-			let [$ex: ident; $count: literal] {$($lock_code: tt)+} => |$locks: ident $(: $l_type: ty)?, $derefs: ident|
-		)+
-		{ $($closure_body: tt)* }
-	) => {
-		{
-			$(
-				let ($locks, $derefs) = $crate::seq_macro::seq!(
-					N in 0 .. $count {
-						{
-							let locks $(: $l_type)? = [ #( $ex[N] $($lock_code)+, )* ];
-							let derefs = [ #( *locks[N], )* ];
-
-							(locks, derefs)
-						}
-					}
-				);
-			)+
-
-			let closure = |$( $locks: [_; $count], $derefs: [_; $count] ),+| { $($closure_body)* };
-			closure($( $locks, $derefs ),+)
-		}
-	}
-}
-
 /// Simple enum dispatch using `Deref`. Suitable for mixed dispatch enums.
 ///
 /// Usage:
@@ -1189,7 +1111,7 @@ macro_rules! collect_iter_faster {
 			$(
 				$iter, $static_size_hint
 			),+
-		);
+		)
 	};
 }
 

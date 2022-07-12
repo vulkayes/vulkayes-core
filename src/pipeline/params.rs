@@ -448,19 +448,20 @@ macro_rules! viewport_scissor_expr {
 /// # use vulkayes_core::ash::vk;
 /// // Blends based on alpha, stores the new alpha, doesn't mask anything
 /// color_blend_state_expr!(
-/// 	(S * SRC_ALPHA) ADD (D * ONE_MINUS_SRC_ALPHA)
-/// 		: (S * ONE) SUBTRACT (D * ZERO)
-/// 		& vk::ColorComponentFlags::all()
+/// 	rgba(
+/// 		(S * SRC_ALPHA) ADD (D * ONE_MINUS_SRC_ALPHA) ,(S * ONE) SUBTRACT (D * ZERO)
+/// 	) & vk::ColorComponentFlags::RGBA
 /// );
 /// // Disables blending, doesn't mask anything
 /// color_blend_state_expr!(
-/// 	disabled & vk::ColorComponentFlags::all()
+/// 	disabled & vk::ColorComponentFlags::RGBA
 /// );
 /// // Same as the first one, but variables are expressions instead of identifiers.
 /// color_blend_state_expr!(
-/// 	(S * vk::BlendFactor::SRC_ALPHA) {vk::BlendOp::ADD} (D * vk::BlendFactor::ONE_MINUS_SRC_ALPHA)
-/// 		: (S * vk::BlendFactor::ONE) {vk::BlendOp::SUBTRACT} (D * vk::BlendFactor::ZERO)
-/// 		& vk::ColorComponentFlags::all()
+/// 	rgba(
+/// 		(S * vk::BlendFactor::SRC_ALPHA) {vk::BlendOp::ADD} (D * vk::BlendFactor::ONE_MINUS_SRC_ALPHA),
+/// 		(S * vk::BlendFactor::ONE) {vk::BlendOp::SUBTRACT} (D * vk::BlendFactor::ZERO)
+/// 	) & vk::ColorComponentFlags::RGBA
 /// );
 /// ```
 #[macro_export]
@@ -473,25 +474,28 @@ macro_rules! color_blend_state_expr {
 	};
 
 	(
-		(S * $src_color_blend_factor: ident) $color_blend_op: ident (D * $dst_color_blend_factor: ident)
-			: (S * $src_alpha_blend_factor: ident) $alpha_blend_op: ident (D * $dst_alpha_blend_factor: ident)
-			& $color_write_mask: expr
+		rgba(
+			(S * $src_color_blend_factor: ident) $color_blend_op: ident (D * $dst_color_blend_factor: ident),
+			(S * $src_alpha_blend_factor: ident) $alpha_blend_op: ident (D * $dst_alpha_blend_factor: ident)
+		) & $color_write_mask: expr
 	) => {
 		{
 			use $crate::ash::vk::{BlendFactor, BlendOp};
 
 			$crate::color_blend_state_expr!(
-				(S * BlendFactor::$src_color_blend_factor) {BlendOp::$color_blend_op} (D * BlendFactor::$dst_color_blend_factor)
-					: (S * BlendFactor::$src_alpha_blend_factor) {BlendOp::$color_blend_op} (D * BlendFactor::$dst_alpha_blend_factor)
-					& $color_write_mask
+				rgba(
+					(S * BlendFactor::$src_color_blend_factor) {BlendOp::$color_blend_op} (D * BlendFactor::$dst_color_blend_factor),
+					(S * BlendFactor::$src_alpha_blend_factor) {BlendOp::$color_blend_op} (D * BlendFactor::$dst_alpha_blend_factor)
+				) & $color_write_mask
 			)
 		}
 	};
 
 	(
-		(S * $src_color_blend_factor: expr) {$color_blend_op: expr} (D * $dst_color_blend_factor: expr)
-			: (S * $src_alpha_blend_factor: expr) {$alpha_blend_op: expr} (D * $dst_alpha_blend_factor: expr)
-			& $color_write_mask: expr
+		rgba(
+			(S * $src_color_blend_factor: expr) {$color_blend_op: expr} (D * $dst_color_blend_factor: expr),
+			(S * $src_alpha_blend_factor: expr) {$alpha_blend_op: expr} (D * $dst_alpha_blend_factor: expr)
+		) & $color_write_mask: expr
 	) => {
 		$crate::ash::vk::PipelineColorBlendAttachmentState::builder().blend_enable(true)
 			.src_color_blend_factor($src_color_blend_factor)
@@ -1146,11 +1150,12 @@ mod test {
 				logic_op: super::BlendLogicOp::default(),
 				attachments: [
 					{
-						(S * SRC_ALPHA) ADD (D * ONE_MINUS_SRC_ALPHA)
-							: (S * ONE) SUBTRACT (D * ZERO)
-							& vvk::ColorComponentFlags::all()
+						rgba(
+							(S * SRC_ALPHA) ADD (D * ONE_MINUS_SRC_ALPHA),
+							(S * ONE) SUBTRACT (D * ZERO)
+						) & vvk::ColorComponentFlags::RGBA
 					},
-					{ disabled & vvk::ColorComponentFlags::all() }
+					{ disabled & vvk::ColorComponentFlags::RGBA }
 				],
 				blend_constants: None
 			}

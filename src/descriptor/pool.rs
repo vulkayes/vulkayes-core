@@ -1,6 +1,6 @@
 use std::{fmt, num::NonZeroU32, ops::Deref};
 
-use ash::{version::DeviceV1_0, vk};
+use ash::vk;
 
 use crate::prelude::{Device, HostMemoryAllocator, SafeHandle, Transparent, Vrc, Vutex};
 
@@ -198,9 +198,7 @@ impl DescriptorPool {
 
 		let alloc_info = vk::DescriptorSetAllocateInfo::builder()
 			.descriptor_pool(*lock)
-			.set_layouts(
-				Transparent::transmute_slice(layouts.as_ref())
-			);
+			.set_layouts(Transparent::transmute_slice(layouts.as_ref()));
 
 		log_trace_common!(
 			"Allocating descriptor sets:",
@@ -235,6 +233,7 @@ impl DescriptorPool {
 
 		self.device
 			.free_descriptor_sets(*lock, descriptor_sets.as_ref())
+			.unwrap()
 	}
 
 	/// ### Safety

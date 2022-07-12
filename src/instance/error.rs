@@ -10,21 +10,10 @@ vk_result_error! {
 			ERROR_INCOMPATIBLE_DRIVER
 		}
 
-		#[error("Instance load error.")]
-		LoadError(Vec<&'static str>),
-
 		// TODO: This causes an error
-		// #[error("Instance layer and/or extension strings could not be converted into CStr")]
-		#[error(transparent)]
+		#[error("Instance layer and/or extension strings could not be converted into CStr")]
+		// #[error(transparent)]
 		NulError(#[from] std::ffi::NulError)
-	}
-}
-impl From<ash::InstanceError> for InstanceError {
-	fn from(err: ash::InstanceError) -> Self {
-		match err {
-			ash::InstanceError::LoadError(v) => InstanceError::LoadError(v),
-			ash::InstanceError::VkError(r) => r.into()
-		}
 	}
 }
 

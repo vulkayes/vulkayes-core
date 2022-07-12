@@ -1,8 +1,8 @@
 use std::{fmt::Debug, ops::Deref};
 
-use ash::{version::DeviceV1_0, vk};
+use ash::vk;
 
-use crate::prelude::{DescriptorPool, DescriptorSetLayout, Transparent, Vrc, Vutex, HasHandle};
+use crate::prelude::{DescriptorPool, DescriptorSetLayout, HasHandle, Transparent, Vrc, Vutex};
 
 use super::error::DescriptorSetError;
 
@@ -20,15 +20,9 @@ impl DescriptorSet {
 		pool: Vrc<DescriptorPool>,
 		layout: Vrc<DescriptorSetLayout>
 	) -> Result<Vrc<Self>, DescriptorSetError> {
-		let [raw] = pool.allocate_descriptor_set(
-			[layout.safe_handle()]
-		)?;
+		let [raw] = pool.allocate_descriptor_set([layout.safe_handle()])?;
 
-		Ok(
-			Vrc::new(
-				unsafe { Self::from_existing(pool, layout, raw) }
-			)
-		)
+		Ok(Vrc::new(unsafe { Self::from_existing(pool, layout, raw) }))
 	}
 
 	/// ### Safety

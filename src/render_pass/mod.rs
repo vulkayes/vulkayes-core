@@ -1,6 +1,6 @@
 use std::{fmt, ops::Deref};
 
-use ash::{version::DeviceV1_0, vk};
+use ash::vk;
 
 use error::RenderPassError;
 
@@ -92,7 +92,7 @@ impl RenderPass {
 		create_info: impl Deref<Target = vk::RenderPassCreateInfo2>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, RenderPassError> {
-		use ash::version::DeviceV1_2;
+		// use ash::version::DeviceV1_2;
 
 		log_trace_common!(
 			"Creating render pass 2:",

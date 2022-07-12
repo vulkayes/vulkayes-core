@@ -1,6 +1,6 @@
 use std::{fmt, ops::Deref};
 
-use ash::{version::DeviceV1_0, vk};
+use ash::vk;
 
 use crate::prelude::{Device, HasHandle, HostMemoryAllocator, SafeHandle, Transparent, Vrc};
 
@@ -52,24 +52,14 @@ impl PipelineLayout {
 		}
 
 		let create_info = vk::PipelineLayoutCreateInfo::builder()
-			.set_layouts(
-				Transparent::transmute_slice(
-					descriptor_set_layouts.as_ref()
-				)
-			)
-			.push_constant_ranges(
-				Transparent::transmute_slice_twice(
-					push_constant_ranges.as_ref()
-				)
-			);
+			.set_layouts(Transparent::transmute_slice(
+				descriptor_set_layouts.as_ref()
+			))
+			.push_constant_ranges(Transparent::transmute_slice_twice(
+				push_constant_ranges.as_ref()
+			));
 
-		unsafe {
-			Self::from_create_info(
-				device,
-				create_info,
-				host_memory_allocator
-			)
-		}
+		unsafe { Self::from_create_info(device, create_info, host_memory_allocator) }
 	}
 
 	/// ### Safety

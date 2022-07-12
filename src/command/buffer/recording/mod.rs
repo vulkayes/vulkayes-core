@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use ash::{version::DeviceV1_0, vk};
+use ash::vk;
 
 use crate::prelude::{Framebuffer, HasHandle, RenderPass};
 
@@ -137,9 +137,7 @@ impl<'a> CommandBufferRecordingLockOutsideRenderPass<'a> {
 		let result = unsafe { dont_drop.end_mut() };
 
 		// Move the lock out, this is safe because drop is prevented
-		let lock = unsafe {
-			std::ptr::read(&dont_drop.0)
-		};
+		let lock = unsafe { std::ptr::read(&dont_drop.0) };
 
 		match result {
 			Ok(()) => Ok(lock),

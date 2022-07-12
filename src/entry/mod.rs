@@ -6,8 +6,6 @@ use std::{
 	ops::Deref
 };
 
-use ash::version::EntryV1_0;
-
 use crate::util::fmt::VkVersion;
 
 pub mod enumerate;
@@ -21,7 +19,7 @@ pub struct Entry {
 impl Entry {
 	pub fn new() -> Result<Self, ash::LoadingError> {
 		Ok(Entry {
-			entry: ash::Entry::new()?
+			entry: unsafe { ash::Entry::load()? }
 		})
 	}
 
@@ -48,7 +46,7 @@ impl Entry {
 	> {
 		Ok(self
 			.entry
-			.enumerate_instance_extension_properties()?
+			.enumerate_instance_extension_properties(None)?
 			.into_iter()
 			.map(|v| v.try_into().unwrap()))
 	}

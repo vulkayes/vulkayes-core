@@ -2,18 +2,12 @@
 
 use std::{ffi::CStr, fmt::Debug, ops::Deref, os::raw::c_char};
 
-use ash::{
-	version::{DeviceV1_0, InstanceV1_0},
-	vk::{self, DeviceCreateInfo, DeviceQueueCreateInfo}
-};
+use ash::vk::{self, DeviceCreateInfo, DeviceQueueCreateInfo};
 
 use crate::{
 	instance::Instance,
 	memory::host::HostMemoryAllocator,
-	physical_device::{
-		PhysicalDevice,
-		enumerate::PhysicalDeviceProperties
-	},
+	physical_device::{enumerate::PhysicalDeviceProperties, PhysicalDevice},
 	prelude::Vrc,
 	queue::Queue
 };

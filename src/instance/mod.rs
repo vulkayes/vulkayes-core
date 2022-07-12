@@ -7,11 +7,7 @@ use std::{
 	os::raw::c_char
 };
 
-use ash::{
-	extensions::ext::DebugReport,
-	version::{EntryV1_0, InstanceV1_0},
-	vk
-};
+use ash::{extensions::ext::DebugUtils, vk};
 
 use crate::{
 	entry::Entry,
@@ -36,8 +32,8 @@ pub struct ApplicationInfo<'a> {
 }
 
 struct InstanceDebug {
-	loader: DebugReport,
-	callback: vk::DebugReportCallbackEXT,
+	loader: DebugUtils,
+	callback: vk::DebugUtilsMessengerEXT,
 	host_memory_allocator: HostMemoryAllocator
 }
 impl Debug for InstanceDebug {
@@ -124,8 +120,8 @@ impl Instance {
 		let debug = match debug_callback.into() {
 			None => None,
 			Some(ref create_info) => {
-				let loader = DebugReport::new(entry.deref(), &instance);
-				let callback = loader.create_debug_report_callback(create_info, None)?;
+				let loader = DebugUtils::new(entry.deref(), &instance);
+				let callback = loader.create_debug_utils_messenger(create_info, None)?;
 
 				Some(InstanceDebug {
 					loader,
@@ -183,7 +179,7 @@ impl Drop for Instance {
 
 		unsafe {
 			if let Some(debug) = self.debug.as_mut() {
-				debug.loader.destroy_debug_report_callback(
+				debug.loader.destroy_debug_utils_messenger(
 					debug.callback,
 					debug.host_memory_allocator.as_ref()
 				);

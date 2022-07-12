@@ -5,19 +5,16 @@ use std::{
 	fmt::{Debug, Error, Formatter}
 };
 
-use ash::{
-	version::InstanceV1_0,
-	vk::{
-		self,
-		Format,
-		FormatProperties,
-		ImageCreateFlags,
-		ImageTiling,
-		ImageType,
-		ImageUsageFlags,
-		PhysicalDeviceFeatures,
-		QueueFamilyProperties
-	}
+use ash::vk::{
+	self,
+	Format,
+	FormatProperties,
+	ImageCreateFlags,
+	ImageTiling,
+	ImageType,
+	ImageUsageFlags,
+	PhysicalDeviceFeatures,
+	QueueFamilyProperties
 };
 
 use crate::prelude::{HasHandle, Instance, Vrc};

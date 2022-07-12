@@ -54,19 +54,18 @@ log_max_level_trace = ["log/max_level_trace"]
 
 [dependencies]
 # core
-ash = "0.31"
+ash = "0.36"
 
 # utility
-arrayvec = "0.5"
-seq-macro = "0.2.1"
+arrayvec = "0.7"
 
 # performance
 rustc-hash = { version = "1", optional = true }
-parking_lot = { version = "0.11", optional = true }
+parking_lot = { version = "0.12", optional = true }
 
 # debuging
 log = "0.4"
 thiserror = "1"
 
 [dev-dependencies]
-edwardium_logger = "1.1"
+edwardium_logger = "1.2.2"

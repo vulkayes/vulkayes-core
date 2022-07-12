@@ -5,7 +5,9 @@ use std::{
 };
 
 use arrayvec::ArrayVec;
+
 use ash::vk::{
+	self,
 	MemoryHeap,
 	MemoryType,
 	PhysicalDeviceLimits,
@@ -60,8 +62,8 @@ vk_result_error! {
 
 #[derive(Debug, Clone)] // TODO: arrayvec isn't copy
 pub struct PhysicalDeviceMemoryProperties {
-	pub memory_types: ArrayVec<[MemoryType; 32]>,
-	pub memory_heaps: ArrayVec<[MemoryHeap; 16]>
+	pub memory_types: ArrayVec<MemoryType, { vk::MAX_MEMORY_TYPES }>,
+	pub memory_heaps: ArrayVec<MemoryHeap, { vk::MAX_MEMORY_HEAPS }>
 }
 impl From<ash::vk::PhysicalDeviceMemoryProperties> for PhysicalDeviceMemoryProperties {
 	fn from(value: ash::vk::PhysicalDeviceMemoryProperties) -> Self {

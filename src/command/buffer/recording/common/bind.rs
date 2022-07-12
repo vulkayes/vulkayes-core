@@ -1,15 +1,13 @@
 use ash::vk;
 
-use ash::version::DeviceV1_0;
-
 use crate::prelude::{
-	GraphicsPipeline,
-	PipelineLayout,
-	HasHandle,
-	SafeHandle,
-	Transparent,
 	Buffer,
-	PushConstantsTrait
+	GraphicsPipeline,
+	HasHandle,
+	PipelineLayout,
+	PushConstantsTrait,
+	SafeHandle,
+	Transparent
 };
 
 impl<'a> super::CommandBufferRecordingLockCommon<'a> {
@@ -57,11 +55,7 @@ impl<'a> super::CommandBufferRecordingLockCommon<'a> {
 		}
 	}
 
-	pub fn push_constants<P: PushConstantsTrait>(
-		&self,
-		layout: &PipelineLayout,
-		value: &P
-	) {
+	pub fn push_constants<P: PushConstantsTrait>(&self, layout: &PipelineLayout, value: &P) {
 		log_trace_common!(
 			"Pushing constants:",
 			crate::util::fmt::format_handle(self.handle()),
@@ -120,12 +114,8 @@ impl<'a> super::CommandBufferRecordingLockCommon<'a> {
 			index_type
 		);
 		unsafe {
-			self.device().cmd_bind_index_buffer(
-				self.handle(),
-				buffer.handle(),
-				offset,
-				index_type
-			)
+			self.device()
+				.cmd_bind_index_buffer(self.handle(), buffer.handle(), offset, index_type)
 		}
 	}
 }

@@ -1,5 +1,3 @@
-use ash::version::DeviceV1_0;
-
 impl<'a> super::super::CommandBufferRecordingLockInsideRenderPass<'a> {
 	pub fn draw(
 		&self,
@@ -17,7 +15,13 @@ impl<'a> super::super::CommandBufferRecordingLockInsideRenderPass<'a> {
 			first_instance
 		);
 		unsafe {
-			self.device().cmd_draw(self.handle(), vertex_count, instance_count, first_vertex, first_instance);
+			self.device().cmd_draw(
+				self.handle(),
+				vertex_count,
+				instance_count,
+				first_vertex,
+				first_instance
+			);
 		}
 	}
 }

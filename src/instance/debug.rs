@@ -1,15 +1,16 @@
 use std::{
 	borrow::Cow,
 	ffi::{c_void, CStr},
-	os::raw::c_char
+	fmt::Write
 };
 
 use ash::vk::{
 	self,
 	Bool32,
-	DebugReportCallbackCreateInfoEXT,
-	DebugReportFlagsEXT,
-	DebugReportObjectTypeEXT
+	DebugUtilsMessageSeverityFlagsEXT,
+	DebugUtilsMessageTypeFlagsEXT,
+	DebugUtilsMessengerCallbackDataEXT,
+	DebugUtilsMessengerCreateInfoEXT
 };
 
 unsafe_enum_variants! {
@@ -20,15 +21,25 @@ unsafe_enum_variants! {
 		/// A default debug callback provided by Vulkayes will be registered.
 		pub Default => {
 			Some(
-				DebugReportCallbackCreateInfoEXT::builder()
-					.flags(DebugReportFlagsEXT::all())
-					.pfn_callback(Some(default_debug_callback))
+				DebugUtilsMessengerCreateInfoEXT::builder()
+					.message_severity(
+						DebugUtilsMessageSeverityFlagsEXT::VERBOSE
+						| DebugUtilsMessageSeverityFlagsEXT::INFO
+						| DebugUtilsMessageSeverityFlagsEXT::WARNING
+						| DebugUtilsMessageSeverityFlagsEXT::ERROR
+					)
+					.message_type(
+						DebugUtilsMessageTypeFlagsEXT::GENERAL
+						| DebugUtilsMessageTypeFlagsEXT::VALIDATION
+						| DebugUtilsMessageTypeFlagsEXT::PERFORMANCE
+					)
+					.pfn_user_callback(Some(default_debug_callback))
 					.build()
 			)
 		},
 		/// A custom debug callback will be registered.
-		{unsafe} pub Custom { info: DebugReportCallbackCreateInfoEXT } => { Some(info) }
-	} as pub DebugCallback impl Into<Option<DebugReportCallbackCreateInfoEXT>>
+		{unsafe} pub Custom { info: DebugUtilsMessengerCreateInfoEXT } => { Some(info) }
+	} as pub DebugCallback impl Into<Option<DebugUtilsMessengerCreateInfoEXT>>
 }
 impl Default for DebugCallback {
 	fn default() -> Self {
@@ -40,52 +51,59 @@ impl Default for DebugCallback {
 ///
 /// `{PERF} PREFIX (LOCATION:CODE) <OBJ_TYPE OBJ> MESSAGE`
 pub unsafe extern "system" fn default_debug_callback(
-	flags: DebugReportFlagsEXT,
-	object_type: DebugReportObjectTypeEXT,
-	object: u64,
-	location: usize,
-	message_code: i32,
-	p_layer_prefix: *const c_char,
-	p_message: *const c_char,
-	_p_user_data: *mut c_void
+	message_severity: DebugUtilsMessageSeverityFlagsEXT,
+	message_type: DebugUtilsMessageTypeFlagsEXT,
+	p_callback_data: *const DebugUtilsMessengerCallbackDataEXT,
+	_user_data: *mut c_void
 ) -> Bool32 {
-	let perf_optional = if flags == DebugReportFlagsEXT::PERFORMANCE_WARNING {
-		"{PERF} "
-	} else {
-		""
-	};
+	let data = *p_callback_data;
 
-	let layer_prefix = CStr::from_ptr(p_layer_prefix).to_string_lossy();
+	macro_rules! gib_str {
+		($ptr: expr) => {
+			if $ptr.is_null() {
+				Cow::Borrowed("")
+			} else {
+				CStr::from_ptr($ptr).to_string_lossy()
+			}
+		};
+	}
 
-	let object_optional = if object_type == DebugReportObjectTypeEXT::UNKNOWN {
-		Cow::Borrowed("")
-	} else {
-		Cow::Owned(format!("<{:?} 0x{:x}> ", object_type, object))
-	};
-
-	let debug_message = CStr::from_ptr(p_message).to_string_lossy();
-
-	let message = format!(
-		"{}{} ({}:{}) {}{}",
-		perf_optional, layer_prefix, location, message_code, object_optional, debug_message
-	);
-
-	match flags {
-		DebugReportFlagsEXT::ERROR => log::error!("{}", message),
-		DebugReportFlagsEXT::WARNING => log::warn!("{}", message),
-		DebugReportFlagsEXT::INFORMATION => log::info!("{}", message),
-		DebugReportFlagsEXT::DEBUG => log::debug!("{}", message),
-
-		DebugReportFlagsEXT::PERFORMANCE_WARNING => log::warn!("{}", message),
-
-		_ => {
-			log::error!(
-				"Message has multiple DebugReportFlagsEXT bits set: {}",
-				message
+	let mut maybe_objects = String::new();
+	if data.object_count > 0 {
+		let objects = std::slice::from_raw_parts(data.p_objects, data.object_count as usize);
+		for object in objects {
+			let _ = write!(
+				&mut maybe_objects,
+				"<{:?} 0x{:x} \"{}\"> ",
+				object.object_type,
+				object.object_handle,
+				gib_str!(object.p_object_name)
 			);
-			unreachable!() // hopefully
 		}
 	}
+
+	let message = format!(
+		"[{:?}] {}({}) {}{}",
+		message_type,
+		gib_str!(data.p_message_id_name),
+		data.message_id_number,
+		maybe_objects,
+		gib_str!(data.p_message)
+	);
+
+	let log_level = if message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::VERBOSE) {
+		log::Level::Debug
+	} else if message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::INFO) {
+		log::Level::Info
+	} else if message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::WARNING) {
+		log::Level::Warn
+	} else if message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::ERROR) {
+		log::Level::Error
+	} else {
+		log::Level::Trace
+	};
+
+	log::log!(log_level, "{}", message);
 
 	vk::FALSE
 }

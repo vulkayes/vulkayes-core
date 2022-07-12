@@ -1,3 +1,5 @@
+use ash::vk;
+
 vk_result_error! {
 	#[derive(Debug)]
 	pub enum QueueSubmitError {
@@ -60,42 +62,25 @@ vk_result_error! {
 }
 #[derive(Debug)]
 #[allow(non_camel_case_types)]
-pub enum QueuePresentResultValue {
+pub enum QueuePresentSuccess {
 	SUCCESS,
 	SUBOPTIMAL_KHR
 }
-impl From<bool> for QueuePresentResultValue {
+impl From<bool> for QueuePresentSuccess {
 	fn from(value: bool) -> Self {
 		if value {
-			QueuePresentResultValue::SUBOPTIMAL_KHR
+			QueuePresentSuccess::SUBOPTIMAL_KHR
 		} else {
-			QueuePresentResultValue::SUCCESS
+			QueuePresentSuccess::SUCCESS
 		}
 	}
 }
-pub type QueuePresentResult = Result<QueuePresentResultValue, QueuePresentError>;
-#[derive(Debug)]
-pub enum QueuePresentMultipleResult<A: AsRef<[QueuePresentResult]> = [QueuePresentResult; 0]> {
-	Single(QueuePresentResult),
-	Multiple(A)
-}
-impl<A: AsRef<[QueuePresentResult]>> QueuePresentMultipleResult<A> {
-	pub fn get_single(self) -> Option<QueuePresentResult> {
-		match self {
-			QueuePresentMultipleResult::Single(v) => Some(v),
-			_ => None
-		}
-	}
-
-	pub fn get_multiple(self) -> Option<A> {
-		match self {
-			QueuePresentMultipleResult::Multiple(v) => Some(v),
-			_ => None
-		}
-	}
-}
-impl<A: AsRef<[QueuePresentResult]>> From<QueuePresentResult> for QueuePresentMultipleResult<A> {
-	fn from(value: QueuePresentResult) -> Self {
-		QueuePresentMultipleResult::Single(value)
+pub fn match_queue_present_result(
+	result: vk::Result
+) -> Result<QueuePresentSuccess, QueuePresentError> {
+	match result {
+		vk::Result::SUCCESS => Ok(QueuePresentSuccess::SUCCESS),
+		vk::Result::SUBOPTIMAL_KHR => Ok(QueuePresentSuccess::SUBOPTIMAL_KHR),
+		err => Err(QueuePresentError::from(err))
 	}
 }

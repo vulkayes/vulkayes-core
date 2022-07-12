@@ -93,7 +93,7 @@ vk_enum_subset! {
 vk_builder_wrap! {
 	/// Transparent wrapper struct over `WriteDescriptorSetInlineUniformBlockEXT`.
 	pub struct DescriptorInlineUniformBlockInfo ['a] {
-		builder: vk::WriteDescriptorSetInlineUniformBlockEXTBuilder<'a> => vk::WriteDescriptorSetInlineUniformBlockEXT
+		builder: vk::WriteDescriptorSetInlineUniformBlockBuilder<'a> => vk::WriteDescriptorSetInlineUniformBlock
 	}
 	impl ['a] {
 		pub fn new(data: &'a [u8]) -> Result<Self, DescriptorInlineUniformBlockInfoError> {

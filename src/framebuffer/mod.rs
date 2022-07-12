@@ -1,6 +1,6 @@
 use std::{fmt, num::NonZeroU32, ops::Deref};
 
-use ash::{version::DeviceV1_0, vk};
+use ash::vk;
 
 use crate::prelude::{HasHandle, HostMemoryAllocator, ImageView, RenderPass, Vrc};
 

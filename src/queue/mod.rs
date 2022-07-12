@@ -3,15 +3,9 @@ use std::{
 	ops::Deref
 };
 
-use ash::{
-	version::{DeviceV1_0, DeviceV1_1},
-	vk::{self, DeviceQueueCreateFlags, DeviceQueueInfo2}
-};
+use ash::vk::{self, DeviceQueueCreateFlags, DeviceQueueInfo2};
 
-use crate::{device::Device, prelude::Vrc, sync::fence::Fence, util::sync::Vutex};
-
-#[macro_use]
-pub mod macros;
+use crate::prelude::{CommandBuffer, Device, Fence, Semaphore, SwapchainImage, Vrc, Vutex};
 
 pub mod error;
 pub mod sharing_mode;
@@ -26,41 +20,144 @@ pub struct Queue {
 	queue_index: u32
 }
 impl Queue {
-	const_queue_submit! {
-		pub fn submit_one_fence_only(
-			&queue,
-			waits: [&Semaphore; 0],
-			stages: [vk::PipelineStageFlags; _],
-			buffers: [&CommandBuffer; 1],
-			signals: [&Semaphore; 0],
-			fence: Option<&Fence>
-		) -> Result<(), QueueSubmitError>;
+	pub fn submit<const WAITS: usize, const BUFFERS: usize, const SIGNALS: usize>(
+		&self,
+		wait_for: [&Semaphore; WAITS],
+		wait_for_stages: [vk::PipelineStageFlags; WAITS],
+		buffers: [&CommandBuffer; BUFFERS],
+		signal_after: [&Semaphore; SIGNALS],
+		fence: Option<&Fence>
+	) -> Result<(), error::QueueSubmitError> {
+		#[cfg(feature = "runtime_implicit_validations")]
+		{
+			for stage in wait_for_stages.iter() {
+				if stage.is_empty() {
+					return Err(error::QueueSubmitError::WaitStagesEmpty)
+				}
+			}
+			{
+				// check that all waits, buffers and signals come from the same device
+				if !crate::util::validations::validate_all_match(
+					wait_for
+						.iter()
+						.map(|w| w.device())
+						.chain(buffers.iter().map(|b| b.pool().device()))
+						.chain(signal_after.iter().map(|s| s.device()))
+				) {
+					return Err(error::QueueSubmitError::WaitBufferSignalDeviceMismatch)
+				}
+			}
+			for cb in buffers.iter() {
+				if cb.pool().queue_family_index() != self.queue_family_index() {
+					return Err(error::QueueSubmitError::QueueFamilyMismatch)
+				}
+			}
+			if let Some(ref fence) = fence {
+				if self.device() != fence.device() {
+					return Err(error::QueueSubmitError::QueueFenceDeviceMismatch)
+				}
+			}
+		}
+
+		let wait_for_locks = wait_for.map(|s| s.lock().expect("vutex poisoned"));
+		let wait_for_raw = wait_for_locks.map(|l| *l);
+
+		let buffers_locks = buffers.map(|s| s.lock().expect("vutex poisoned"));
+		let buffers_raw = buffers_locks.map(|l| *l);
+
+		let signal_after_locks = signal_after.map(|s| s.lock().expect("vutex poisoned"));
+		let signal_after_raw = signal_after_locks.map(|l| *l);
+
+		let submit_info = vk::SubmitInfo::builder()
+			.wait_semaphores(&wait_for_raw)
+			.wait_dst_stage_mask(&wait_for_stages)
+			.command_buffers(&buffers_raw)
+			.signal_semaphores(&signal_after_raw)
+			.build();
+
+		unsafe { self.submit_raw([submit_info], fence) }
 	}
 
-	const_queue_submit! {
-		/// Example submit function generated using the [const_queue_submit!](../macro.const_queue_submit.html) macro.
-		///
-		/// At some point in the distant future this function will become const generic and the macro will be an implementation detail.
-		pub fn submit_one(
-			&queue,
-			waits: [&Semaphore; 1],
-			stages: [vk::PipelineStageFlags; _],
-			buffers: [&CommandBuffer; 1],
-			signals: [&Semaphore; 1],
-			fence: Option<&Fence>
-		) -> Result<(), QueueSubmitError>;
+	pub fn present_with_all_results<const WAITS: usize, const IMAGES: usize>(
+		&self,
+		wait_for: [&Semaphore; WAITS],
+		images: [&SwapchainImage; IMAGES]
+	) -> [Result<error::QueuePresentSuccess, error::QueuePresentError>; IMAGES] {
+		#[cfg(feature = "runtime_implicit_validations")]
+		{
+			if IMAGES == 0 {
+				return [(); IMAGES].map(|_| Err(error::QueuePresentError::SwapchainsEmpty))
+			}
+			if !crate::util::validations::validate_all_match(
+				images
+					.iter()
+					.map(|&i| i.device().instance())
+					.chain(wait_for.iter().map(|&w| w.device().instance()))
+			) {
+				return [(); IMAGES]
+					.map(|_| Err(error::QueuePresentError::SwapchainsSempahoredInstanceMismatch))
+			}
+		}
+
+		let any_swapchain = images[0].swapchain();
+
+		let wait_for_locks = wait_for.map(|s| s.lock().expect("vutex poisoned"));
+		let wait_for_raw = wait_for_locks.map(|l| *l);
+
+		let swapchains_locks = images.map(|i| i.swapchain().lock().expect("vutex poisoned"));
+		let swapchains_raw = swapchains_locks.map(|l| *l);
+
+		let indices = images.map(|i| i.index());
+
+		let mut results = [vk::Result::SUCCESS; IMAGES];
+
+		let present_info = vk::PresentInfoKHR::builder()
+			.wait_semaphores(&wait_for_raw)
+			.swapchains(&swapchains_raw)
+			.image_indices(&indices)
+			.results(&mut results);
+
+		let _ = unsafe { any_swapchain.present(self, present_info) };
+
+		results.map(error::match_queue_present_result)
 	}
 
-	const_queue_present! {
-		/// Example present function generated using the [const_queue_present!](../macro.const_queue_present.html) macro.
-		///
-		/// At some point in the distant future this function will become const generic and the macro will be an implementation detail.
-		pub fn present_one(
-			&queue,
-			waits: [&Semaphore; 1],
-			images: [&SwapchainImage; 1],
-			result_for_all: bool
-		) -> QueuePresentMultipleResult<[QueuePresentResult; _]>;
+	pub fn present<const WAITS: usize, const IMAGES: usize>(
+		&self,
+		wait_for: [&Semaphore; WAITS],
+		images: [&SwapchainImage; IMAGES]
+	) -> Result<error::QueuePresentSuccess, error::QueuePresentError> {
+		#[cfg(feature = "runtime_implicit_validations")]
+		{
+			if IMAGES == 0 {
+				return Err(error::QueuePresentError::SwapchainsEmpty)
+			}
+			if !crate::util::validations::validate_all_match(
+				images
+					.iter()
+					.map(|&i| i.device().instance())
+					.chain(wait_for.iter().map(|&w| w.device().instance()))
+			) {
+				return Err(error::QueuePresentError::SwapchainsSempahoredInstanceMismatch)
+			}
+		}
+
+		let any_swapchain = images[0].swapchain();
+
+		let wait_for_locks = wait_for.map(|s| s.lock().expect("vutex poisoned"));
+		let wait_for_raw = wait_for_locks.map(|l| *l);
+
+		let swapchains_locks = images.map(|i| i.swapchain().lock().expect("vutex poisoned"));
+		let swapchains_raw = swapchains_locks.map(|l| *l);
+
+		let indices = images.map(|i| i.index());
+
+		let present_info = vk::PresentInfoKHR::builder()
+			.wait_semaphores(&wait_for_raw)
+			.swapchains(&swapchains_raw)
+			.image_indices(&indices);
+
+		unsafe { any_swapchain.present(self, present_info) }
 	}
 
 	/// Gets a queue from the logical device.
@@ -115,7 +212,7 @@ impl Queue {
 	/// ### Panic
 	///
 	/// This function will panic if the `Vutex` is poisoned.
-	pub unsafe fn submit(
+	pub unsafe fn submit_raw(
 		&self,
 		infos: impl AsRef<[vk::SubmitInfo]>,
 		fence: Option<&Fence>

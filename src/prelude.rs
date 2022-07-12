@@ -3,13 +3,13 @@ pub use crate::{
 		buffer::{
 			recording::{
 				common::CommandBufferRecordingLockCommon,
+				outside::{
+					barrier::{BufferMemoryBarrier, ImageMemoryBarrier, MemoryBarrier},
+					copy::{BufferImageCopy, ImageSubresourceLayers}
+				},
 				CommandBufferBeginInfo,
 				CommandBufferRecordingLockInsideRenderPass,
-				CommandBufferRecordingLockOutsideRenderPass,
-				outside::{
-					barrier::{MemoryBarrier, BufferMemoryBarrier, ImageMemoryBarrier},
-					copy::{BufferImageCopy, ImageSubresourceLayers}
-				}
+				CommandBufferRecordingLockOutsideRenderPass
 			},
 			CommandBuffer
 		},
@@ -42,10 +42,10 @@ pub use crate::{
 	instance::{ApplicationInfo, Instance},
 	memory::{
 		device::{
-			MappingAccessResult,
-			allocator::{BufferMemoryAllocator, ImageMemoryAllocator}
+			allocator::{BufferMemoryAllocator, ImageMemoryAllocator},
+			MappingAccessResult
 		},
-		host::HostMemoryAllocator,
+		host::HostMemoryAllocator
 	},
 	physical_device::PhysicalDevice,
 	pipeline::{
@@ -61,7 +61,14 @@ pub use crate::{
 	resource::{
 		buffer::{params::BufferAllocatorParams, view::BufferView, Buffer},
 		image::{
-			layout::{ImageLayoutAttachment, ImageLayoutClearColorImage, ImageLayoutDestination, ImageLayoutFinal, ImageLayoutSampled, ImageLayoutInputAttachment},
+			layout::{
+				ImageLayoutAttachment,
+				ImageLayoutClearColorImage,
+				ImageLayoutDestination,
+				ImageLayoutFinal,
+				ImageLayoutInputAttachment,
+				ImageLayoutSampled
+			},
 			params::{
 				ImageAllocatorParams,
 				ImageSize,
@@ -78,7 +85,10 @@ pub use crate::{
 			MixedDynImage
 		}
 	},
-	shader::{params::{ShaderEntryPoint, PushConstantsTrait}, ShaderModule},
+	shader::{
+		params::{PushConstantsTrait, ShaderEntryPoint},
+		ShaderModule
+	},
 	surface::Surface,
 	swapchain::{
 		image::{SwapchainCreateImageInfo, SwapchainImage},

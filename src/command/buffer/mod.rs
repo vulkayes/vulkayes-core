@@ -1,6 +1,6 @@
 use std::{fmt::Debug, ops::Deref};
 
-use ash::{version::DeviceV1_0, vk};
+use ash::vk;
 
 use crate::{
 	command::pool::CommandPool,

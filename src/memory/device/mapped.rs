@@ -5,7 +5,7 @@ use std::{
 	ptr::NonNull
 };
 
-use ash::{version::DeviceV1_0, vk};
+use ash::vk;
 
 use crate::{device::Device, prelude::Vrc};
 

@@ -28,14 +28,14 @@ deref_enum_dispatch! {
 	}: Deref<Target = Image>
 }
 impl MixedDynImage {
-	pub fn get_image(&self) -> Option<&Vrc<Image>> {
+	pub fn try_as_image(&self) -> Option<&Vrc<Image>> {
 		match self {
 			MixedDynImage::Image(i) => Some(i),
 			_ => None
 		}
 	}
 
-	pub fn get_swapchain_image(&self) -> Option<&Vrc<SwapchainImage>> {
+	pub fn try_as_swapchain_image(&self) -> Option<&Vrc<SwapchainImage>> {
 		match self {
 			MixedDynImage::SwapchainImage(i) => Some(i),
 			_ => None

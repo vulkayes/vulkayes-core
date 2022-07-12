@@ -3,7 +3,7 @@ use std::{
 	ops::Deref
 };
 
-use ash::{version::DeviceV1_0, vk};
+use ash::vk;
 
 use crate::{device::Device, memory::host::HostMemoryAllocator, prelude::Vrc, util::sync::Vutex};
 

@@ -47,8 +47,6 @@
 pub use ash;
 // Export `log` so that `log_*` features can be applied to all vulkayes crates
 pub use log;
-// Export `seq_macro` because `lock_and_deref` macro requires it.
-pub use seq_macro;
 
 // Macros used inside and outside of the crate.
 #[macro_use]
@@ -75,16 +73,21 @@ pub mod sync;
 #[cfg(test)]
 mod test {
 	pub fn setup_testing_logger() {
-		static LOGGER_INITIALIZED: std::sync::atomic::AtomicBool =
-			std::sync::atomic::AtomicBool::new(false);
+		use std::sync::atomic::{AtomicBool, Ordering};
 
-		if LOGGER_INITIALIZED.compare_exchange(
-			false, true, std::sync::atomic::Ordering::SeqCst, std::sync::atomic::Ordering::SeqCst
-		).is_err() {
-			let logger = edwardium_logger::Logger::new(
-				[edwardium_logger::targets::stderr::StderrTarget::new(
-					log::Level::Trace
-				)],
+		use edwardium_logger::{
+			targets::{stdout::StdoutTarget, util::ignore_list::IgnoreList},
+			Logger
+		};
+
+		static LOGGER_INITIALIZED: AtomicBool = AtomicBool::new(false);
+
+		if LOGGER_INITIALIZED
+			.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+			.is_err()
+		{
+			let logger = Logger::new(
+				StdoutTarget::new(log::Level::Trace, IgnoreList::EMPTY_PATTERNS),
 				std::time::Instant::now()
 			);
 			logger.init_boxed().expect("Could not initialize logger");

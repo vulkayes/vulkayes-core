@@ -1,6 +1,6 @@
 use std::{fmt, ops::Deref};
 
-use ash::{version::DeviceV1_0, vk};
+use ash::vk;
 
 use crate::{
 	device::Device,
@@ -102,7 +102,7 @@ impl CommandPool {
 		flags: vk::CommandPoolCreateFlags,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<Vrc<Self>, CommandPoolError> {
-		let flags = flags - vk::CommandPoolCreateFlags::PROTECTED;
+		let flags = flags & !vk::CommandPoolCreateFlags::PROTECTED;
 
 		let create_info = vk::CommandPoolCreateInfo::builder()
 			.flags(flags)

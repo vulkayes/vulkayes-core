@@ -142,14 +142,12 @@ impl RustHostMemoryAllocator {
 	pub(super) unsafe extern "system" fn rust_free(
 		p_user_data: *mut c_void,
 		p_memory: *mut c_void
-	) -> c_void {
+	) {
 		let mut allocator = Self::lock_init_allocator();
 
 		log::trace!("rust_free({:p}, {:p})", p_user_data, p_memory);
 
 		allocator.dealloc(p_memory as *mut u8);
-
-		std::mem::MaybeUninit::uninit().assume_init()
 	}
 
 	pub(super) unsafe extern "system" fn rust_internal_allocation(
@@ -157,7 +155,7 @@ impl RustHostMemoryAllocator {
 		size: usize,
 		allocation_type: InternalAllocationType,
 		allocation_scope: SystemAllocationScope
-	) -> c_void {
+	) {
 		log::trace!(
 			"rust_internal_allocation({:p}, {}, {:?}, {:?})",
 			p_user_data,
@@ -165,8 +163,6 @@ impl RustHostMemoryAllocator {
 			allocation_type,
 			allocation_scope
 		);
-
-		std::mem::MaybeUninit::uninit().assume_init()
 	}
 
 	pub(super) unsafe extern "system" fn rust_internal_free(
@@ -174,7 +170,7 @@ impl RustHostMemoryAllocator {
 		size: usize,
 		allocation_type: InternalAllocationType,
 		allocation_scope: SystemAllocationScope
-	) -> c_void {
+	) {
 		log::trace!(
 			"rust_internal_free({:p}, {}, {:?}, {:?})",
 			p_user_data,
@@ -182,7 +178,5 @@ impl RustHostMemoryAllocator {
 			allocation_type,
 			allocation_scope
 		);
-
-		std::mem::MaybeUninit::uninit().assume_init()
 	}
 }

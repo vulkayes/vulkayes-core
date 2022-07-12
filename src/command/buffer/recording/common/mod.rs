@@ -1,12 +1,6 @@
 use ash::vk;
 
-use crate::prelude::{
-	CommandBuffer,
-	Device,
-	HasSynchronizedHandle,
-	Vrc,
-	VutexGuard,
-};
+use crate::prelude::{CommandBuffer, Device, HasSynchronizedHandle, Vrc, VutexGuard};
 
 pub mod bind;
 pub mod set;

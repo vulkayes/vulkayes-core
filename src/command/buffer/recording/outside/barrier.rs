@@ -2,9 +2,15 @@ use std::num::NonZeroU64;
 
 use ash::vk;
 
-use ash::version::DeviceV1_0;
-
-use crate::prelude::{HasHandle, Transparent, Buffer, Image, Queue, ImageLayoutFinal, ImageSubresourceRange};
+use crate::prelude::{
+	Buffer,
+	HasHandle,
+	Image,
+	ImageLayoutFinal,
+	ImageSubresourceRange,
+	Queue,
+	Transparent
+};
 
 // salmon
 vk_builder_wrap! {
@@ -143,7 +149,7 @@ impl<'a> super::super::CommandBufferRecordingLockOutsideRenderPass<'a> {
 		destination_stages: vk::PipelineStageFlags,
 		memory_barriers: impl AsRef<[MemoryBarrier]>,
 		buffer_memory_barriers: impl AsRef<[BufferMemoryBarrier<'b>]>,
-		image_memory_barriers: impl AsRef<[ImageMemoryBarrier<'i>]>,
+		image_memory_barriers: impl AsRef<[ImageMemoryBarrier<'i>]>
 	) {
 		log_trace_common!(
 			"Pipeline barrier:",

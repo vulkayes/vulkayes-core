@@ -1,9 +1,8 @@
 use std::num::NonZeroU32;
 
-use ash::version::DeviceV1_0;
 use ash::vk;
 
-use crate::prelude::{Buffer, Image, ImageLayoutDestination, HasHandle, Transparent};
+use crate::prelude::{Buffer, HasHandle, Image, ImageLayoutDestination, Transparent};
 
 vk_builder_wrap! {
 	pub struct ImageSubresourceLayers {
