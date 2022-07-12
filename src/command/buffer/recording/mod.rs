@@ -2,9 +2,8 @@ use std::ops::Deref;
 
 use ash::vk;
 
-use crate::prelude::{Framebuffer, HasHandle, RenderPass};
-
 use super::CommandBufferError;
+use crate::prelude::{Framebuffer, HasHandle, RenderPass};
 
 pub mod common;
 pub mod inside;
@@ -50,10 +49,7 @@ impl From<CommandBufferBeginInfo> for vk::CommandBufferBeginInfoBuilder<'static>
 #[derive(Debug)]
 pub struct CommandBufferRecordingLockOutsideRenderPass<'a>(CommandBufferRecordingLockCommon<'a>);
 impl<'a> CommandBufferRecordingLockOutsideRenderPass<'a> {
-	pub fn new(
-		lock: CommandBufferRecordingLockCommon<'a>,
-		info: CommandBufferBeginInfo
-	) -> Result<Self, CommandBufferError> {
+	pub fn new(lock: CommandBufferRecordingLockCommon<'a>, info: CommandBufferBeginInfo) -> Result<Self, CommandBufferError> {
 		log_trace_common!(
 			"Beginning command buffer:",
 			crate::util::fmt::format_handle(lock.handle()),
@@ -62,8 +58,10 @@ impl<'a> CommandBufferRecordingLockOutsideRenderPass<'a> {
 
 		let command_buffer_begin_info: vk::CommandBufferBeginInfoBuilder = info.into();
 		unsafe {
-			lock.device()
-				.begin_command_buffer(lock.handle(), &command_buffer_begin_info)?;
+			lock.device().begin_command_buffer(
+				lock.handle(),
+				&command_buffer_begin_info
+			)?;
 		}
 
 		Ok(CommandBufferRecordingLockOutsideRenderPass(lock))
@@ -91,11 +89,7 @@ impl<'a> CommandBufferRecordingLockOutsideRenderPass<'a> {
 			.render_area(render_area)
 			.clear_values(clear_values.as_ref());
 
-		let contents = if contents_inline {
-			vk::SubpassContents::INLINE
-		} else {
-			vk::SubpassContents::SECONDARY_COMMAND_BUFFERS
-		};
+		let contents = if contents_inline { vk::SubpassContents::INLINE } else { vk::SubpassContents::SECONDARY_COMMAND_BUFFERS };
 
 		log_trace_common!(
 			"Recording BeginRenderPass:",
@@ -155,9 +149,7 @@ impl Drop for CommandBufferRecordingLockOutsideRenderPass<'_> {
 ///
 /// This structure will panic on `drop` if the inner `CommandBufferRecordingLockOutsideRenderPass` panics on drop.
 /// It is recommended to call `end_render_pass` and retrieve the inner lock instead.
-pub struct CommandBufferRecordingLockInsideRenderPass<'a>(
-	CommandBufferRecordingLockOutsideRenderPass<'a>
-);
+pub struct CommandBufferRecordingLockInsideRenderPass<'a>(CommandBufferRecordingLockOutsideRenderPass<'a>);
 impl<'a> Deref for CommandBufferRecordingLockInsideRenderPass<'a> {
 	type Target = CommandBufferRecordingLockCommon<'a>;
 
@@ -167,11 +159,7 @@ impl<'a> Deref for CommandBufferRecordingLockInsideRenderPass<'a> {
 }
 impl<'a> CommandBufferRecordingLockInsideRenderPass<'a> {
 	pub fn next_subpass(&self, contents_inline: bool) {
-		let contents = if contents_inline {
-			vk::SubpassContents::INLINE
-		} else {
-			vk::SubpassContents::SECONDARY_COMMAND_BUFFERS
-		};
+		let contents = if contents_inline { vk::SubpassContents::INLINE } else { vk::SubpassContents::SECONDARY_COMMAND_BUFFERS };
 
 		log_trace_common!(
 			"Recording NextSubpass:",

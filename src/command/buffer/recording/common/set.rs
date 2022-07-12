@@ -9,8 +9,11 @@ impl<'a> super::CommandBufferRecordingLockCommon<'a> {
 			viewports.as_ref()
 		);
 		unsafe {
-			self.device()
-				.cmd_set_viewport(self.handle(), first_viewport, viewports.as_ref())
+			self.device().cmd_set_viewport(
+				self.handle(),
+				first_viewport,
+				viewports.as_ref()
+			)
 		}
 	}
 }

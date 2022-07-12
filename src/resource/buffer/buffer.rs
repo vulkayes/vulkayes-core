@@ -2,6 +2,7 @@ use std::{fmt, num::NonZeroU64, ops::Deref};
 
 use ash::vk;
 
+use super::{error, params};
 use crate::{
 	device::Device,
 	memory::{
@@ -11,8 +12,6 @@ use crate::{
 	prelude::Vrc,
 	queue::sharing_mode::SharingMode
 };
-
-use super::{error, params};
 
 pub struct Buffer {
 	device: Vrc<Device>,
@@ -48,7 +47,12 @@ impl Buffer {
 			.queue_family_indices(sharing_mode.indices());
 
 		unsafe {
-			Self::from_create_info(device, create_info, allocator_params, host_memory_allocator)
+			Self::from_create_info(
+				device,
+				create_info,
+				allocator_params,
+				host_memory_allocator
+			)
 		}
 	}
 
@@ -75,10 +79,7 @@ impl Buffer {
 		let buffer = device.create_buffer(c_info, host_memory_allocator.as_ref())?;
 
 		let memory = match allocator_params {
-			params::BufferAllocatorParams::Some {
-				allocator,
-				requirements
-			} => {
+			params::BufferAllocatorParams::Some { allocator, requirements } => {
 				let memory = allocator
 					.allocate(buffer, requirements)
 					.map_err(error::BufferError::AllocationError)?;
@@ -91,7 +92,11 @@ impl Buffer {
 				}
 
 				// TODO: Error here leaks buffer
-				device.bind_buffer_memory(buffer, *memory.deref(), memory.bind_offset())?;
+				device.bind_buffer_memory(
+					buffer,
+					*memory.deref(),
+					memory.bind_offset()
+				)?;
 				Some(memory)
 			}
 			params::BufferAllocatorParams::None => None
@@ -103,10 +108,8 @@ impl Buffer {
 			device,
 			buffer,
 			memory,
-
 			usage: c_info.usage,
 			size,
-
 			host_memory_allocator
 		}))
 	}
@@ -143,8 +146,10 @@ impl Drop for Buffer {
 		log_trace_common!("Dropping", self);
 
 		unsafe {
-			self.device
-				.destroy_buffer(self.buffer, self.host_memory_allocator.as_ref());
+			self.device.destroy_buffer(
+				self.buffer,
+				self.host_memory_allocator.as_ref()
+			);
 		}
 	}
 }
@@ -152,7 +157,10 @@ impl fmt::Debug for Buffer {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		f.debug_struct("Buffer")
 			.field("device", &self.device)
-			.field("buffer", &crate::util::fmt::format_handle(self.buffer))
+			.field(
+				"buffer",
+				&crate::util::fmt::format_handle(self.buffer)
+			)
 			.field(
 				"memory",
 				&self
@@ -162,7 +170,10 @@ impl fmt::Debug for Buffer {
 			)
 			.field("usage", &self.usage)
 			.field("size", &self.size)
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

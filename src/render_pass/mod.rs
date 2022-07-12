@@ -1,7 +1,6 @@
 use std::{fmt, ops::Deref};
 
 use ash::vk;
-
 use error::RenderPassError;
 
 use crate::prelude::{Device, HasHandle, HostMemoryAllocator, Transparent, Vrc};
@@ -41,11 +40,21 @@ impl RenderPass {
 		}
 
 		let create_info = vk::RenderPassCreateInfo::builder()
-			.attachments(Transparent::transmute_slice_twice(attachments))
-			.subpasses(Transparent::transmute_slice_twice(subpasses))
+			.attachments(Transparent::transmute_slice_twice(
+				attachments
+			))
+			.subpasses(Transparent::transmute_slice_twice(
+				subpasses
+			))
 			.dependencies(dependencies);
 
-		unsafe { Self::from_create_info(device, create_info, host_memory_allocator) }
+		unsafe {
+			Self::from_create_info(
+				device,
+				create_info,
+				host_memory_allocator
+			)
+		}
 	}
 
 	/// ### Safety
@@ -76,8 +85,10 @@ impl RenderPass {
 			);
 		}
 
-		let render_pass =
-			device.create_render_pass(create_info.deref(), host_memory_allocator.as_ref())?;
+		let render_pass = device.create_render_pass(
+			create_info.deref(),
+			host_memory_allocator.as_ref()
+		)?;
 
 		Ok(Vrc::new(RenderPass {
 			device,
@@ -101,8 +112,10 @@ impl RenderPass {
 			host_memory_allocator
 		);
 
-		let render_pass =
-			device.create_render_pass2(create_info.deref(), host_memory_allocator.as_ref())?;
+		let render_pass = device.create_render_pass2(
+			create_info.deref(),
+			host_memory_allocator.as_ref()
+		)?;
 
 		Ok(Vrc::new(RenderPass {
 			device,
@@ -125,8 +138,10 @@ impl Drop for RenderPass {
 		log_trace_common!("Dropping", self);
 
 		unsafe {
-			self.device
-				.destroy_render_pass(self.render_pass, self.host_memory_allocator.as_ref())
+			self.device.destroy_render_pass(
+				self.render_pass,
+				self.host_memory_allocator.as_ref()
+			)
 		}
 	}
 }
@@ -135,7 +150,10 @@ impl fmt::Debug for RenderPass {
 		f.debug_struct("RenderPass")
 			.field("device", &self.device)
 			.field("render_pass", &self.safe_handle())
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

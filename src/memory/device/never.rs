@@ -17,11 +17,7 @@ unsafe impl ImageMemoryAllocator for NeverDeviceAllocator {
 
 	// TODO: Replace with never `!` type when stable
 
-	fn allocate(
-		&self,
-		_: vk::Image,
-		_: Self::AllocationRequirements
-	) -> Result<DeviceMemoryAllocation, Self::Error> {
+	fn allocate(&self, _: vk::Image, _: Self::AllocationRequirements) -> Result<DeviceMemoryAllocation, Self::Error> {
 		unreachable!()
 	}
 }
@@ -31,11 +27,7 @@ unsafe impl BufferMemoryAllocator for NeverDeviceAllocator {
 
 	// TODO: Replace with never `!` type when stable
 
-	fn allocate(
-		&self,
-		_: vk::Buffer,
-		_: Self::AllocationRequirements
-	) -> Result<DeviceMemoryAllocation, Self::Error> {
+	fn allocate(&self, _: vk::Buffer, _: Self::AllocationRequirements) -> Result<DeviceMemoryAllocation, Self::Error> {
 		unreachable!()
 	}
 }

@@ -2,9 +2,8 @@ use std::{fmt, ops::Deref};
 
 use ash::vk;
 
-use crate::prelude::{HasHandle, HostMemoryAllocator, Vrc};
-
 use super::params::{ImageSize, ImageSubresourceRange};
+use crate::prelude::{HasHandle, HostMemoryAllocator, Vrc};
 
 pub struct ImageView {
 	image: super::MixedDynImage,
@@ -42,7 +41,13 @@ impl ImageView {
 				layer_count: subresource_slice.array_layers.get()
 			});
 
-		unsafe { Self::from_create_info(image, create_info, host_memory_allocator) }
+		unsafe {
+			Self::from_create_info(
+				image,
+				create_info,
+				host_memory_allocator
+			)
+		}
 	}
 
 	/// Creates a new `ImageView` from create info.
@@ -57,7 +62,12 @@ impl ImageView {
 	) -> Result<Vrc<Self>, super::error::ImageViewError> {
 		let c_info = create_info.deref();
 
-		log_trace_common!("Create image view:", image, c_info, host_memory_allocator);
+		log_trace_common!(
+			"Create image view:",
+			image,
+			c_info,
+			host_memory_allocator
+		);
 		let view = image
 			.device()
 			.create_image_view(c_info, host_memory_allocator.as_ref())?;
@@ -65,13 +75,10 @@ impl ImageView {
 		let subresource_range = ImageSubresourceRange::from_image_view_create_info(c_info);
 		let subresource_image_size = {
 			let image_type = match create_info.view_type {
-				vk::ImageViewType::TYPE_1D | vk::ImageViewType::TYPE_1D_ARRAY => {
-					vk::ImageType::TYPE_1D
+				vk::ImageViewType::TYPE_1D | vk::ImageViewType::TYPE_1D_ARRAY => vk::ImageType::TYPE_1D,
+				vk::ImageViewType::TYPE_2D | vk::ImageViewType::TYPE_2D_ARRAY | vk::ImageViewType::CUBE | vk::ImageViewType::CUBE_ARRAY => {
+					vk::ImageType::TYPE_2D
 				}
-				vk::ImageViewType::TYPE_2D
-				| vk::ImageViewType::TYPE_2D_ARRAY
-				| vk::ImageViewType::CUBE
-				| vk::ImageViewType::CUBE_ARRAY => vk::ImageType::TYPE_2D,
 				vk::ImageViewType::TYPE_3D => vk::ImageType::TYPE_3D,
 				_ => unreachable!()
 			};
@@ -131,9 +138,10 @@ impl Drop for ImageView {
 		log_trace_common!("Dropping", self);
 
 		unsafe {
-			self.image
-				.device()
-				.destroy_image_view(self.view, self.host_memory_allocator.as_ref())
+			self.image.device().destroy_image_view(
+				self.view,
+				self.host_memory_allocator.as_ref()
+			)
 		}
 	}
 }
@@ -143,10 +151,22 @@ impl fmt::Debug for ImageView {
 			.field("image", &self.image)
 			.field("view", &self.safe_handle())
 			.field("format", &self.format)
-			.field("component_mapping", &self.component_mapping)
-			.field("subresource_range", &self.subresource_range)
-			.field("subresource_image_size", &self.subresource_image_size)
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"component_mapping",
+				&self.component_mapping
+			)
+			.field(
+				"subresource_range",
+				&self.subresource_range
+			)
+			.field(
+				"subresource_image_size",
+				&self.subresource_image_size
+			)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

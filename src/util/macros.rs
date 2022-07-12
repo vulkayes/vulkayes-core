@@ -33,24 +33,24 @@
 /// enum UnsafeEnumInner<'a> {
 /// 	Foo,
 /// 	Bar,
-/// 	Qux {
-/// 		num: &'a u32
-/// 	}
+/// 	Qux { num: &'a u32 }
 /// }
 /// #[derive(Debug)]
 /// pub struct UnsafeEnum<'a>(UnsafeEnumInner<'a>);
 /// impl<'a> UnsafeEnum<'a> {
-/// 	#[doc = r###"Private"###]
+/// 	/// Private
 /// 	#[allow(non_snake_case)]
 /// 	const fn Foo() -> Self {
 /// 		UnsafeEnum(UnsafeEnumInner::Foo)
 /// 	}
-/// 	#[doc = r###"Public"###]
+///
+/// 	/// Public
 /// 	#[allow(non_snake_case)]
 /// 	pub const fn Bar() -> Self {
 /// 		UnsafeEnum(UnsafeEnumInner::Bar)
 /// 	}
-/// 	#[doc = r###"Unsafe"###]
+///
+/// 	/// Unsafe
 /// 	#[allow(non_snake_case)]
 /// 	pub const unsafe fn Qux(num: &'a u32) -> Self {
 /// 		UnsafeEnum(UnsafeEnumInner::Qux { num })
@@ -59,9 +59,9 @@
 /// impl<'a> Into<&'a u32> for UnsafeEnum<'a> {
 /// 	fn into(self) -> &'a u32 {
 /// 		match self.0 {
-/// 			UnsafeEnumInner::Foo => { &0u32 },
-/// 			UnsafeEnumInner::Bar => { &1u32 },
-/// 			UnsafeEnumInner::Qux { num } => { num }
+/// 			UnsafeEnumInner::Foo => &0u32,
+/// 			UnsafeEnumInner::Bar => &1u32,
+/// 			UnsafeEnumInner::Qux { num } => num
 /// 		}
 /// 	}
 /// }
@@ -306,8 +306,7 @@ macro_rules! vk_builder_wrap {
 /// #[allow(unused_imports)]
 /// use thiserror::*;
 ///
-/// #[derive(Debug)]
-/// #[derive(Error)]
+/// #[derive(Debug, Error)]
 /// pub enum ImageError<A: Trait> {
 /// 	#[error("{}", ash::vk::Result::ERROR_OUT_OF_HOST_MEMORY)]
 /// 	#[allow(non_camel_case_types)]
@@ -323,8 +322,14 @@ macro_rules! vk_builder_wrap {
 /// 	fn from(err: ash::vk::Result) -> Self {
 /// 		match err {
 /// 			ash::vk::Result::ERROR_OUT_OF_HOST_MEMORY => ImageError::ERROR_OUT_OF_HOST_MEMORY,
-/// 			ash::vk::Result::ERROR_OUT_OF_DEVICE_MEMORY => ImageError::ERROR_OUT_OF_DEVICE_MEMORY,
-/// 			_ => unreachable!("Cannot create {} from {}", stringify!(ImageError), err)
+/// 			ash::vk::Result::ERROR_OUT_OF_DEVICE_MEMORY => {
+/// 				ImageError::ERROR_OUT_OF_DEVICE_MEMORY
+/// 			}
+/// 			_ => unreachable!(
+/// 				"Cannot create {} from {}",
+/// 				stringify!(ImageError),
+/// 				err
+/// 			)
 /// 		}
 /// 	}
 /// }
@@ -477,12 +482,16 @@ macro_rules! vk_result_error {
 ///
 /// impl<A: Debug> std::cmp::PartialOrd for MyType<A> {
 /// 	fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-/// 		self.field_on_self.handle().partial_cmp(&other.field_on_self.handle())
+/// 		self.field_on_self
+/// 			.handle()
+/// 			.partial_cmp(&other.field_on_self.handle())
 /// 	}
 /// }
 /// impl<A: Debug> std::cmp::Ord for MyType<A> {
 /// 	fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-/// 		self.field_on_self.handle().cmp(&other.field_on_self.handle())
+/// 		self.field_on_self
+/// 			.handle()
+/// 			.cmp(&other.field_on_self.handle())
 /// 	}
 /// }
 ///
@@ -650,20 +659,25 @@ macro_rules! impl_common_handle_traits {
 /// 	pub const fn offsets() -> NameOffsets {
 /// 		let current_offset: usize = 0;
 ///
-/// 		let a = vulkayes_core::util::align_up(current_offset, std::mem::align_of::<f32>());
+/// 		let a = vulkayes_core::util::align_up(
+/// 			current_offset,
+/// 			std::mem::align_of::<f32>()
+/// 		);
 /// 		let current_offset = a + std::mem::size_of::<f32>();
 ///
-/// 		let b = vulkayes_core::util::align_up(current_offset, std::mem::align_of::<[f32; 4]>());
+/// 		let b = vulkayes_core::util::align_up(
+/// 			current_offset,
+/// 			std::mem::align_of::<[f32; 4]>()
+/// 		);
 /// 		let current_offset = b + std::mem::size_of::<[f32; 4]>();
 ///
-/// 		let c = vulkayes_core::util::align_up(current_offset, std::mem::align_of::<u8>());
+/// 		let c = vulkayes_core::util::align_up(
+/// 			current_offset,
+/// 			std::mem::align_of::<u8>()
+/// 		);
 /// 		let current_offset = c + std::mem::size_of::<u8>();
 ///
-/// 		NameOffsets {
-/// 			a,
-/// 			b,
-/// 			c
-/// 		}
+/// 		NameOffsets { a, b, c }
 /// 	}
 /// }
 /// ```
@@ -916,12 +930,15 @@ macro_rules! deref_enum_dispatch {
 /// 			vk::MainEnum::FOO => Ok(SubsetEnum::FOO),
 /// 			vk::MainEnum::BAR => Ok(SubsetEnum::BAR),
 /// 			vk::MainEnum::BAZ => Ok(SubsetEnum::BAZ),
-/// 			_ => Err(
-/// 				format!(
-/// 					concat!("Cannot convert from ", stringify!(vk::MainEnum), "::{:?} to ", stringify!(SubsetEnum)),
-/// 					value
-/// 				)
-/// 			)
+/// 			_ => Err(format!(
+/// 				concat!(
+/// 					"Cannot convert from ",
+/// 					stringify!(vk::MainEnum),
+/// 					"::{:?} to ",
+/// 					stringify!(SubsetEnum)
+/// 				),
+/// 				value
+/// 			))
 /// 		}
 /// 	}
 /// }
@@ -976,21 +993,15 @@ macro_rules! vk_enum_subset {
 /// Usage:
 /// ```
 /// # use vulkayes_core::iter_once_chain;
-/// iter_once_chain!(
-/// 	1,
-/// 	2,
-/// 	3
-/// );
+/// iter_once_chain!(1, 2, 3);
 /// ```
 ///
 /// expands to:
 /// ```
 /// # use vulkayes_core::iter_once_chain;
-/// std::iter::once(1).chain(
-/// 	std::iter::once(2)
-/// ).chain(
-/// 	std::iter::once(3)
-/// );
+/// std::iter::once(1)
+/// 	.chain(std::iter::once(2))
+/// 	.chain(std::iter::once(3));
 /// ```
 #[macro_export]
 macro_rules! iter_once_chain {

@@ -2,13 +2,12 @@ use std::{fmt::Debug, ops::Deref};
 
 use ash::vk;
 
+use super::error::CommandBufferError;
 use crate::{
 	command::pool::CommandPool,
 	prelude::{HasSynchronizedHandle, Vrc},
 	util::sync::Vutex
 };
-
-use super::error::CommandBufferError;
 
 pub mod recording;
 // pub mod clear;
@@ -28,14 +27,12 @@ impl CommandBuffer {
 		};
 		let [raw] = unsafe { pool.allocate_command_buffer(level)? };
 
-		Ok(Vrc::new(unsafe { Self::from_existing(pool, raw) }))
+		Ok(Vrc::new(unsafe {
+			Self::from_existing(pool, raw)
+		}))
 	}
 
-	pub fn new_multiple(
-		pool: Vrc<CommandPool>,
-		primary: bool,
-		count: std::num::NonZeroU32
-	) -> Result<Vec<Vrc<Self>>, CommandBufferError> {
+	pub fn new_multiple(pool: Vrc<CommandPool>, primary: bool, count: std::num::NonZeroU32) -> Result<Vec<Vrc<Self>>, CommandBufferError> {
 		let level = match primary {
 			true => vk::CommandBufferLevel::PRIMARY,
 			false => vk::CommandBufferLevel::SECONDARY
@@ -44,9 +41,7 @@ impl CommandBuffer {
 
 		let buffers: Vec<_> = raw
 			.into_iter()
-			.map(|command_buffer| {
-				Vrc::new(unsafe { Self::from_existing(pool.clone(), command_buffer) })
-			})
+			.map(|command_buffer| Vrc::new(unsafe { Self::from_existing(pool.clone(), command_buffer) }))
 			.collect();
 
 		Ok(buffers)
@@ -64,10 +59,7 @@ impl CommandBuffer {
 			crate::util::fmt::format_handle(command_buffer)
 		);
 
-		Self {
-			pool,
-			command_buffer: Vutex::new(command_buffer)
-		}
+		Self { pool, command_buffer: Vutex::new(command_buffer) }
 	}
 
 	/// ### Panic
@@ -76,11 +68,7 @@ impl CommandBuffer {
 	pub fn reset(&self, release_resource: bool) -> Result<(), CommandBufferError> {
 		let handle = self.lock_handle();
 
-		let flags = if release_resource {
-			vk::CommandBufferResetFlags::RELEASE_RESOURCES
-		} else {
-			vk::CommandBufferResetFlags::empty()
-		};
+		let flags = if release_resource { vk::CommandBufferResetFlags::RELEASE_RESOURCES } else { vk::CommandBufferResetFlags::empty() };
 
 		log_trace_common!(
 			"Resetting command buffer:",

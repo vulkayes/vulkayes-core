@@ -70,7 +70,10 @@ pub unsafe extern "system" fn default_debug_callback(
 
 	let mut maybe_objects = String::new();
 	if data.object_count > 0 {
-		let objects = std::slice::from_raw_parts(data.p_objects, data.object_count as usize);
+		let objects = std::slice::from_raw_parts(
+			data.p_objects,
+			data.object_count as usize
+		);
 		for object in objects {
 			let _ = write!(
 				&mut maybe_objects,

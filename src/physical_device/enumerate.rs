@@ -5,15 +5,7 @@ use std::{
 };
 
 use arrayvec::ArrayVec;
-
-use ash::vk::{
-	self,
-	MemoryHeap,
-	MemoryType,
-	PhysicalDeviceLimits,
-	PhysicalDeviceSparseProperties,
-	PhysicalDeviceType
-};
+use ash::vk::{self, MemoryHeap, MemoryType, PhysicalDeviceLimits, PhysicalDeviceSparseProperties, PhysicalDeviceType};
 
 use crate::util::{fmt::VkVersion, string::VkSmallString};
 
@@ -36,15 +28,16 @@ impl TryFrom<ash::vk::ExtensionProperties> for DeviceExtensionProperties {
 	type Error = std::str::Utf8Error;
 
 	fn try_from(value: ash::vk::ExtensionProperties) -> Result<Self, Self::Error> {
-		Ok(DeviceExtensionProperties {
-			extension_name: VkSmallString::try_from(value.extension_name)?,
-			spec_version: VkVersion(value.spec_version)
-		})
+		Ok(DeviceExtensionProperties { extension_name: VkSmallString::try_from(value.extension_name)?, spec_version: VkVersion(value.spec_version) })
 	}
 }
 impl Display for DeviceExtensionProperties {
 	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-		write!(f, "{} {}", self.extension_name, self.spec_version)
+		write!(
+			f,
+			"{} {}",
+			self.extension_name, self.spec_version
+		)
 	}
 }
 
@@ -77,10 +70,7 @@ impl From<ash::vk::PhysicalDeviceMemoryProperties> for PhysicalDeviceMemoryPrope
 			memory_heaps.set_len(value.memory_heap_count as usize);
 		}
 
-		PhysicalDeviceMemoryProperties {
-			memory_types,
-			memory_heaps
-		}
+		PhysicalDeviceMemoryProperties { memory_types, memory_heaps }
 	}
 }
 
@@ -117,8 +107,14 @@ impl Debug for PhysicalDeviceProperties {
 		f.debug_struct("PhysicalDeviceProperties")
 			.field("api_version", &self.api_version)
 			.field("driver_version", &self.driver_version)
-			.field("vendor_id", &format_args!("0x{:x}", self.vendor_id))
-			.field("device_id", &format_args!("0x{:x}", self.device_id))
+			.field(
+				"vendor_id",
+				&format_args!("0x{:x}", self.vendor_id)
+			)
+			.field(
+				"device_id",
+				&format_args!("0x{:x}", self.device_id)
+			)
 			.field("device_type", &self.device_type)
 			.field("device_name", &self.device_name)
 			.field(
@@ -126,7 +122,10 @@ impl Debug for PhysicalDeviceProperties {
 				&crate::util::fmt::format_uuid(self.pipeline_cache_uuid)
 			)
 			.field("limits", &self.limits)
-			.field("sparse_properties", &self.sparse_properties)
+			.field(
+				"sparse_properties",
+				&self.sparse_properties
+			)
 			.finish()
 	}
 }

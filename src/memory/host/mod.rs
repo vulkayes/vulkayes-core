@@ -36,9 +36,7 @@ impl HostMemoryAllocator {
 				pfn_allocation: Some(rust::RustHostMemoryAllocator::rust_alloc),
 				pfn_reallocation: Some(rust::RustHostMemoryAllocator::rust_realloc),
 				pfn_free: Some(rust::RustHostMemoryAllocator::rust_free),
-				pfn_internal_allocation: Some(
-					rust::RustHostMemoryAllocator::rust_internal_allocation
-				),
+				pfn_internal_allocation: Some(rust::RustHostMemoryAllocator::rust_internal_allocation),
 				pfn_internal_free: Some(rust::RustHostMemoryAllocator::rust_internal_free)
 			})
 		}

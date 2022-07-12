@@ -29,7 +29,13 @@ impl BufferView {
 			.offset(offset)
 			.range(range.get());
 
-		unsafe { Self::from_create_info(buffer, create_info, host_memory_allocator) }
+		unsafe {
+			Self::from_create_info(
+				buffer,
+				create_info,
+				host_memory_allocator
+			)
+		}
 	}
 
 	/// ### Safety
@@ -43,25 +49,28 @@ impl BufferView {
 	) -> Result<Vrc<Self>, super::error::BufferViewError> {
 		let c_info = create_info.deref();
 
-		log_trace_common!("Create buffer view:", buffer, c_info, host_memory_allocator);
+		log_trace_common!(
+			"Create buffer view:",
+			buffer,
+			c_info,
+			host_memory_allocator
+		);
 		let view = buffer
 			.device()
 			.create_buffer_view(c_info, host_memory_allocator.as_ref())?;
 
 		let format = c_info.format;
 		let offset = c_info.offset;
-		let range = NonZeroU64::new(c_info.range)
-			.unwrap_or(NonZeroU64::new_unchecked(buffer.size().get() - offset));
+		let range = NonZeroU64::new(c_info.range).unwrap_or(NonZeroU64::new_unchecked(
+			buffer.size().get() - offset
+		));
 
 		Ok(Vrc::new(BufferView {
 			buffer,
 			view,
-
 			format,
-
 			offset,
 			range,
-
 			host_memory_allocator
 		}))
 	}
@@ -92,9 +101,10 @@ impl Drop for BufferView {
 		log_trace_common!("Dropping", self);
 
 		unsafe {
-			self.buffer
-				.device()
-				.destroy_buffer_view(self.view, self.host_memory_allocator.as_ref())
+			self.buffer.device().destroy_buffer_view(
+				self.view,
+				self.host_memory_allocator.as_ref()
+			)
 		}
 	}
 }
@@ -106,7 +116,10 @@ impl fmt::Debug for BufferView {
 			.field("format", &self.format)
 			.field("offset", &self.offset)
 			.field("range", &self.range)
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

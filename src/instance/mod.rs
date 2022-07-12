@@ -9,13 +9,7 @@ use std::{
 
 use ash::{extensions::ext::DebugUtils, vk};
 
-use crate::{
-	entry::Entry,
-	memory::host::HostMemoryAllocator,
-	physical_device::PhysicalDevice,
-	prelude::Vrc,
-	util::fmt::VkVersion
-};
+use crate::{entry::Entry, memory::host::HostMemoryAllocator, physical_device::PhysicalDevice, prelude::Vrc, util::fmt::VkVersion};
 
 pub mod debug;
 pub mod error;
@@ -41,7 +35,10 @@ impl Debug for InstanceDebug {
 		f.debug_struct("InstanceDebug")
 			.field("loader", &"<ash::_::DebugReport>")
 			.field("callback", &self.callback)
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }
@@ -64,7 +61,10 @@ impl Instance {
 		host_memory_allocator: HostMemoryAllocator,
 		debug_callback: debug::DebugCallback
 	) -> Result<Vrc<Self>, error::InstanceError> {
-		log::info!("Vulkan instance version {}", entry.instance_version());
+		log::info!(
+			"Vulkan instance version {}",
+			entry.instance_version()
+		);
 
 		let application_name_c = CString::new(application_info.application_name)?;
 		let engine_name_c = CString::new(application_info.engine_name)?;
@@ -91,7 +91,12 @@ impl Instance {
 			.enabled_extension_names(ptr_extensions.as_slice());
 
 		unsafe {
-			Instance::from_create_info(entry, create_info, host_memory_allocator, debug_callback)
+			Instance::from_create_info(
+				entry,
+				create_info,
+				host_memory_allocator,
+				debug_callback
+			)
 		}
 	}
 
@@ -113,7 +118,10 @@ impl Instance {
 			host_memory_allocator,
 			debug_callback
 		);
-		let instance = entry.create_instance(&create_info, host_memory_allocator.as_ref())?;
+		let instance = entry.create_instance(
+			&create_info,
+			host_memory_allocator.as_ref()
+		)?;
 
 		// TODO: debug messenger, validation features, validation flags?
 
@@ -123,11 +131,7 @@ impl Instance {
 				let loader = DebugUtils::new(entry.deref(), &instance);
 				let callback = loader.create_debug_utils_messenger(create_info, None)?;
 
-				Some(InstanceDebug {
-					loader,
-					callback,
-					host_memory_allocator: HostMemoryAllocator::Unspecified() /* TODO: Allow callbacks */
-				})
+				Some(InstanceDebug { loader, callback, host_memory_allocator: HostMemoryAllocator::Unspecified() /* TODO: Allow callbacks */ })
 			}
 		};
 
@@ -145,17 +149,12 @@ impl Instance {
 	}
 
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkEnumeratePhysicalDevices.html>.
-	pub fn physical_devices(
-		self: &Vrc<Self>
-	) -> Result<impl ExactSizeIterator<Item = PhysicalDevice>, error::PhysicalDeviceEnumerationError>
-	{
+	pub fn physical_devices(self: &Vrc<Self>) -> Result<impl ExactSizeIterator<Item = PhysicalDevice>, error::PhysicalDeviceEnumerationError> {
 		let elf = self.clone();
 		let enumerator = unsafe {
 			self.enumerate_physical_devices()?
 				.into_iter()
-				.map(move |physical_device| {
-					PhysicalDevice::from_existing(elf.clone(), physical_device)
-				})
+				.map(move |physical_device| PhysicalDevice::from_existing(elf.clone(), physical_device))
 		};
 
 		Ok(enumerator)
@@ -197,7 +196,10 @@ impl Debug for Instance {
 				"instance",
 				&crate::util::fmt::format_handle(self.instance.handle())
 			)
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.field("debug", &self.debug)
 			.finish()
 	}

@@ -1,14 +1,6 @@
 use ash::vk;
 
-use crate::prelude::{
-	Buffer,
-	GraphicsPipeline,
-	HasHandle,
-	PipelineLayout,
-	PushConstantsTrait,
-	SafeHandle,
-	Transparent
-};
+use crate::prelude::{Buffer, GraphicsPipeline, HasHandle, PipelineLayout, PushConstantsTrait, SafeHandle, Transparent};
 
 impl<'a> super::CommandBufferRecordingLockCommon<'a> {
 	pub fn bind_graphics_pipeline(&self, pipeline: &GraphicsPipeline) {
@@ -100,12 +92,7 @@ impl<'a> super::CommandBufferRecordingLockCommon<'a> {
 		}
 	}
 
-	pub fn bind_index_buffer(
-		&self,
-		buffer: &Buffer,
-		offset: vk::DeviceSize,
-		index_type: vk::IndexType
-	) {
+	pub fn bind_index_buffer(&self, buffer: &Buffer, offset: vk::DeviceSize, index_type: vk::IndexType) {
 		log_trace_common!(
 			"Binding index buffer:",
 			crate::util::fmt::format_handle(self.handle()),
@@ -114,8 +101,12 @@ impl<'a> super::CommandBufferRecordingLockCommon<'a> {
 			index_type
 		);
 		unsafe {
-			self.device()
-				.cmd_bind_index_buffer(self.handle(), buffer.handle(), offset, index_type)
+			self.device().cmd_bind_index_buffer(
+				self.handle(),
+				buffer.handle(),
+				offset,
+				index_type
+			)
 		}
 	}
 }

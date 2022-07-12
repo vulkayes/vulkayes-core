@@ -2,9 +2,8 @@ use std::{fmt, ops::Deref};
 
 use ash::vk;
 
-use crate::prelude::{Device, HasHandle, HostMemoryAllocator, SafeHandle, Transparent, Vrc};
-
 use super::error::PipelineLayoutError;
+use crate::prelude::{Device, HasHandle, HostMemoryAllocator, SafeHandle, Transparent, Vrc};
 
 vk_builder_wrap! {
 	pub struct PushConstantRange {
@@ -59,7 +58,13 @@ impl PipelineLayout {
 				push_constant_ranges.as_ref()
 			));
 
-		unsafe { Self::from_create_info(device, create_info, host_memory_allocator) }
+		unsafe {
+			Self::from_create_info(
+				device,
+				create_info,
+				host_memory_allocator
+			)
+		}
 	}
 
 	/// ### Safety
@@ -77,8 +82,10 @@ impl PipelineLayout {
 			host_memory_allocator
 		);
 
-		let layout =
-			device.create_pipeline_layout(create_info.deref(), host_memory_allocator.as_ref())?;
+		let layout = device.create_pipeline_layout(
+			create_info.deref(),
+			host_memory_allocator.as_ref()
+		)?;
 
 		Ok(Vrc::new(PipelineLayout {
 			device,
@@ -101,8 +108,10 @@ impl Drop for PipelineLayout {
 		log_trace_common!("Dropping", self);
 
 		unsafe {
-			self.device
-				.destroy_pipeline_layout(self.layout, self.host_memory_allocator.as_ref())
+			self.device.destroy_pipeline_layout(
+				self.layout,
+				self.host_memory_allocator.as_ref()
+			)
 		}
 	}
 }
@@ -111,7 +120,10 @@ impl fmt::Debug for PipelineLayout {
 		f.debug_struct("PipelineLayout")
 			.field("device", &self.device)
 			.field("layout", &self.safe_handle())
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

@@ -25,13 +25,11 @@ impl Surface {
 	///
 	/// `instance` must be a parent of `surface`.
 	/// `surface` must be a valid surface handle for the whole lifetime of this object.
-	pub unsafe fn from_existing(
-		instance: Vrc<Instance>,
-		surface: vk::SurfaceKHR,
-		host_memory_allocator: HostMemoryAllocator
-	) -> Self {
-		let loader =
-			ash::extensions::khr::Surface::new(instance.entry().deref(), instance.deref().deref());
+	pub unsafe fn from_existing(instance: Vrc<Instance>, surface: vk::SurfaceKHR, host_memory_allocator: HostMemoryAllocator) -> Self {
+		let loader = ash::extensions::khr::Surface::new(
+			instance.entry().deref(),
+			instance.deref().deref()
+		);
 
 		log_trace_common!(
 			"Creating surface from existing handle:",
@@ -39,12 +37,7 @@ impl Surface {
 			surface,
 			host_memory_allocator
 		);
-		Surface {
-			instance,
-			loader,
-			surface,
-			host_memory_allocator
-		}
+		Surface { instance, loader, surface, host_memory_allocator }
 	}
 
 	/// Queries whether the given queue on the given physical device supports this surface.
@@ -95,10 +88,7 @@ impl Surface {
 	}
 
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetPhysicalDeviceSurfaceFormatsKHR.html>.
-	pub fn physical_device_surface_formats(
-		&self,
-		physical_device: &PhysicalDevice
-	) -> Result<Vec<vk::SurfaceFormatKHR>, error::SurfaceQueryError> {
+	pub fn physical_device_surface_formats(&self, physical_device: &PhysicalDevice) -> Result<Vec<vk::SurfaceFormatKHR>, error::SurfaceQueryError> {
 		let formats = unsafe {
 			self.loader
 				.get_physical_device_surface_formats(*physical_device.deref(), self.surface)?
@@ -125,8 +115,10 @@ impl Drop for Surface {
 		log_trace_common!("Dropping", self);
 
 		unsafe {
-			self.loader
-				.destroy_surface(self.surface, self.host_memory_allocator.as_ref());
+			self.loader.destroy_surface(
+				self.surface,
+				self.host_memory_allocator.as_ref()
+			);
 		}
 	}
 }
@@ -134,9 +126,15 @@ impl Debug for Surface {
 	fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
 		f.debug_struct("Surface")
 			.field("instance", &self.instance)
-			.field("loader", &"<ash::extensions::khr::Surface>")
+			.field(
+				"loader",
+				&"<ash::extensions::khr::Surface>"
+			)
 			.field("surface", &self.safe_handle())
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

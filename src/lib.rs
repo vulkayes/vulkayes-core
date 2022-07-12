@@ -83,11 +83,19 @@ mod test {
 		static LOGGER_INITIALIZED: AtomicBool = AtomicBool::new(false);
 
 		if LOGGER_INITIALIZED
-			.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+			.compare_exchange(
+				false,
+				true,
+				Ordering::SeqCst,
+				Ordering::SeqCst
+			)
 			.is_err()
 		{
 			let logger = Logger::new(
-				StdoutTarget::new(log::Level::Trace, IgnoreList::EMPTY_PATTERNS),
+				StdoutTarget::new(
+					log::Level::Trace,
+					IgnoreList::EMPTY_PATTERNS
+				),
 				std::time::Instant::now()
 			);
 			logger.init_boxed().expect("Could not initialize logger");

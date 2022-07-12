@@ -94,8 +94,7 @@ impl Queue {
 					.map(|&i| i.device().instance())
 					.chain(wait_for.iter().map(|&w| w.device().instance()))
 			) {
-				return [(); IMAGES]
-					.map(|_| Err(error::QueuePresentError::SwapchainsSempahoredInstanceMismatch))
+				return [(); IMAGES].map(|_| Err(error::QueuePresentError::SwapchainsSempahoredInstanceMismatch))
 			}
 		}
 
@@ -166,12 +165,7 @@ impl Queue {
 	///
 	/// * See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetDeviceQueue.html>.
 	/// * See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkGetDeviceQueue2.html>.
-	pub unsafe fn from_device(
-		device: Vrc<Device>,
-		flags: DeviceQueueCreateFlags,
-		queue_family_index: u32,
-		queue_index: u32
-	) -> Vrc<Self> {
+	pub unsafe fn from_device(device: Vrc<Device>, flags: DeviceQueueCreateFlags, queue_family_index: u32, queue_index: u32) -> Vrc<Self> {
 		log_trace_common!(
 			"Creating queue:",
 			device,
@@ -188,19 +182,16 @@ impl Queue {
 				.flags(flags)
 				.queue_family_index(queue_family_index)
 				.queue_index(queue_index);
-			device
-				.fp_v1_1()
-				.get_device_queue2(device.handle(), info.deref(), mem.as_mut_ptr());
+			device.fp_v1_1().get_device_queue2(
+				device.handle(),
+				info.deref(),
+				mem.as_mut_ptr()
+			);
 
 			mem.assume_init()
 		};
 
-		Vrc::new(Queue {
-			device,
-			queue: Vutex::new(queue),
-			queue_family_index,
-			queue_index
-		})
+		Vrc::new(Queue { device, queue: Vutex::new(queue), queue_family_index, queue_index })
 	}
 
 	/// Submits to given queue.
@@ -212,11 +203,7 @@ impl Queue {
 	/// ### Panic
 	///
 	/// This function will panic if the `Vutex` is poisoned.
-	pub unsafe fn submit_raw(
-		&self,
-		infos: impl AsRef<[vk::SubmitInfo]>,
-		fence: Option<&Fence>
-	) -> Result<(), error::QueueSubmitError> {
+	pub unsafe fn submit_raw(&self, infos: impl AsRef<[vk::SubmitInfo]>, fence: Option<&Fence>) -> Result<(), error::QueueSubmitError> {
 		let lock = self.queue.lock().expect("vutex poisoned");
 
 		log_trace_common!(
@@ -272,7 +259,10 @@ impl Debug for Queue {
 		f.debug_struct("Queue")
 			.field("device", &self.device)
 			.field("queue", &self.queue)
-			.field("queue_family_index", &self.queue_family_index)
+			.field(
+				"queue_family_index",
+				&self.queue_family_index
+			)
 			.field("queue_index", &self.queue_index)
 			.finish()
 	}

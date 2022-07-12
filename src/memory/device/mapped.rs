@@ -7,9 +7,8 @@ use std::{
 
 use ash::vk;
 
-use crate::{device::Device, prelude::Vrc};
-
 use super::{MapMemoryImpl, UnmapMemoryImpl};
+use crate::{device::Device, prelude::Vrc};
 
 pub(super) struct DeviceMemoryMapping {
 	pub ptr: Option<NonNull<[u8]>>,
@@ -18,13 +17,7 @@ pub(super) struct DeviceMemoryMapping {
 	pub unmap_impl: UnmapMemoryImpl
 }
 impl DeviceMemoryMapping {
-	pub fn map(
-		&mut self,
-		device: &Vrc<Device>,
-		memory: vk::DeviceMemory,
-		bind_offset: vk::DeviceSize,
-		size: NonZeroU64
-	) -> Result<(), MapError> {
+	pub fn map(&mut self, device: &Vrc<Device>, memory: vk::DeviceMemory, bind_offset: vk::DeviceSize, size: NonZeroU64) -> Result<(), MapError> {
 		log_trace_common!("Mapping memory:", self);
 		let ptr = (self.map_impl)(device, memory, bind_offset, size)?;
 
@@ -33,13 +26,7 @@ impl DeviceMemoryMapping {
 		Ok(())
 	}
 
-	pub fn unmap(
-		&mut self,
-		device: &Vrc<Device>,
-		memory: vk::DeviceMemory,
-		bind_offset: vk::DeviceSize,
-		size: NonZeroU64
-	) -> bool {
+	pub fn unmap(&mut self, device: &Vrc<Device>, memory: vk::DeviceMemory, bind_offset: vk::DeviceSize, size: NonZeroU64) -> bool {
 		log_trace_common!("Unmapping memory:", self);
 		match self.ptr.take() {
 			None => false,
@@ -58,8 +45,14 @@ impl fmt::Debug for DeviceMemoryMapping {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		f.debug_struct("DeviceMemoryMapping")
 			.field("ptr", &self.ptr)
-			.field("map_impl", &(self.map_impl.deref() as *const _))
-			.field("unmap_impl", &(self.unmap_impl.deref() as *const _))
+			.field(
+				"map_impl",
+				&(self.map_impl.deref() as *const _)
+			)
+			.field(
+				"unmap_impl",
+				&(self.unmap_impl.deref() as *const _)
+			)
 			.finish()
 	}
 }
@@ -91,12 +84,11 @@ pub enum SliceWriteStride {
 impl SliceWriteStride {
 	pub fn for_t<T>(&self) -> usize {
 		match self {
-			SliceWriteStride::Implicit => {
-				crate::util::align_up(std::mem::size_of::<T>(), std::mem::align_of::<T>())
-			}
-			SliceWriteStride::Align(align) => {
-				crate::util::align_up(std::mem::size_of::<T>(), align.get())
-			}
+			SliceWriteStride::Implicit => crate::util::align_up(
+				std::mem::size_of::<T>(),
+				std::mem::align_of::<T>()
+			),
+			SliceWriteStride::Align(align) => crate::util::align_up(std::mem::size_of::<T>(), align.get()),
 			SliceWriteStride::Stride(stride) => stride.get().max(std::mem::size_of::<T>())
 		}
 	}
@@ -165,9 +157,7 @@ impl<'a> DeviceMemoryMappingAccess<'a> {
 					count * std::mem::size_of::<T>()
 				);
 			}
-		} else if stride % std::mem::align_of::<T>() == 0
-			&& bytes.as_mut_ptr() as usize % std::mem::align_of::<T>() == 0
-		{
+		} else if stride % std::mem::align_of::<T>() == 0 && bytes.as_mut_ptr() as usize % std::mem::align_of::<T>() == 0 {
 			// If stride is not the same as the implicit stride, then this will have to be a manual loop
 			// But if both the stride and destination pointer are aligned, then we can use aligned writes
 			for index in 0 .. count {

@@ -83,8 +83,7 @@ mod test {
 
 	#[test]
 	fn transparent_transmute_ref_mut() {
-		let mut value =
-			unsafe { std::mem::MaybeUninit::<DescriptorSetWrite>::zeroed().assume_init() };
+		let mut value = unsafe { std::mem::MaybeUninit::<DescriptorSetWrite>::zeroed().assume_init() };
 		let muted = Transparent::transmute_ref_mut(&mut value);
 
 		assert_first_last_byte_zero(&muted);
@@ -93,10 +92,7 @@ mod test {
 	#[test]
 	fn transparent_transmute_slice() {
 		let value = unsafe {
-			[
-				std::mem::MaybeUninit::<DescriptorSetWrite>::zeroed().assume_init(),
-				std::mem::MaybeUninit::<DescriptorSetWrite>::zeroed().assume_init()
-			]
+			[std::mem::MaybeUninit::<DescriptorSetWrite>::zeroed().assume_init(), std::mem::MaybeUninit::<DescriptorSetWrite>::zeroed().assume_init()]
 		};
 		let muted = Transparent::transmute_slice(&value);
 
@@ -108,10 +104,7 @@ mod test {
 	#[test]
 	fn transparent_transmute_slice_mut() {
 		let mut value = unsafe {
-			[
-				std::mem::MaybeUninit::<DescriptorSetWrite>::zeroed().assume_init(),
-				std::mem::MaybeUninit::<DescriptorSetWrite>::zeroed().assume_init()
-			]
+			[std::mem::MaybeUninit::<DescriptorSetWrite>::zeroed().assume_init(), std::mem::MaybeUninit::<DescriptorSetWrite>::zeroed().assume_init()]
 		};
 		let muted = Transparent::transmute_slice_mut(&mut value);
 

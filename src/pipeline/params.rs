@@ -3,9 +3,7 @@ use ash::vk;
 unsafe impl crate::util::transparent::Transparent for vk::PipelineShaderStageCreateInfoBuilder<'_> {
 	type Target = vk::PipelineShaderStageCreateInfo;
 }
-unsafe impl crate::util::transparent::Transparent
-	for vk::PipelineColorBlendAttachmentStateBuilder<'_>
-{
+unsafe impl crate::util::transparent::Transparent for vk::PipelineColorBlendAttachmentStateBuilder<'_> {
 	type Target = vk::PipelineColorBlendAttachmentState;
 }
 
@@ -40,18 +38,17 @@ unsafe_enum_variants! {
 }
 impl Default for PolygonMode {
 	fn default() -> Self {
-		PolygonMode::Fill(vk::CullModeFlags::NONE, vk::FrontFace::COUNTER_CLOCKWISE)
+		PolygonMode::Fill(
+			vk::CullModeFlags::NONE,
+			vk::FrontFace::COUNTER_CLOCKWISE
+		)
 	}
 }
 
 #[derive(Debug, Copy, Clone)]
 pub enum DepthBias {
 	Disabled,
-	Enabled {
-		constant_factor: f32,
-		clamp: f32,
-		slope_factor: f32
-	},
+	Enabled { constant_factor: f32, clamp: f32, slope_factor: f32 },
 	Dynamic
 }
 impl Default for DepthBias {
@@ -63,11 +60,12 @@ impl Into<(bool, f32, f32, f32)> for DepthBias {
 	fn into(self) -> (bool, f32, f32, f32) {
 		match self {
 			DepthBias::Disabled => (false, 0.0, 0.0, 0.0),
-			DepthBias::Enabled {
+			DepthBias::Enabled { constant_factor, clamp, slope_factor } => (
+				true,
 				constant_factor,
 				clamp,
 				slope_factor
-			} => (true, constant_factor, clamp, slope_factor),
+			),
 			DepthBias::Dynamic => (true, f32::NAN, f32::NAN, f32::NAN)
 		}
 	}
@@ -181,15 +179,7 @@ impl
 				false,
 				false
 			),
-			StencilTest::Enabled {
-				fail_op,
-				pass_op,
-				depth_fail_op,
-				compare_op,
-				compare_mask,
-				write_mask,
-				reference
-			} => {
+			StencilTest::Enabled { fail_op, pass_op, depth_fail_op, compare_op, compare_mask, write_mask, reference } => {
 				let cmp_mask = compare_mask.unwrap_or([0, 0]);
 				let wrt_mask = write_mask.unwrap_or([0, 0]);
 				let rfc = reference.unwrap_or([0, 0]);

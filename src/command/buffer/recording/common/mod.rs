@@ -20,11 +20,7 @@ impl<'a> CommandBufferRecordingLockCommon<'a> {
 		let pool_lock = command_buffer.pool().lock_handle();
 		let lock = command_buffer.lock_handle();
 
-		CommandBufferRecordingLockCommon {
-			pool_lock,
-			lock,
-			buffer: command_buffer
-		}
+		CommandBufferRecordingLockCommon { pool_lock, lock, buffer: command_buffer }
 	}
 
 	pub(super) fn handle(&self) -> vk::CommandBuffer {

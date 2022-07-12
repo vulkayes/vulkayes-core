@@ -2,13 +2,12 @@ use std::{fmt, ops::Deref};
 
 use ash::vk;
 
+use super::{error, params};
 use crate::{
 	memory::device::{allocator::ImageMemoryAllocator, DeviceMemoryAllocation},
 	prelude::{Device, HasHandle, HostMemoryAllocator, Vrc},
 	queue::sharing_mode::SharingMode
 };
-
-use super::{error, params};
 
 pub struct Image {
 	device: Vrc<Device>,
@@ -57,7 +56,12 @@ impl Image {
 			.initial_layout(layout);
 
 		unsafe {
-			Self::from_create_info(device, create_info, allocator_param, host_memory_allocator)
+			Self::from_create_info(
+				device,
+				create_info,
+				allocator_param,
+				host_memory_allocator
+			)
 		}
 	}
 
@@ -84,10 +88,7 @@ impl Image {
 		let image = device.create_image(c_info, host_memory_allocator.as_ref())?;
 
 		let memory = match allocator_params {
-			params::ImageAllocatorParams::Some {
-				allocator,
-				requirements
-			} => {
+			params::ImageAllocatorParams::Some { allocator, requirements } => {
 				let memory = allocator
 					.allocate(image, requirements)
 					.map_err(error::ImageError::AllocationError)?;
@@ -100,7 +101,11 @@ impl Image {
 				}
 
 				// TODO: Error here leaks buffer
-				device.bind_image_memory(image, *memory.deref(), memory.bind_offset())?;
+				device.bind_image_memory(
+					image,
+					*memory.deref(),
+					memory.bind_offset()
+				)?;
 				Some(memory)
 			}
 			params::ImageAllocatorParams::None => None
@@ -112,11 +117,9 @@ impl Image {
 			device,
 			image,
 			memory,
-
 			usage: c_info.usage,
 			format: c_info.format,
 			size,
-
 			host_memory_allocator
 		}))
 	}
@@ -147,15 +150,7 @@ impl Image {
 			host_memory_allocator
 		);
 
-		Image {
-			device,
-			image,
-			memory,
-			usage,
-			format,
-			size,
-			host_memory_allocator
-		}
+		Image { device, image, memory, usage, format, size, host_memory_allocator }
 	}
 
 	pub const fn device(&self) -> &Vrc<Device> {
@@ -189,8 +184,10 @@ impl Drop for Image {
 		log_trace_common!("Dropping", self);
 
 		unsafe {
-			self.device
-				.destroy_image(self.image, self.host_memory_allocator.as_ref());
+			self.device.destroy_image(
+				self.image,
+				self.host_memory_allocator.as_ref()
+			);
 		}
 	}
 }
@@ -209,7 +206,10 @@ impl fmt::Debug for Image {
 			.field("usage", &self.usage)
 			.field("format", &self.format)
 			.field("size", &self.size)
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

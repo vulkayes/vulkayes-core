@@ -2,15 +2,8 @@ use std::{fmt, ops::Deref};
 
 use ash::vk;
 
-use crate::{
-	device::Device,
-	memory::host::HostMemoryAllocator,
-	prelude::Vrc,
-	queue::Queue,
-	util::sync::Vutex
-};
-
 use super::error::{CommandBufferError, CommandPoolError};
+use crate::{device::Device, memory::host::HostMemoryAllocator, prelude::Vrc, queue::Queue, util::sync::Vutex};
 
 macro_rules! impl_allocate_command_buffers_array {
 	(
@@ -97,18 +90,20 @@ impl CommandPool {
 	);
 
 	/// Note: `PROTECTED` flag value is currently ignored.
-	pub fn new(
-		queue: &Queue,
-		flags: vk::CommandPoolCreateFlags,
-		host_memory_allocator: HostMemoryAllocator
-	) -> Result<Vrc<Self>, CommandPoolError> {
+	pub fn new(queue: &Queue, flags: vk::CommandPoolCreateFlags, host_memory_allocator: HostMemoryAllocator) -> Result<Vrc<Self>, CommandPoolError> {
 		let flags = flags & !vk::CommandPoolCreateFlags::PROTECTED;
 
 		let create_info = vk::CommandPoolCreateInfo::builder()
 			.flags(flags)
 			.queue_family_index(queue.queue_family_index());
 
-		unsafe { Self::from_create_info(queue, create_info, host_memory_allocator) }
+		unsafe {
+			Self::from_create_info(
+				queue,
+				create_info,
+				host_memory_allocator
+			)
+		}
 	}
 
 	/// ### Safety
@@ -125,9 +120,10 @@ impl CommandPool {
 			create_info.deref(),
 			host_memory_allocator
 		);
-		let pool = queue
-			.device()
-			.create_command_pool(create_info.deref(), host_memory_allocator.as_ref())?;
+		let pool = queue.device().create_command_pool(
+			create_info.deref(),
+			host_memory_allocator.as_ref()
+		)?;
 
 		Ok(Vrc::new(Self {
 			device: queue.device().clone(),
@@ -160,11 +156,7 @@ impl CommandPool {
 	pub fn reset(&self, return_resources: bool) -> Result<(), CommandPoolError> {
 		let lock = self.pool.lock().expect("vutex poisoned");
 
-		let flags = if return_resources {
-			vk::CommandPoolResetFlags::RELEASE_RESOURCES
-		} else {
-			vk::CommandPoolResetFlags::empty()
-		};
+		let flags = if return_resources { vk::CommandPoolResetFlags::RELEASE_RESOURCES } else { vk::CommandPoolResetFlags::empty() };
 
 		unsafe {
 			self.device
@@ -245,8 +237,10 @@ impl Drop for CommandPool {
 		log_trace_common!("Dropping", self, lock);
 
 		unsafe {
-			self.device
-				.destroy_command_pool(*lock, self.host_memory_allocator.as_ref())
+			self.device.destroy_command_pool(
+				*lock,
+				self.host_memory_allocator.as_ref()
+			)
 		}
 	}
 }
@@ -254,9 +248,15 @@ impl fmt::Debug for CommandPool {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		f.debug_struct("CommandPool")
 			.field("device", &self.device)
-			.field("queue_family_index", &self.queue_family_index)
+			.field(
+				"queue_family_index",
+				&self.queue_family_index
+			)
 			.field("pool", &self.pool)
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

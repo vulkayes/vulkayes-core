@@ -20,7 +20,13 @@ impl Sampler {
 	) -> Result<Vrc<Self>, super::error::SamplerError> {
 		let create_info: vk::SamplerCreateInfoBuilder<'static> = create_info.into();
 
-		unsafe { Self::from_create_info(device, create_info, host_memory_allocator) }
+		unsafe {
+			Self::from_create_info(
+				device,
+				create_info,
+				host_memory_allocator
+			)
+		}
 	}
 
 	pub unsafe fn from_create_info(
@@ -35,7 +41,10 @@ impl Sampler {
 			host_memory_allocator
 		);
 
-		let sampler = device.create_sampler(create_info.deref(), host_memory_allocator.as_ref())?;
+		let sampler = device.create_sampler(
+			create_info.deref(),
+			host_memory_allocator.as_ref()
+		)?;
 
 		Ok(Vrc::new(Sampler {
 			device,
@@ -58,8 +67,10 @@ impl Drop for Sampler {
 		log_trace_common!("Dropping", self);
 
 		unsafe {
-			self.device
-				.destroy_sampler(self.sampler, self.host_memory_allocator.as_ref())
+			self.device.destroy_sampler(
+				self.sampler,
+				self.host_memory_allocator.as_ref()
+			)
 		}
 	}
 }
@@ -68,7 +79,10 @@ impl fmt::Debug for Sampler {
 		f.debug_struct("Sampler")
 			.field("device", &self.device)
 			.field("sampler", &self.safe_handle())
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

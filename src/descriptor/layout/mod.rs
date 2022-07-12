@@ -2,9 +2,8 @@ use std::{fmt, ops::Deref};
 
 use ash::vk;
 
-use crate::prelude::{Device, HasHandle, HostMemoryAllocator, Vrc};
-
 use super::error::DescriptorSetLayoutError;
+use crate::prelude::{Device, HasHandle, HostMemoryAllocator, Vrc};
 
 pub mod params;
 
@@ -33,7 +32,13 @@ impl DescriptorSetLayout {
 			.flags(flags)
 			.bindings(bindings.as_slice());
 
-		unsafe { Self::from_create_info(device, create_info, host_memory_allocator) }
+		unsafe {
+			Self::from_create_info(
+				device,
+				create_info,
+				host_memory_allocator
+			)
+		}
 	}
 
 	/// ### Safety
@@ -51,8 +56,10 @@ impl DescriptorSetLayout {
 			host_memory_allocator
 		);
 
-		let layout = device
-			.create_descriptor_set_layout(create_info.deref(), host_memory_allocator.as_ref())?;
+		let layout = device.create_descriptor_set_layout(
+			create_info.deref(),
+			host_memory_allocator.as_ref()
+		)?;
 
 		Ok(Vrc::new(DescriptorSetLayout {
 			device,
@@ -75,8 +82,10 @@ impl Drop for DescriptorSetLayout {
 		log_trace_common!("Dropping", self);
 
 		unsafe {
-			self.device
-				.destroy_descriptor_set_layout(self.layout, self.host_memory_allocator.as_ref())
+			self.device.destroy_descriptor_set_layout(
+				self.layout,
+				self.host_memory_allocator.as_ref()
+			)
 		}
 	}
 }
@@ -85,7 +94,10 @@ impl fmt::Debug for DescriptorSetLayout {
 		f.debug_struct("DescriptorSetLayout")
 			.field("device", &self.device)
 			.field("layout", &self.safe_handle())
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

@@ -2,12 +2,11 @@ use std::convert::TryFrom;
 
 use ash::vk;
 
+use super::error::SubpassDescriptionError;
 use crate::{
 	prelude::Transparent,
 	resource::image::layout::{ImageLayoutAttachment, ImageLayoutFinal}
 };
-
-use super::error::SubpassDescriptionError;
 
 #[derive(Debug)]
 pub enum AttachmentOps {
@@ -157,10 +156,12 @@ where
 	fn try_from(holder: &'a SubpassDescriptionHolder<I, CR, P>) -> Result<Self, Self::Error> {
 		SubpassDescription::new(
 			holder.input_attachments.as_ref().map(AsRef::as_ref),
-			holder
-				.color_resolve_attachments
-				.as_ref()
-				.map(|(c, r)| (c.as_ref(), r.as_ref().map(AsRef::as_ref))),
+			holder.color_resolve_attachments.as_ref().map(|(c, r)| {
+				(
+					c.as_ref(),
+					r.as_ref().map(AsRef::as_ref)
+				)
+			}),
 			holder.depth_stencil_attachment.as_ref(),
 			holder.preserve_attachments.as_ref().map(AsRef::as_ref)
 		)

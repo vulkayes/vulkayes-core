@@ -1,7 +1,8 @@
 use std::num::NonZeroU32;
 
-use crate::prelude::Transparent;
 use ash::vk;
+
+use crate::prelude::Transparent;
 
 vk_enum_subset! {
 	/// Enum for supported descriptor set layout types and don't require special handling.

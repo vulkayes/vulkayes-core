@@ -2,13 +2,8 @@ use std::{num::NonZeroU64, ops::DerefMut};
 
 use ash::vk;
 
+use super::super::error::{DescriptorImageInfoError, DescriptorInlineUniformBlockInfoError, DescriptorSetWriteError};
 use crate::prelude::{Buffer, HasHandle, ImageView, SafeHandle, Sampler, Transparent};
-
-use super::super::error::{
-	DescriptorImageInfoError,
-	DescriptorInlineUniformBlockInfoError,
-	DescriptorSetWriteError
-};
 
 vk_builder_wrap! {
 	/// Transparent wrapper struct over `DescriptorImageInfoBuilder`.
@@ -115,9 +110,7 @@ vk_builder_wrap! {
 	}
 }
 /// This is a hack. Waiting on `const_mut_refs` but it works like this on stable.
-pub struct DescriptorInlineUniformBlockInfoRefMut<'a>(
-	pub &'a mut DescriptorInlineUniformBlockInfo<'a>
-);
+pub struct DescriptorInlineUniformBlockInfoRefMut<'a>(pub &'a mut DescriptorInlineUniformBlockInfo<'a>);
 
 unsafe_enum_variants! {
 	enum DescriptorSetWriteDataInner ['a] {

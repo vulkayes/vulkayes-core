@@ -2,9 +2,8 @@ use std::{fmt, ops::Deref};
 
 use ash::vk;
 
-use crate::prelude::{Device, HasHandle, HostMemoryAllocator, Vrc};
-
 use super::error::GraphicsPipelineError;
+use crate::prelude::{Device, HasHandle, HostMemoryAllocator, Vrc};
 
 pub struct GraphicsPipeline {
 	device: Vrc<Device>,
@@ -107,8 +106,10 @@ impl Drop for GraphicsPipeline {
 		log_trace_common!("Dropping", self);
 
 		unsafe {
-			self.device
-				.destroy_pipeline(self.pipeline, self.host_memory_allocator.as_ref())
+			self.device.destroy_pipeline(
+				self.pipeline,
+				self.host_memory_allocator.as_ref()
+			)
 		}
 	}
 }
@@ -117,7 +118,10 @@ impl fmt::Debug for GraphicsPipeline {
 		f.debug_struct("GraphicsPipeline")
 			.field("device", &self.device)
 			.field("pipeline", &self.safe_handle())
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

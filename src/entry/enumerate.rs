@@ -63,6 +63,10 @@ impl TryFrom<vk::ExtensionProperties> for InstanceExtensionProperties {
 }
 impl Display for InstanceExtensionProperties {
 	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-		write!(f, "{} {}", self.extension_name, self.spec_version)
+		write!(
+			f,
+			"{} {}",
+			self.extension_name, self.spec_version
+		)
 	}
 }

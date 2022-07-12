@@ -1,7 +1,6 @@
 use std::{fmt, num::NonZeroU64, ops::Deref, ptr::NonNull};
 
 use ash::vk;
-
 use mapped::DeviceMemoryMapping;
 pub use mapped::{DeviceMemoryMappingAccess, MapError, MappingAccessResult, SliceWriteStride};
 
@@ -14,23 +13,9 @@ mod mapped;
 pub mod naive;
 pub mod never;
 
-type DropAllocImpl =
-	Box<VSendSync![dyn FnOnce(&Vrc<Device>, vk::DeviceMemory, vk::DeviceSize, NonZeroU64)]>;
-type MapMemoryImpl = Box<
-	VSendSync![
-		dyn FnMut(
-			&Vrc<Device>,
-			vk::DeviceMemory,
-			vk::DeviceSize,
-			NonZeroU64
-		) -> Result<NonNull<[u8]>, MapError>
-	]
->;
-type UnmapMemoryImpl = Box<
-	VSendSync![
-		dyn FnMut(&Vrc<Device>, vk::DeviceMemory, vk::DeviceSize, NonZeroU64, NonNull<[u8]>)
-	]
->;
+type DropAllocImpl = Box<VSendSync![dyn FnOnce(&Vrc<Device>, vk::DeviceMemory, vk::DeviceSize, NonZeroU64)]>;
+type MapMemoryImpl = Box<VSendSync![dyn FnMut(&Vrc<Device>, vk::DeviceMemory, vk::DeviceSize, NonZeroU64) -> Result<NonNull<[u8]>, MapError>]>;
+type UnmapMemoryImpl = Box<VSendSync![dyn FnMut(&Vrc<Device>, vk::DeviceMemory, vk::DeviceSize, NonZeroU64, NonNull<[u8]>)]>;
 
 /// Struct that represents a device memory allocation.
 pub struct DeviceMemoryAllocation {
@@ -82,11 +67,7 @@ impl DeviceMemoryAllocation {
 			bind_offset,
 			size,
 
-			mapping: Vutex::new(DeviceMemoryMapping {
-				ptr: None,
-				map_impl,
-				unmap_impl
-			}),
+			mapping: Vutex::new(DeviceMemoryMapping { ptr: None, map_impl, unmap_impl }),
 
 			drop_impl: Some(drop_impl)
 		}
@@ -127,7 +108,12 @@ impl DeviceMemoryAllocation {
 	pub fn unmap(&self) -> bool {
 		let mut lock = self.mapping.lock().expect("vutex poisoned");
 
-		lock.unmap(&self.device, self.memory, self.bind_offset, self.size)
+		lock.unmap(
+			&self.device,
+			self.memory,
+			self.bind_offset,
+			self.size
+		)
 	}
 
 	/// Provides mutable access to the mapped memory, possibly mapping it in the process.
@@ -137,14 +123,16 @@ impl DeviceMemoryAllocation {
 	/// ### Panic
 	///
 	/// This function will panic if the `Vutex` is poisoned.
-	pub fn map_memory_with(
-		&self,
-		accessor: impl FnOnce(DeviceMemoryMappingAccess) -> MappingAccessResult
-	) -> Result<(), MapError> {
+	pub fn map_memory_with(&self, accessor: impl FnOnce(DeviceMemoryMappingAccess) -> MappingAccessResult) -> Result<(), MapError> {
 		let mut lock = self.mapping.lock().expect("vutex poisoned");
 
 		if let None = lock.ptr {
-			lock.map(&self.device, self.memory, self.bind_offset, self.size)?;
+			lock.map(
+				&self.device,
+				self.memory,
+				self.bind_offset,
+				self.size
+			)?;
 		}
 
 		// SAFETY: We are under a Vutex
@@ -161,7 +149,12 @@ impl DeviceMemoryAllocation {
 		match result {
 			MappingAccessResult::Continue => (),
 			MappingAccessResult::Unmap => {
-				lock.unmap(&self.device, self.memory, self.bind_offset, self.size);
+				lock.unmap(
+					&self.device,
+					self.memory,
+					self.bind_offset,
+					self.size
+				);
 			}
 		}
 
@@ -181,17 +174,30 @@ impl Drop for DeviceMemoryAllocation {
 		log_trace_common!("Dropping", self, lock);
 
 		if lock.ptr.is_some() {
-			lock.unmap(&self.device, self.memory, self.bind_offset, self.size);
+			lock.unmap(
+				&self.device,
+				self.memory,
+				self.bind_offset,
+				self.size
+			);
 		}
 
-		(self.drop_impl.take().unwrap())(&self.device, self.memory, self.bind_offset, self.size)
+		(self.drop_impl.take().unwrap())(
+			&self.device,
+			self.memory,
+			self.bind_offset,
+			self.size
+		)
 	}
 }
 impl fmt::Debug for DeviceMemoryAllocation {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		f.debug_struct("DeviceMemoryAllocation")
 			.field("device", &self.device)
-			.field("memory", &crate::util::fmt::format_handle(self.memory))
+			.field(
+				"memory",
+				&crate::util::fmt::format_handle(self.memory)
+			)
 			.field("bind_offset", &self.bind_offset)
 			.field("size", &self.size)
 			.field("mapping", &self.mapping)

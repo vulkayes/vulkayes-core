@@ -119,7 +119,14 @@ impl Swapchain {
 
 		let c_info = create_info.image_info.add_to_create_info(c_info);
 
-		unsafe { Self::from_create_info(device, Vrc::new(surface), c_info, host_memory_allocator) }
+		unsafe {
+			Self::from_create_info(
+				device,
+				Vrc::new(surface),
+				c_info,
+				host_memory_allocator
+			)
+		}
 	}
 
 	pub fn recreate(
@@ -132,8 +139,10 @@ impl Swapchain {
 		if self.retired.load(std::sync::atomic::Ordering::Relaxed) {
 			return Err(error::SwapchainError::SwapchainRetired)
 		}
-		self.retired
-			.store(true, std::sync::atomic::Ordering::Relaxed);
+		self.retired.store(
+			true,
+			std::sync::atomic::Ordering::Relaxed
+		);
 
 		let c_info = vk::SwapchainCreateInfoKHR::builder()
 			.surface(**self.surface)
@@ -197,7 +206,8 @@ impl Swapchain {
 		let images: Vec<_> = me
 			.loader
 			.get_swapchain_images(swapchain)? // This is still okay since we haven't given anyone else access to the `swapchain` or `me` object, no synchronization problem
-			.into_iter().enumerate()
+			.into_iter()
+			.enumerate()
 			.map(|(index, image)| {
 				image::SwapchainImage::new(
 					me.clone(),
@@ -212,7 +222,8 @@ impl Swapchain {
 							NonZeroU32::new_unchecked(c_info.image_extent.height),
 							NonZeroU32::new_unchecked(c_info.image_array_layers),
 							MipmapLevels::One()
-						).into(),
+						)
+						.into(),
 						HostMemoryAllocator::Unspecified()
 					),
 					index as u32
@@ -220,10 +231,7 @@ impl Swapchain {
 			})
 			.collect();
 
-		Ok(SwapchainData {
-			swapchain: me,
-			images
-		})
+		Ok(SwapchainData { swapchain: me, images })
 	}
 
 	/// Presents on given queue.
@@ -231,14 +239,15 @@ impl Swapchain {
 	/// ### Safety
 	///
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkQueuePresentKHR.html>
-	pub unsafe fn present(
-		&self,
-		queue: &Queue,
-		info: impl Deref<Target = vk::PresentInfoKHR>
-	) -> Result<QueuePresentSuccess, QueuePresentError> {
+	pub unsafe fn present(&self, queue: &Queue, info: impl Deref<Target = vk::PresentInfoKHR>) -> Result<QueuePresentSuccess, QueuePresentError> {
 		let queue_lock = queue.lock().expect("queue Vutex poisoned");
 
-		log_trace_common!("Presenting on queue:", self, queue_lock, info.deref());
+		log_trace_common!(
+			"Presenting on queue:",
+			self,
+			queue_lock,
+			info.deref()
+		);
 
 		self.loader
 			.queue_present(*queue_lock, info.deref())
@@ -246,11 +255,7 @@ impl Swapchain {
 			.map_err(Into::into)
 	}
 
-	pub fn acquire_next(
-		&self,
-		timeout: crate::util::WaitTimeout,
-		synchronization: AcquireSynchronization
-	) -> error::AcquireResult {
+	pub fn acquire_next(&self, timeout: crate::util::WaitTimeout, synchronization: AcquireSynchronization) -> error::AcquireResult {
 		#[cfg(feature = "runtime_implicit_validations")]
 		{
 			if let Some(semaphore) = synchronization.semaphore() {
@@ -286,7 +291,9 @@ impl Swapchain {
 		};
 
 		match result {
-			Ok((index, false)) => Ok(error::AcquireResultValue::SUCCESS(index)),
+			Ok((index, false)) => Ok(error::AcquireResultValue::SUCCESS(
+				index
+			)),
 			Ok((index, true)) => Ok(error::AcquireResultValue::SUBOPTIMAL_KHR(index)),
 			Err(e) => Err(e.into())
 		}
@@ -319,8 +326,10 @@ impl Drop for Swapchain {
 		log_trace_common!("Dropping", self, lock);
 
 		unsafe {
-			self.loader
-				.destroy_swapchain(*lock, self.host_memory_allocator.as_ref());
+			self.loader.destroy_swapchain(
+				*lock,
+				self.host_memory_allocator.as_ref()
+			);
 		}
 	}
 }
@@ -329,9 +338,15 @@ impl Debug for Swapchain {
 		f.debug_struct("Swapchain")
 			.field("surface", &self.surface)
 			.field("device", &self.device)
-			.field("loader", &"<ash::extensions::khr::Swapchain>")
+			.field(
+				"loader",
+				&"<ash::extensions::khr::Swapchain>"
+			)
 			.field("swapchain", &self.swapchain)
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

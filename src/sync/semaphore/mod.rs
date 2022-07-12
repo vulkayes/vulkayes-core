@@ -37,19 +37,19 @@ pub struct Semaphore {
 	host_memory_allocator: HostMemoryAllocator
 }
 impl Semaphore {
-	pub fn binary(
-		device: Vrc<Device>,
-		host_memory_allocator: HostMemoryAllocator
-	) -> Result<BinarySemaphore, error::SemaphoreError> {
-		let mut type_create_info =
-			vk::SemaphoreTypeCreateInfo::builder().semaphore_type(vk::SemaphoreType::BINARY);
+	pub fn binary(device: Vrc<Device>, host_memory_allocator: HostMemoryAllocator) -> Result<BinarySemaphore, error::SemaphoreError> {
+		let mut type_create_info = vk::SemaphoreTypeCreateInfo::builder().semaphore_type(vk::SemaphoreType::BINARY);
 
 		let create_info = vk::SemaphoreCreateInfo::builder().push_next(&mut type_create_info);
 
 		unsafe {
-			Self::from_create_info(device, create_info, host_memory_allocator)
-				.map_err(Into::into)
-				.map(|s| BinarySemaphore::new(s))
+			Self::from_create_info(
+				device,
+				create_info,
+				host_memory_allocator
+			)
+			.map_err(Into::into)
+			.map(|s| BinarySemaphore::new(s))
 		}
 	}
 
@@ -67,13 +67,14 @@ impl Semaphore {
 			create_info.deref(),
 			host_memory_allocator
 		);
-		let semaphore =
-			device.create_semaphore(create_info.deref(), host_memory_allocator.as_ref())?;
+		let semaphore = device.create_semaphore(
+			create_info.deref(),
+			host_memory_allocator.as_ref()
+		)?;
 
 		Ok(Vrc::new(Semaphore {
 			device,
 			semaphore: Vutex::new(semaphore),
-
 			host_memory_allocator
 		}))
 	}
@@ -93,8 +94,10 @@ impl Drop for Semaphore {
 		log_trace_common!("Dropping", self, lock);
 
 		unsafe {
-			self.device
-				.destroy_semaphore(*lock, self.host_memory_allocator.as_ref())
+			self.device.destroy_semaphore(
+				*lock,
+				self.host_memory_allocator.as_ref()
+			)
 		}
 	}
 }
@@ -103,7 +106,10 @@ impl Debug for Semaphore {
 		f.debug_struct("Semaphore")
 			.field("device", &self.device)
 			.field("semaphore", &self.semaphore)
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

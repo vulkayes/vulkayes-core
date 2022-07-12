@@ -227,10 +227,7 @@ pub fn format_handle<H: ash::vk::Handle>(handle: H) -> impl Debug + Display {
 		}
 	}
 
-	Inner {
-		ty: H::TYPE,
-		raw: handle.as_raw()
-	}
+	Inner { ty: H::TYPE, raw: handle.as_raw() }
 }
 
 #[repr(transparent)]
@@ -238,7 +235,9 @@ pub fn format_handle<H: ash::vk::Handle>(handle: H) -> impl Debug + Display {
 pub struct VkVersion(pub u32);
 impl VkVersion {
 	pub fn new(major: u32, minor: u32, patch: u32) -> Self {
-		VkVersion(ash::vk::make_api_version(0, major, minor, patch))
+		VkVersion(ash::vk::make_api_version(
+			0, major, minor, patch
+		))
 	}
 }
 impl Debug for VkVersion {
@@ -273,11 +272,22 @@ pub fn format_uuid(uuid: [u8; 16]) -> impl Debug + Display {
 			write!(
 				f,
 				"{:0>2x}{:0>2x}{:0>2x}{:0>2x}-{:0>2x}{:0>2x}-{:0>2x}{:0>2x}-{:0>2x}{:0>2x}-{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}{:0>2x}",
-				self.uuid[0], self.uuid[1], self.uuid[2], self.uuid[3],
-				self.uuid[4], self.uuid[5],
-				self.uuid[6], self.uuid[7],
-				self.uuid[8], self.uuid[9],
-				self.uuid[10], self.uuid[11], self.uuid[12], self.uuid[13], self.uuid[14], self.uuid[15]
+				self.uuid[0],
+				self.uuid[1],
+				self.uuid[2],
+				self.uuid[3],
+				self.uuid[4],
+				self.uuid[5],
+				self.uuid[6],
+				self.uuid[7],
+				self.uuid[8],
+				self.uuid[9],
+				self.uuid[10],
+				self.uuid[11],
+				self.uuid[12],
+				self.uuid[13],
+				self.uuid[14],
+				self.uuid[15]
 			)
 		}
 	}

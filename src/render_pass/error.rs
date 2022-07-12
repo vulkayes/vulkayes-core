@@ -23,8 +23,6 @@ vk_result_error! {
 #[derive(Error, Debug)]
 pub enum SubpassDescriptionError {
 	#[cfg(feature = "runtime_implicit_validations")]
-	#[error(
-		"Number of resolve attachment references must match number of color attachment references"
-	)]
+	#[error("Number of resolve attachment references must match number of color attachment references")]
 	ResolveAttachmentsLengthMismatch
 }

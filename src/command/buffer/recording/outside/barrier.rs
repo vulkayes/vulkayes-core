@@ -2,15 +2,7 @@ use std::num::NonZeroU64;
 
 use ash::vk;
 
-use crate::prelude::{
-	Buffer,
-	HasHandle,
-	Image,
-	ImageLayoutFinal,
-	ImageSubresourceRange,
-	Queue,
-	Transparent
-};
+use crate::prelude::{Buffer, HasHandle, Image, ImageLayoutFinal, ImageSubresourceRange, Queue, Transparent};
 
 // salmon
 vk_builder_wrap! {

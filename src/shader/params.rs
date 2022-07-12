@@ -27,9 +27,8 @@ impl<'a> ShaderEntryPoint<'a> {
 
 /// Trait for values that are to be used as push constants.
 pub unsafe trait PushConstantsTrait: Sized + std::fmt::Debug {
-	const STAGE_FLAGS: vk::ShaderStageFlags = vk::ShaderStageFlags::from_raw(
-		vk::ShaderStageFlags::VERTEX.as_raw() | vk::ShaderStageFlags::FRAGMENT.as_raw()
-	);
+	const STAGE_FLAGS: vk::ShaderStageFlags =
+		vk::ShaderStageFlags::from_raw(vk::ShaderStageFlags::VERTEX.as_raw() | vk::ShaderStageFlags::FRAGMENT.as_raw());
 	const OFFSET_DIV_FOUR: u32 = 0;
 	// TODO: Is there any way to force `Self` to **not** be a ZST?
 	const SIZE_DIV_FOUR: u32 = (std::mem::size_of::<Self>() / 4) as u32;
@@ -38,8 +37,7 @@ pub unsafe trait PushConstantsTrait: Sized + std::fmt::Debug {
 		PushConstantRange::new(
 			Self::STAGE_FLAGS,
 			Self::OFFSET_DIV_FOUR,
-			std::num::NonZeroU32::new(Self::SIZE_DIV_FOUR)
-				.expect("Push constants block struct must have size of at least 4 bytes")
+			std::num::NonZeroU32::new(Self::SIZE_DIV_FOUR).expect("Push constants block struct must have size of at least 4 bytes")
 		)
 	}
 
@@ -61,12 +59,7 @@ pub struct AlignedMatrix2<T: Copy + Default> {
 }
 impl<T: Copy + Default> From<[[T; 3]; 2]> for AlignedMatrix2<T> {
 	fn from(arr: [[T; 3]; 2]) -> Self {
-		AlignedMatrix2 {
-			data: [
-				[arr[0][0], arr[0][1], arr[0][2], T::default()],
-				[arr[1][0], arr[1][1], arr[0][1], T::default()]
-			]
-		}
+		AlignedMatrix2 { data: [[arr[0][0], arr[0][1], arr[0][2], T::default()], [arr[1][0], arr[1][1], arr[0][1], T::default()]] }
 	}
 }
 
@@ -565,7 +558,10 @@ mod test {
 			}
 		}
 
-		eprintln!("{:#?}", VertexShaderSpecializationConstants::offsets());
+		eprintln!(
+			"{:#?}",
+			VertexShaderSpecializationConstants::offsets()
+		);
 		eprintln!(
 			"{:#?}",
 			VertexShaderSpecializationConstants::specialization_map_entries()

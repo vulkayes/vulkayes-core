@@ -2,16 +2,11 @@ use std::{num::NonZeroU64, ops::Deref, ptr::NonNull};
 
 use ash::vk;
 
-use crate::{
-	device::Device,
-	physical_device::enumerate::PhysicalDeviceMemoryProperties,
-	prelude::Vrc
-};
-
 use super::{
 	allocator::{BufferMemoryAllocator, ImageMemoryAllocator},
 	DeviceMemoryAllocation
 };
+use crate::{device::Device, physical_device::enumerate::PhysicalDeviceMemoryProperties, prelude::Vrc};
 
 vk_result_error! {
 	#[derive(Debug)]
@@ -45,11 +40,7 @@ impl NaiveDeviceMemoryAllocator {
 		NaiveDeviceMemoryAllocator { device, properties }
 	}
 
-	fn find_memory_index(
-		&self,
-		requirements: vk::MemoryRequirements,
-		required_flags: vk::MemoryPropertyFlags
-	) -> Result<u32, AllocationError> {
+	fn find_memory_index(&self, requirements: vk::MemoryRequirements, required_flags: vk::MemoryPropertyFlags) -> Result<u32, AllocationError> {
 		for (index, memory_type) in self.properties.memory_types.iter().enumerate() {
 			// If this type is in the mask of allowed types
 			if requirements.memory_type_bits & (1 << index as u32) != 0 {
@@ -63,10 +54,7 @@ impl NaiveDeviceMemoryAllocator {
 		Err(AllocationError::NoSuitableMemoryType)
 	}
 
-	fn allocate(
-		&self,
-		info: impl Deref<Target = vk::MemoryAllocateInfo>
-	) -> Result<DeviceMemoryAllocation, AllocationError> {
+	fn allocate(&self, info: impl Deref<Target = vk::MemoryAllocateInfo>) -> Result<DeviceMemoryAllocation, AllocationError> {
 		let memory = unsafe { self.device.allocate_memory(&info, None)? };
 		let size = unsafe { NonZeroU64::new_unchecked(info.allocation_size) };
 
@@ -85,8 +73,7 @@ impl NaiveDeviceMemoryAllocator {
 					)? as *mut u8;
 					debug_assert_ne!(ptr, std::ptr::null_mut());
 
-					let slice_ptr =
-						std::slice::from_raw_parts_mut(ptr, size.get() as usize) as *mut [u8];
+					let slice_ptr = std::slice::from_raw_parts_mut(ptr, size.get() as usize) as *mut [u8];
 					Ok(NonNull::new_unchecked(slice_ptr))
 				}),
 				Box::new(|device, memory, _, _, _| device.unmap_memory(memory)),
@@ -103,11 +90,7 @@ unsafe impl ImageMemoryAllocator for NaiveDeviceMemoryAllocator {
 	type AllocationRequirements = vk::MemoryPropertyFlags;
 	type Error = AllocationError;
 
-	fn allocate(
-		&self,
-		image: vk::Image,
-		required_flags: Self::AllocationRequirements
-	) -> Result<DeviceMemoryAllocation, Self::Error> {
+	fn allocate(&self, image: vk::Image, required_flags: Self::AllocationRequirements) -> Result<DeviceMemoryAllocation, Self::Error> {
 		let memory_requirements = unsafe { self.device.get_image_memory_requirements(image) };
 		let memory_index = self.find_memory_index(memory_requirements, required_flags)?;
 
@@ -128,11 +111,7 @@ unsafe impl BufferMemoryAllocator for NaiveDeviceMemoryAllocator {
 	type AllocationRequirements = vk::MemoryPropertyFlags;
 	type Error = AllocationError;
 
-	fn allocate(
-		&self,
-		buffer: vk::Buffer,
-		required_flags: Self::AllocationRequirements
-	) -> Result<DeviceMemoryAllocation, Self::Error> {
+	fn allocate(&self, buffer: vk::Buffer, required_flags: Self::AllocationRequirements) -> Result<DeviceMemoryAllocation, Self::Error> {
 		let memory_requirements = unsafe { self.device.get_buffer_memory_requirements(buffer) };
 		let memory_index = self.find_memory_index(memory_requirements, required_flags)?;
 

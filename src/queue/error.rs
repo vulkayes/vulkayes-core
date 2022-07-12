@@ -75,9 +75,7 @@ impl From<bool> for QueuePresentSuccess {
 		}
 	}
 }
-pub fn match_queue_present_result(
-	result: vk::Result
-) -> Result<QueuePresentSuccess, QueuePresentError> {
+pub fn match_queue_present_result(result: vk::Result) -> Result<QueuePresentSuccess, QueuePresentError> {
 	match result {
 		vk::Result::SUCCESS => Ok(QueuePresentSuccess::SUCCESS),
 		vk::Result::SUBOPTIMAL_KHR => Ok(QueuePresentSuccess::SUBOPTIMAL_KHR),

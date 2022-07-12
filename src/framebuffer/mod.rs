@@ -25,14 +25,16 @@ impl Framebuffer {
 		#[cfg(feature = "runtime_implicit_validations")]
 		{
 			if !crate::util::validations::validate_all_match(
-				std::iter::once(render_pass.device())
-					.chain(attachments.iter().map(|a| a.image().device()))
+				std::iter::once(render_pass.device()).chain(attachments.iter().map(|a| a.image().device()))
 			) {
 				return Err(error::FramebufferError::RenderPassAttachmentsDeviceMismatch)
 			}
 		};
 
-		let attachment_handles = collect_iter_faster!(attachments.iter().map(|a| a.handle()), 8);
+		let attachment_handles = collect_iter_faster!(
+			attachments.iter().map(|a| a.handle()),
+			8
+		);
 
 		let create_info = vk::FramebufferCreateInfo::builder()
 			.render_pass(render_pass.handle())
@@ -42,7 +44,12 @@ impl Framebuffer {
 			.layers(layers.get());
 
 		unsafe {
-			Self::from_create_info(render_pass, attachments, create_info, host_memory_allocator)
+			Self::from_create_info(
+				render_pass,
+				attachments,
+				create_info,
+				host_memory_allocator
+			)
 		}
 	}
 
@@ -59,9 +66,10 @@ impl Framebuffer {
 			host_memory_allocator
 		);
 
-		let framebuffer = render_pass
-			.device()
-			.create_framebuffer(create_info.deref(), host_memory_allocator.as_ref())?;
+		let framebuffer = render_pass.device().create_framebuffer(
+			create_info.deref(),
+			host_memory_allocator.as_ref()
+		)?;
 
 		Ok(Vrc::new(Framebuffer {
 			render_pass,
@@ -89,9 +97,10 @@ impl Drop for Framebuffer {
 		log_trace_common!("Dropping", self);
 
 		unsafe {
-			self.render_pass
-				.device()
-				.destroy_framebuffer(self.framebuffer, self.host_memory_allocator.as_ref())
+			self.render_pass.device().destroy_framebuffer(
+				self.framebuffer,
+				self.host_memory_allocator.as_ref()
+			)
 		}
 	}
 }
@@ -101,7 +110,10 @@ impl fmt::Debug for Framebuffer {
 			.field("render_pass", &self.render_pass)
 			.field("attachments", &self.attachments)
 			.field("framebuffer", &self.safe_handle())
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

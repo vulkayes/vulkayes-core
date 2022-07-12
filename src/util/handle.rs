@@ -8,9 +8,7 @@ use crate::util::{
 };
 
 /// Trait for objects that have corresponding Vulkan handles.
-pub trait HasHandle<T: vk::Handle + Copy>:
-	std::borrow::Borrow<T> + PartialEq + Eq + Hash + PartialOrd + Ord
-{
+pub trait HasHandle<T: vk::Handle + Copy>: std::borrow::Borrow<T> + PartialEq + Eq + Hash + PartialOrd + Ord {
 	fn handle(&self) -> T {
 		*self.borrow()
 	}
@@ -51,9 +49,7 @@ impl<'a, T: vk::Handle> Into<VutexGuard<'a, T>> for VutexGuardSafeHandleBorrow<'
 }
 
 /// Trait for objects that have corresponding Vulkan handles and are internally synchronized.
-pub trait HasSynchronizedHandle<T: vk::Handle + Copy>:
-	std::borrow::Borrow<Vutex<T>> + PartialEq + Eq + Hash + PartialOrd + Ord
-{
+pub trait HasSynchronizedHandle<T: vk::Handle + Copy>: std::borrow::Borrow<Vutex<T>> + PartialEq + Eq + Hash + PartialOrd + Ord {
 	fn lock_handle(&self) -> VutexGuard<T> {
 		self.borrow().lock().expect("vutex poisoned")
 	}
@@ -75,10 +71,7 @@ impl<'a, T: ash::vk::Handle> SafeHandle<'a, T> {
 	///
 	/// `handle` must be a valid handle for at least the lifetime `'a`.
 	pub unsafe fn from_raw(handle: T) -> Self {
-		SafeHandle {
-			handle,
-			ghost: std::marker::PhantomData
-		}
+		SafeHandle { handle, ghost: std::marker::PhantomData }
 	}
 
 	pub fn into_handle(self) -> T {
@@ -105,6 +98,10 @@ unsafe impl<'a, T: ash::vk::Handle> Transparent for SafeHandle<'a, T> {
 }
 impl<'a, T: ash::vk::Handle + Copy> fmt::Debug for SafeHandle<'a, T> {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "{:?}", crate::util::fmt::format_handle(self.handle))
+		write!(
+			f,
+			"{:?}",
+			crate::util::fmt::format_handle(self.handle)
+		)
 	}
 }

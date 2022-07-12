@@ -16,19 +16,17 @@ pub struct Fence {
 	host_memory_allocator: HostMemoryAllocator
 }
 impl Fence {
-	pub fn new(
-		device: Vrc<Device>,
-		signaled: bool,
-		host_memory_allocator: HostMemoryAllocator
-	) -> Result<Vrc<Self>, error::FenceError> {
-		let flags = if signaled {
-			vk::FenceCreateFlags::SIGNALED
-		} else {
-			vk::FenceCreateFlags::empty()
-		};
+	pub fn new(device: Vrc<Device>, signaled: bool, host_memory_allocator: HostMemoryAllocator) -> Result<Vrc<Self>, error::FenceError> {
+		let flags = if signaled { vk::FenceCreateFlags::SIGNALED } else { vk::FenceCreateFlags::empty() };
 		let create_info = vk::FenceCreateInfo::builder().flags(flags);
 
-		unsafe { Self::from_create_info(device, create_info, host_memory_allocator) }
+		unsafe {
+			Self::from_create_info(
+				device,
+				create_info,
+				host_memory_allocator
+			)
+		}
 	}
 
 	/// ### Safety
@@ -46,12 +44,14 @@ impl Fence {
 			host_memory_allocator
 		);
 
-		let fence = device.create_fence(create_info.deref(), host_memory_allocator.as_ref())?;
+		let fence = device.create_fence(
+			create_info.deref(),
+			host_memory_allocator.as_ref()
+		)?;
 
 		Ok(Vrc::new(Fence {
 			device,
 			fence: Vutex::new(fence),
-
 			host_memory_allocator
 		}))
 	}
@@ -114,8 +114,10 @@ impl Drop for Fence {
 		log_trace_common!("Dropping", self, lock);
 
 		unsafe {
-			self.device
-				.destroy_fence(*lock, self.host_memory_allocator.as_ref())
+			self.device.destroy_fence(
+				*lock,
+				self.host_memory_allocator.as_ref()
+			)
 		}
 	}
 }
@@ -124,7 +126,10 @@ impl Debug for Fence {
 		f.debug_struct("Fence")
 			.field("device", &self.device)
 			.field("Fence", &self.fence)
-			.field("allocation_callbacks", &self.host_memory_allocator)
+			.field(
+				"allocation_callbacks",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

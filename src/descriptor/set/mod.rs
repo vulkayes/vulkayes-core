@@ -2,9 +2,8 @@ use std::{fmt::Debug, ops::Deref};
 
 use ash::vk;
 
-use crate::prelude::{DescriptorPool, DescriptorSetLayout, HasHandle, Transparent, Vrc, Vutex};
-
 use super::error::DescriptorSetError;
+use crate::prelude::{DescriptorPool, DescriptorSetLayout, HasHandle, Transparent, Vrc, Vutex};
 
 pub mod update;
 
@@ -16,24 +15,19 @@ pub struct DescriptorSet {
 	descriptor_set: Vutex<vk::DescriptorSet>
 }
 impl DescriptorSet {
-	pub fn new(
-		pool: Vrc<DescriptorPool>,
-		layout: Vrc<DescriptorSetLayout>
-	) -> Result<Vrc<Self>, DescriptorSetError> {
+	pub fn new(pool: Vrc<DescriptorPool>, layout: Vrc<DescriptorSetLayout>) -> Result<Vrc<Self>, DescriptorSetError> {
 		let [raw] = pool.allocate_descriptor_set([layout.safe_handle()])?;
 
-		Ok(Vrc::new(unsafe { Self::from_existing(pool, layout, raw) }))
+		Ok(Vrc::new(unsafe {
+			Self::from_existing(pool, layout, raw)
+		}))
 	}
 
 	/// ### Safety
 	///
 	/// * `descriptor_set` must be a valid handle allocated from `pool`.
 	/// * `descriptor_set` must have been allocated from `layout`.
-	pub unsafe fn from_existing(
-		pool: Vrc<DescriptorPool>,
-		layout: Vrc<DescriptorSetLayout>,
-		descriptor_set: vk::DescriptorSet
-	) -> Self {
+	pub unsafe fn from_existing(pool: Vrc<DescriptorPool>, layout: Vrc<DescriptorSetLayout>, descriptor_set: vk::DescriptorSet) -> Self {
 		log_trace_common!(
 			"Creating DescriptorSet from existing handle:",
 			pool,
@@ -41,18 +35,10 @@ impl DescriptorSet {
 			crate::util::fmt::format_handle(descriptor_set)
 		);
 
-		Self {
-			pool,
-			layout,
-			descriptor_set: Vutex::new(descriptor_set)
-		}
+		Self { pool, layout, descriptor_set: Vutex::new(descriptor_set) }
 	}
 
-	pub fn update<'a>(
-		&self,
-		writes: &[update::DescriptorSetWrite<'a>],
-		copies: &[update::DescriptorSetCopy<'a>]
-	) {
+	pub fn update<'a>(&self, writes: &[update::DescriptorSetWrite<'a>], copies: &[update::DescriptorSetCopy<'a>]) {
 		unsafe {
 			self.pool.device().update_descriptor_sets(
 				Transparent::transmute_slice_twice(writes),

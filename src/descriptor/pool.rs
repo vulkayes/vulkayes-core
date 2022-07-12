@@ -2,9 +2,8 @@ use std::{fmt, num::NonZeroU32, ops::Deref};
 
 use ash::vk;
 
-use crate::prelude::{Device, HostMemoryAllocator, SafeHandle, Transparent, Vrc, Vutex};
-
 use super::error::{DescriptorPoolError, DescriptorSetError};
+use crate::prelude::{Device, HostMemoryAllocator, SafeHandle, Transparent, Vrc, Vutex};
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct DescriptorPoolSize {
@@ -132,11 +131,13 @@ impl DescriptorPool {
 
 		unsafe {
 			match max_inline_uniform_bindings {
-				None => Self::from_create_info(device, create_info, host_memory_allocator),
+				None => Self::from_create_info(
+					device,
+					create_info,
+					host_memory_allocator
+				),
 				Some(bindings) => {
-					let mut bindings_info =
-						vk::DescriptorPoolInlineUniformBlockCreateInfoEXT::builder()
-							.max_inline_uniform_block_bindings(bindings);
+					let mut bindings_info = vk::DescriptorPoolInlineUniformBlockCreateInfoEXT::builder().max_inline_uniform_block_bindings(bindings);
 					Self::from_create_info(
 						device,
 						create_info.push_next(&mut bindings_info),
@@ -161,12 +162,13 @@ impl DescriptorPool {
 			create_info.deref(),
 			host_memory_allocator
 		);
-		let pool =
-			device.create_descriptor_pool(create_info.deref(), host_memory_allocator.as_ref())?;
+		let pool = device.create_descriptor_pool(
+			create_info.deref(),
+			host_memory_allocator.as_ref()
+		)?;
 
 		Ok(Vrc::new(Self {
 			device,
-
 			pool: Vutex::new(pool),
 			host_memory_allocator
 		}))
@@ -198,7 +200,9 @@ impl DescriptorPool {
 
 		let alloc_info = vk::DescriptorSetAllocateInfo::builder()
 			.descriptor_pool(*lock)
-			.set_layouts(Transparent::transmute_slice(layouts.as_ref()));
+			.set_layouts(Transparent::transmute_slice(
+				layouts.as_ref()
+			));
 
 		log_trace_common!(
 			"Allocating descriptor sets:",
@@ -249,7 +253,10 @@ impl DescriptorPool {
 		);
 
 		self.device
-			.reset_descriptor_pool(*lock, vk::DescriptorPoolResetFlags::empty())
+			.reset_descriptor_pool(
+				*lock,
+				vk::DescriptorPoolResetFlags::empty()
+			)
 			.unwrap();
 	}
 
@@ -268,8 +275,10 @@ impl Drop for DescriptorPool {
 		log_trace_common!("Dropping", self, lock);
 
 		unsafe {
-			self.device
-				.destroy_descriptor_pool(*lock, self.host_memory_allocator.as_ref())
+			self.device.destroy_descriptor_pool(
+				*lock,
+				self.host_memory_allocator.as_ref()
+			)
 		}
 	}
 }
@@ -278,7 +287,10 @@ impl fmt::Debug for DescriptorPool {
 		f.debug_struct("DescriptorPool")
 			.field("device", &self.device)
 			.field("pool", &self.pool)
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

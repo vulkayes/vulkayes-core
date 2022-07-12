@@ -47,11 +47,7 @@ impl RustHostMemoryAllocator {
 					ptr,
 					new_ptr
 				);
-				let new_layout = if new_ptr != null_mut() {
-					Layout::from_size_align_unchecked(new_size, old_layout.align())
-				} else {
-					old_layout
-				};
+				let new_layout = if new_ptr != null_mut() { Layout::from_size_align_unchecked(new_size, old_layout.align()) } else { old_layout };
 
 				self.ptr_map.insert(new_ptr, new_layout);
 				new_ptr
@@ -106,7 +102,9 @@ impl RustHostMemoryAllocator {
 			allocation_scope
 		);
 
-		allocator.alloc(Layout::from_size_align_unchecked(size, alignment)) as *mut c_void
+		allocator.alloc(Layout::from_size_align_unchecked(
+			size, alignment
+		)) as *mut c_void
 	}
 
 	pub(super) unsafe extern "system" fn rust_realloc(
@@ -128,7 +126,9 @@ impl RustHostMemoryAllocator {
 		);
 
 		let ptr = if p_original == std::ptr::null_mut() {
-			allocator.alloc(Layout::from_size_align_unchecked(size, alignment))
+			allocator.alloc(Layout::from_size_align_unchecked(
+				size, alignment
+			))
 		} else if size == 0 {
 			allocator.dealloc(p_original as *mut u8);
 			null_mut()
@@ -139,13 +139,14 @@ impl RustHostMemoryAllocator {
 		ptr as *mut c_void
 	}
 
-	pub(super) unsafe extern "system" fn rust_free(
-		p_user_data: *mut c_void,
-		p_memory: *mut c_void
-	) {
+	pub(super) unsafe extern "system" fn rust_free(p_user_data: *mut c_void, p_memory: *mut c_void) {
 		let mut allocator = Self::lock_init_allocator();
 
-		log::trace!("rust_free({:p}, {:p})", p_user_data, p_memory);
+		log::trace!(
+			"rust_free({:p}, {:p})",
+			p_user_data,
+			p_memory
+		);
 
 		allocator.dealloc(p_memory as *mut u8);
 	}

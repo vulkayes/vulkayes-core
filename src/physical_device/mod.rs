@@ -32,29 +32,18 @@ impl PhysicalDevice {
 	/// ### Safety
 	///
 	/// The `instance` must be the parent of the `physical_device`.
-	pub unsafe fn from_existing(
-		instance: Vrc<Instance>,
-		physical_device: ash::vk::PhysicalDevice
-	) -> Self {
+	pub unsafe fn from_existing(instance: Vrc<Instance>, physical_device: ash::vk::PhysicalDevice) -> Self {
 		log_trace_common!(
 			"Creating PhysicalDevice from existing handle:",
 			instance,
 			crate::util::fmt::format_handle(physical_device)
 		);
 
-		PhysicalDevice {
-			instance,
-			physical_device
-		}
+		PhysicalDevice { instance, physical_device }
 	}
 
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkEnumerateDeviceExtensionProperties.html>.
-	pub fn extensions_properties(
-		&self
-	) -> Result<
-		impl ExactSizeIterator<Item = enumerate::DeviceExtensionProperties>,
-		enumerate::EnumerateError
-	> {
+	pub fn extensions_properties(&self) -> Result<impl ExactSizeIterator<Item = enumerate::DeviceExtensionProperties>, enumerate::EnumerateError> {
 		let enumerator = unsafe {
 			self.instance
 				.enumerate_device_extension_properties(self.physical_device)?

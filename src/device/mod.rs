@@ -87,7 +87,13 @@ impl Device {
 			.enabled_extension_names(ptr_extensions.as_slice())
 			.enabled_features(&features);
 
-		unsafe { Device::from_create_info(physical_device, create_info, host_memory_allocator) }
+		unsafe {
+			Device::from_create_info(
+				physical_device,
+				create_info,
+				host_memory_allocator
+			)
+		}
 	}
 
 	/// Creates a new `Device` from existing `DeviceCreateInfo`
@@ -124,10 +130,7 @@ impl Device {
 		Ok(DeviceData { device, queues })
 	}
 
-	unsafe fn get_created_queues(
-		self: &Vrc<Self>,
-		create_info: impl Deref<Target = DeviceCreateInfo>
-	) -> Vec<Vrc<Queue>> {
+	unsafe fn get_created_queues(self: &Vrc<Self>, create_info: impl Deref<Target = DeviceCreateInfo>) -> Vec<Vrc<Queue>> {
 		let num = create_info.queue_create_info_count as usize;
 		let mut result = Vec::with_capacity(num);
 
@@ -195,7 +198,10 @@ impl Debug for Device {
 				&crate::util::fmt::format_handle(self.device.handle())
 			)
 			.field("physical_device", &self.physical_device)
-			.field("host_memory_allocator", &self.host_memory_allocator)
+			.field(
+				"host_memory_allocator",
+				&self.host_memory_allocator
+			)
 			.finish()
 	}
 }

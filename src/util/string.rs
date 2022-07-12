@@ -46,7 +46,10 @@ impl TryFrom<[c_char; Self::MAX_STRING_SIZE]> for VkSmallString {
 			.0;
 
 		unsafe {
-			std::str::from_utf8(std::slice::from_raw_parts(array.as_ptr() as *const u8, len))?
+			std::str::from_utf8(std::slice::from_raw_parts(
+				array.as_ptr() as *const u8,
+				len
+			))?
 		};
 
 		Ok(VkSmallString { array, len })

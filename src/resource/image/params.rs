@@ -1,7 +1,6 @@
 use std::{convert::TryFrom, num::NonZeroU32};
 
 use ash::vk;
-
 use thiserror::Error;
 
 use crate::{
@@ -12,10 +11,7 @@ use crate::{
 #[derive(Debug)]
 pub enum ImageAllocatorParams<'a, A: ImageMemoryAllocator = NeverDeviceAllocator> {
 	None,
-	Some {
-		allocator: &'a A,
-		requirements: A::AllocationRequirements
-	}
+	Some { allocator: &'a A, requirements: A::AllocationRequirements }
 }
 impl Default for ImageAllocatorParams<'static> {
 	fn default() -> Self {
@@ -65,78 +61,33 @@ impl ImageSize {
 		array_layers: NonZeroU32,
 		mipmap_levels: NonZeroU32
 	) -> Self {
-		ImageSize {
-			image_type,
-			width,
-			height,
-			depth,
-			array_layers,
-			mipmap_levels
-		}
+		ImageSize { image_type, width, height, depth, array_layers, mipmap_levels }
 	}
 
-	pub fn new_1d(
-		width: NonZeroU32,
-		array_layers: NonZeroU32,
-		mipmaps: MipmapLevels
-	) -> ImageSize1D {
+	pub fn new_1d(width: NonZeroU32, array_layers: NonZeroU32, mipmaps: MipmapLevels) -> ImageSize1D {
 		let height = NonZeroU32::new(1).unwrap();
 		let depth = NonZeroU32::new(1).unwrap();
 
 		let mipmap_levels: Option<NonZeroU32> = mipmaps.into();
-		let mipmap_levels = mipmap_levels
-			.unwrap_or_else(|| Self::complete_mipmap_chain_mipmaps(width, height, depth));
+		let mipmap_levels = mipmap_levels.unwrap_or_else(|| Self::complete_mipmap_chain_mipmaps(width, height, depth));
 
-		ImageSize1D(ImageSize {
-			image_type: vk::ImageType::TYPE_1D,
-			width,
-			height,
-			depth,
-			array_layers,
-			mipmap_levels
-		})
+		ImageSize1D(ImageSize { image_type: vk::ImageType::TYPE_1D, width, height, depth, array_layers, mipmap_levels })
 	}
 
-	pub fn new_2d(
-		width: NonZeroU32,
-		height: NonZeroU32,
-		array_layers: NonZeroU32,
-		mipmaps: MipmapLevels
-	) -> ImageSize2D {
+	pub fn new_2d(width: NonZeroU32, height: NonZeroU32, array_layers: NonZeroU32, mipmaps: MipmapLevels) -> ImageSize2D {
 		let depth = NonZeroU32::new(1).unwrap();
 
 		let mipmap_levels: Option<NonZeroU32> = mipmaps.into();
-		let mipmap_levels = mipmap_levels
-			.unwrap_or_else(|| Self::complete_mipmap_chain_mipmaps(width, height, depth));
+		let mipmap_levels = mipmap_levels.unwrap_or_else(|| Self::complete_mipmap_chain_mipmaps(width, height, depth));
 
-		ImageSize2D(ImageSize {
-			image_type: vk::ImageType::TYPE_2D,
-			width,
-			height,
-			depth,
-			array_layers,
-			mipmap_levels
-		})
+		ImageSize2D(ImageSize { image_type: vk::ImageType::TYPE_2D, width, height, depth, array_layers, mipmap_levels })
 	}
 
-	pub fn new_3d(
-		width: NonZeroU32,
-		height: NonZeroU32,
-		depth: NonZeroU32,
-		mipmaps: MipmapLevels
-	) -> ImageSize3D {
+	pub fn new_3d(width: NonZeroU32, height: NonZeroU32, depth: NonZeroU32, mipmaps: MipmapLevels) -> ImageSize3D {
 		let mipmap_levels: Option<NonZeroU32> = mipmaps.into();
-		let mipmap_levels = mipmap_levels
-			.unwrap_or_else(|| Self::complete_mipmap_chain_mipmaps(width, height, depth));
+		let mipmap_levels = mipmap_levels.unwrap_or_else(|| Self::complete_mipmap_chain_mipmaps(width, height, depth));
 
-		ImageSize3D(ImageSize {
-			image_type: vk::ImageType::TYPE_2D,
-			width,
-			height,
-			depth,
-			array_layers: NonZeroU32::new(1).unwrap(),
-			mipmap_levels
-		})
+		ImageSize3D(ImageSize { image_type: vk::ImageType::TYPE_2D, width, height, depth, array_layers: NonZeroU32::new(1).unwrap(), mipmap_levels })
 	}
 
 	pub const fn image_type(&self) -> vk::ImageType {
@@ -167,17 +118,11 @@ impl ImageSize {
 		self.mipmap_levels
 	}
 
-	pub fn complete_mipmap_chain_mipmaps(
-		width: NonZeroU32,
-		height: NonZeroU32,
-		depth: NonZeroU32
-	) -> NonZeroU32 {
+	pub fn complete_mipmap_chain_mipmaps(width: NonZeroU32, height: NonZeroU32, depth: NonZeroU32) -> NonZeroU32 {
 		let max_dimension = std::cmp::max(std::cmp::max(width, height), depth);
 
 		// SAFETY: log2(u32) + 1 cannot overflow u32 (at most 32 + 1), + 1 ensures non-zero
-		unsafe {
-			NonZeroU32::new_unchecked(((max_dimension.get() as f32).log2()).floor() as u32 + 1)
-		}
+		unsafe { NonZeroU32::new_unchecked(((max_dimension.get() as f32).log2()).floor() as u32 + 1) }
 	}
 
 	/// ### Safety
@@ -206,19 +151,12 @@ impl ImageSize {
 }
 impl Into<vk::Extent3D> for ImageSize {
 	fn into(self) -> vk::Extent3D {
-		vk::Extent3D {
-			width: self.width.get(),
-			height: self.height.get(),
-			depth: self.depth.get()
-		}
+		vk::Extent3D { width: self.width.get(), height: self.height.get(), depth: self.depth.get() }
 	}
 }
 impl Into<vk::Extent2D> for ImageSize {
 	fn into(self) -> vk::Extent2D {
-		vk::Extent2D {
-			width: self.width.get(),
-			height: self.height.get()
-		}
+		vk::Extent2D { width: self.width.get(), height: self.height.get() }
 	}
 }
 impl From<ImageSize1D> for ImageSize {
