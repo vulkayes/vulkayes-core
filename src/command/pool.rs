@@ -1,64 +1,9 @@
-use std::{fmt, ops::Deref};
+use std::{fmt, ops::Deref, num::NonZeroU32};
 
 use ash::vk;
 
 use super::error::{CommandBufferError, CommandPoolError};
 use crate::{device::Device, memory::host::HostMemoryAllocator, prelude::Vrc, queue::Queue, util::sync::Vutex};
-
-macro_rules! impl_allocate_command_buffers_array {
-	(
-		$name: ident, $size: expr
-	) => {
-		/// Allocates command buffers into fixed-size array.
-		///
-		/// ### Safety
-		///
-		/// `level` must be a valid `vk::CommandBufferLevel` value.
-		///
-		/// ### Panic
-		///
-		/// This function will panic if the pool `Vutex` is poisoned.
-		// Const generics can't come fast enough
-		pub unsafe fn $name(
-			&self,
-			level: vk::CommandBufferLevel,
-		) -> Result<[vk::CommandBuffer; $size], CommandBufferError> {
-			let lock = self.pool.lock().expect("vutex poisoned");
-
-			let alloc_info = vk::CommandBufferAllocateInfo::builder()
-				.command_pool(*lock)
-				.level(level)
-				.command_buffer_count($size);
-
-			log_trace_common!(
-				"Allocating command buffers:",
-				self,
-				crate::util::fmt::format_handle(*lock),
-				alloc_info.deref()
-			);
-
-
-			let mut buffers = std::mem::MaybeUninit::<[vk::CommandBuffer; $size]>::uninit();
-			let err_code = self.device.fp_v1_0().allocate_command_buffers(
-				self.device.handle(),
-				alloc_info.deref() as *const _,
-				buffers.as_mut_ptr() as *mut vk::CommandBuffer
-			);
-			match err_code {
-				vk::Result::SUCCESS => Ok(buffers.assume_init()),
-				_ => Err(CommandBufferError::from(err_code))
-			}
-		}
-	};
-
-	(
-		$($name: ident, $size: expr),+
-	) => {
-		$(
-			impl_allocate_command_buffers_array!($name, $size);
-		)+
-	}
-}
 
 /// Internally synchronized command pool.
 pub struct CommandPool {
@@ -70,25 +15,6 @@ pub struct CommandPool {
 	host_memory_allocator: HostMemoryAllocator
 }
 impl CommandPool {
-	impl_allocate_command_buffers_array!(
-		allocate_command_buffer,
-		1,
-		allocate_command_buffers_2,
-		2,
-		allocate_command_buffers_3,
-		3,
-		allocate_command_buffers_4,
-		4,
-		allocate_command_buffers_5,
-		5,
-		allocate_command_buffers_6,
-		6,
-		allocate_command_buffers_7,
-		7,
-		allocate_command_buffers_8,
-		8
-	);
-
 	/// Note: `PROTECTED` flag value is currently ignored.
 	pub fn new(queue: &Queue, flags: vk::CommandPoolCreateFlags, host_memory_allocator: HostMemoryAllocator) -> Result<Vrc<Self>, CommandPoolError> {
 		let flags = flags & !vk::CommandPoolCreateFlags::PROTECTED;
@@ -165,20 +91,49 @@ impl CommandPool {
 		}
 	}
 
-	/// Allocates multiple command buffers into a `Vec`.
-	///
-	/// ### Safety
-	///
-	/// `level` must be a valid `vk::CommandBufferLevel` value.
+	/// Allocates command buffers into fixed-size array.
 	///
 	/// ### Panic
 	///
 	/// This function will panic if the pool `Vutex` is poisoned.
-	pub unsafe fn allocate_command_buffers(
+	pub fn allocate_command_buffers<const BUFFERS: usize>(
+		&self,
+		secondary: bool,
+	) -> Result<[vk::CommandBuffer; BUFFERS], CommandBufferError> {	
+		let level  = if secondary {
+			vk::CommandBufferLevel::SECONDARY
+		} else {
+			vk::CommandBufferLevel::PRIMARY
+		};
+
+		unsafe {
+			let mut buffers = std::mem::MaybeUninit::<[vk::CommandBuffer; BUFFERS]>::uninit();
+			self.allocate_command_buffers_into(
+				level,
+				NonZeroU32::new(BUFFERS as u32).unwrap(),
+				buffers.as_mut_ptr() as *mut _
+			)?;
+
+			Ok(buffers.assume_init())
+		}
+	}
+
+	/// Allocates multiple command buffers into existing memory.
+	///
+	/// ### Safety
+	///
+	/// * `level` must be a valid `vk::CommandBufferLevel` value.
+	/// * `out` must point to memory with size for at least `count` elements.
+	///
+	/// ### Panic
+	///
+	/// This function will panic if the pool `Vutex` is poisoned.
+	pub unsafe fn allocate_command_buffers_into(
 		&self,
 		level: vk::CommandBufferLevel,
-		count: std::num::NonZeroU32
-	) -> Result<Vec<vk::CommandBuffer>, CommandBufferError> {
+		count: NonZeroU32,
+		out: *mut vk::CommandBuffer,
+	) -> Result<(), CommandBufferError> {
 		let lock = self.pool.lock().expect("vutex poisoned");
 
 		let alloc_info = vk::CommandBufferAllocateInfo::builder()
@@ -193,9 +148,14 @@ impl CommandPool {
 			alloc_info.deref()
 		);
 
-		self.device
-			.allocate_command_buffers(alloc_info.deref())
-			.map_err(Into::into)
+		match self.device.fp_v1_0().allocate_command_buffers(
+			self.device.handle(),
+			alloc_info.deref() as *const _,
+			out
+		) {
+			vk::Result::SUCCESS => Ok(()),
+			err => Err(CommandBufferError::from(err))
+		}
 	}
 
 	/// ### Safety

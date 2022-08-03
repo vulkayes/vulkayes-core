@@ -19,79 +19,6 @@ impl From<DescriptorPoolSize> for vk::DescriptorPoolSize {
 	}
 }
 
-macro_rules! impl_allocate_command_buffers_array {
-	(
-		$name: ident, $size: expr, $layouts_name: ident
-	) => {
-		/// Allocates descriptor sets into fixed-size array.
-		///
-		/// ### Panic
-		///
-		/// This function will panic if the pool `Vutex` is poisoned.
-		// TODO: Const generics can't come fast enough
-		pub fn $name<'a>(
-			&self,
-			$layouts_name: [SafeHandle<'a, vk::DescriptorSetLayout>; $size]
-		) -> Result<[vk::DescriptorSet; $size], DescriptorSetError> {
-			use $crate::util::handle::HasHandle;
-
-			let lock = self.pool.lock().expect("vutex poisoned");
-
-			#[cfg(feature = "runtime_implicit_validations")]
-			{
-				if $size == 0 {
-					return Err(DescriptorSetError::LayoutsEmpty)
-				}
-
-				// if !$crate::util::validations::validate_all_match(
-				// 	std::iter::once(&self.device).chain(
-				// 		$layouts_name.iter().map(|l| l.device())
-				// 	)
-				// ) {
-				// 	return Err(DescriptorSetError::DescriptorPoolLayoutsDeviceMismatch)
-				// }
-			}
-
-			let alloc_info = vk::DescriptorSetAllocateInfo::builder()
-				.descriptor_pool(*lock)
-				.set_layouts(
-					Transparent::transmute_slice($layouts_name.as_ref())
-				)
-			;
-
-			log_trace_common!(
-				"Allocating descriptor sets:",
-				self,
-				crate::util::fmt::format_handle(*lock),
-				alloc_info.deref()
-			);
-
-			unsafe {
-				let mut sets = std::mem::MaybeUninit::<[vk::DescriptorSet; $size]>::uninit();
-				let err_code = self.device.fp_v1_0().allocate_descriptor_sets(
-					self.device.handle(),
-					alloc_info.deref() as *const _,
-					sets.as_mut_ptr() as *mut vk::DescriptorSet
-				);
-
-				match err_code {
-					vk::Result::SUCCESS => Ok(sets.assume_init()),
-					_ => Err(DescriptorSetError::from(err_code))
-				}
-			}
-		}
-	};
-
-	(
-		$layouts_name: ident
-		$($name: ident, $size: expr),+
-	) => {
-		$(
-			impl_allocate_command_buffers_array!($name, $size, $layouts_name);
-		)+
-	}
-}
-
 pub struct DescriptorPool {
 	device: Vrc<Device>,
 	pool: Vutex<vk::DescriptorPool>,
@@ -99,18 +26,6 @@ pub struct DescriptorPool {
 	host_memory_allocator: HostMemoryAllocator
 }
 impl DescriptorPool {
-	impl_allocate_command_buffers_array!(
-		layouts
-		allocate_descriptor_set, 1,
-		allocate_descriptor_sets_2, 2,
-		allocate_descriptor_sets_3, 3,
-		allocate_descriptor_sets_4, 4,
-		allocate_descriptor_sets_5, 5,
-		allocate_descriptor_sets_6, 6,
-		allocate_descriptor_sets_7, 7,
-		allocate_descriptor_sets_8, 8
-	);
-
 	pub fn new(
 		device: Vrc<Device>,
 		flags: vk::DescriptorPoolCreateFlags,
@@ -174,13 +89,36 @@ impl DescriptorPool {
 		}))
 	}
 
+	/// Allocates descriptor sets into fixed-size array.
+	///
+	/// ### Panic
+	///
+	/// This function will panic if the pool `Vutex` is poisoned.
+	pub fn allocate_descriptor_sets<'a, const SETS: usize>(
+		&self,
+		layouts: [SafeHandle<'a, vk::DescriptorSetLayout>; SETS]
+	) -> Result<[vk::DescriptorSet; SETS], DescriptorSetError> {
+		unsafe {
+			let mut sets = std::mem::MaybeUninit::<[vk::DescriptorSet; SETS]>::uninit();
+			
+			self.allocate_descriptor_sets_into(layouts, sets.as_mut_ptr() as *mut _)?;
+
+			Ok(sets.assume_init())
+		}
+	}
+
+	/// ### Safety
+	///
+	/// * `out` must point to memory with size for at least `layouts.len()` elements.
+	///
 	/// ### Panic
 	///
 	/// This function will panic if the pool `Vutex` is poisoned.`
-	pub fn allocate_descriptor_sets<'a>(
+	pub unsafe fn allocate_descriptor_sets_into<'a>(
 		&self,
-		layouts: impl AsRef<[SafeHandle<'a, vk::DescriptorSetLayout>]>
-	) -> Result<Vec<vk::DescriptorSet>, DescriptorSetError> {
+		layouts: impl AsRef<[SafeHandle<'a, vk::DescriptorSetLayout>]>,
+		out: *mut vk::DescriptorSet
+	) -> Result<(), DescriptorSetError> {
 		let lock = self.pool.lock().expect("vutex poisoned");
 
 		#[cfg(feature = "runtime_implicit_validations")]
@@ -200,9 +138,9 @@ impl DescriptorPool {
 
 		let alloc_info = vk::DescriptorSetAllocateInfo::builder()
 			.descriptor_pool(*lock)
-			.set_layouts(Transparent::transmute_slice(
-				layouts.as_ref()
-			));
+			.set_layouts(
+				Transparent::transmute_slice(layouts.as_ref())
+			);
 
 		log_trace_common!(
 			"Allocating descriptor sets:",
@@ -211,10 +149,13 @@ impl DescriptorPool {
 			alloc_info.deref()
 		);
 
-		unsafe {
-			self.device
-				.allocate_descriptor_sets(alloc_info.deref())
-				.map_err(Into::into)
+		match self.device.fp_v1_0().allocate_descriptor_sets(
+			self.device.handle(),
+			alloc_info.deref() as *const _,
+			out
+		) {
+			vk::Result::SUCCESS => Ok(()),
+			err => Err(DescriptorSetError::from(err))
 		}
 	}
 

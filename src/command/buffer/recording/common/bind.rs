@@ -1,11 +1,11 @@
 use ash::vk;
 
-use crate::prelude::{Buffer, GraphicsPipeline, HasHandle, PipelineLayout, PushConstantsTrait, SafeHandle, Transparent};
+use crate::prelude::{Buffer, GraphicsPipeline, ComputePipeline, HasHandle, PipelineLayout, PushConstantsTrait, SafeHandle, Transparent};
 
 impl<'a> super::CommandBufferRecordingLockCommon<'a> {
 	pub fn bind_graphics_pipeline(&self, pipeline: &GraphicsPipeline) {
 		log_trace_common!(
-			"Binding pipeline:",
+			"Binding graphics pipeline:",
 			crate::util::fmt::format_handle(self.handle()),
 			pipeline
 		);
@@ -13,6 +13,21 @@ impl<'a> super::CommandBufferRecordingLockCommon<'a> {
 			self.device().cmd_bind_pipeline(
 				self.handle(),
 				vk::PipelineBindPoint::GRAPHICS,
+				pipeline.handle()
+			)
+		}
+	}
+
+	pub fn bind_compute_pipeline(&self, pipeline: &ComputePipeline) {
+		log_trace_common!(
+			"Binding compute pipeline:",
+			crate::util::fmt::format_handle(self.handle()),
+			pipeline
+		);
+		unsafe {
+			self.device().cmd_bind_pipeline(
+				self.handle(),
+				vk::PipelineBindPoint::COMPUTE,
 				pipeline.handle()
 			)
 		}

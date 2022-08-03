@@ -552,7 +552,7 @@ macro_rules! color_blend_state_expr {
 /// but with rasterization disabled the `Viewport`, `Multisampling`, `DepthStencil` and `ColorBlend` sections can be left out as well.
 /// `DepthStencil` and `ColorBlend` also have additional cases where they can be left out: <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkGraphicsPipelineCreateInfo.html>.
 #[macro_export]
-macro_rules! create_graphics_pipeline {
+macro_rules! describe_graphics_pipeline {
 	(
 		@Shaders($output_builder: expr)
 		stages: [
@@ -989,52 +989,52 @@ macro_rules! create_graphics_pipeline {
 		let mut dynamic_info = DynamicInfo::new();
 		let mut builder = $crate::ash::vk::GraphicsPipelineCreateInfo::builder();
 
-		$crate::create_graphics_pipeline!(
+		$crate::describe_graphics_pipeline!(
 			@Shaders(builder)
 			$($shaders_tt)+
 		);
 
 		$(
-			$crate::create_graphics_pipeline!(
+			$crate::describe_graphics_pipeline!(
 				@Tessellation(builder)
 				$($tessellation_tt)*
 			);
 		)?
 
 		$(
-			$crate::create_graphics_pipeline!(
+			$crate::describe_graphics_pipeline!(
 				@Viewport(builder, dynamic_info)
 				$($viewport_tt)+
 			);
 		)?
 
-		$crate::create_graphics_pipeline!(
+		$crate::describe_graphics_pipeline!(
 			@Rasterization(builder, dynamic_info)
 			$($rasterization_tt)+
 		);
 
 		$(
-			$crate::create_graphics_pipeline!(
+			$crate::describe_graphics_pipeline!(
 				@Multisampling(builder)
 				$($multisampling_tt)+
 			);
 		)?
 
 		$(
-			$crate::create_graphics_pipeline!(
+			$crate::describe_graphics_pipeline!(
 				@DepthStencil(builder, dynamic_info)
 				$($depth_stencil_tt)+
 			);
 		)?
 
 		$(
-			$crate::create_graphics_pipeline!(
+			$crate::describe_graphics_pipeline!(
 				@ColorBlend(builder, dynamic_info)
 				$($color_blend_tt)+
 			);
 		)?
 
-		$crate::create_graphics_pipeline!(
+		$crate::describe_graphics_pipeline!(
 			@Deps(builder)
 			$($deps_tt)+
 		);
@@ -1052,9 +1052,122 @@ macro_rules! create_graphics_pipeline {
 	}
 }
 
+#[macro_export]
+macro_rules! describe_compute_pipeline {
+	(
+		@Shaders($output_builder: expr)
+		stage: $stage: expr $(, $entry_name: expr $(, $specialization: expr)?)? => $stage_type: expr
+		$(,)?
+	) => {
+		let specialization_info: Option<$crate::ash::vk::SpecializationInfoBuilder> = {
+			let mut info = None::<$crate::ash::vk::SpecializationInfoBuilder>;
+			$(
+				$(
+					info = Some($specialization.specialization_info());
+				)?
+			)?
+
+			info
+		};
+
+		let stage: $crate::ash::vk::PipelineShaderStageCreateInfoBuilder = {
+			let mut entry_name: $crate::shader::params::ShaderEntryPoint = Default::default();
+			$(
+				entry_name = $entry_name;
+			)?
+
+			$stage.stage_create_info(
+				$stage_type,
+				entry_name,
+				specialization_info.as_ref()
+			)
+		};
+
+		$output_builder = $output_builder
+			.stage(stage.build())
+		;
+	};
+
+	(
+		@Deps($output_builder: expr)
+		layout: $layout: expr
+		$(,)?
+	) => {
+		let layout: $crate::ash::vk::PipelineLayout = $layout.handle();
+		$output_builder = $output_builder
+			.layout(layout)
+		;
+	};
+	
+	(
+		let $create_info_variable_name: ident;
+
+		Shaders {
+			$($shaders_tt: tt)+
+		}
+
+		Deps {
+			$($deps_tt: tt)+
+		}
+	) => {
+		let mut builder = $crate::ash::vk::ComputePipelineCreateInfo::builder();
+
+		$crate::describe_compute_pipeline!(
+			@Shaders(builder)
+			$($shaders_tt)+
+		);
+
+		$crate::describe_compute_pipeline!(
+			@Deps(builder)
+			$($deps_tt)+
+		);
+
+		// Final builder
+		let $create_info_variable_name = builder;
+	}
+}
+
 #[cfg(test)]
 mod test {
 	use ash::vk as vvk;
+
+	macro_rules! dbg_it {
+		(
+			$base: expr;
+			$(
+				$field: ident[$len: literal]$({ $($rec_tt: tt)+ })?
+			),+ $(,)?
+		) => {
+			$(
+				if $base.$field == std::ptr::null() {
+					eprintln!(
+						"{} = null",
+						stringify!($field)
+					);
+				} else {
+					#[allow(unused_unsafe)]
+					unsafe {
+						for x in 0 .. $len {
+							let field = *($base.$field.add(x));
+							eprintln!(
+								"[{:?}] {}[{}] = {:#?}",
+								$base.$field.add(x),
+								stringify!($field), x,
+								field
+							);
+							$(
+								dbg_it!(
+									field;
+									$($rec_tt)+
+								);
+							)?
+						}
+					}
+					eprintln!("");
+				}
+			)+
+		}
+	}
 
 	#[test]
 	#[ignore]
@@ -1084,7 +1197,7 @@ mod test {
 			}
 		}
 
-		create_graphics_pipeline! {
+		describe_graphics_pipeline! {
 			let create_info;
 
 			Shaders {
@@ -1155,44 +1268,6 @@ mod test {
 				render_pass: RenderPassHandle
 			}
 		};
-
-		macro_rules! dbg_it {
-			(
-				$base: expr;
-				$(
-					$field: ident[$len: literal]$({ $($rec_tt: tt)+ })?
-				),+ $(,)?
-			) => {
-				$(
-					if $base.$field == std::ptr::null() {
-						eprintln!(
-							"{} = null",
-							stringify!($field)
-						);
-					} else {
-						#[allow(unused_unsafe)]
-						unsafe {
-							for x in 0 .. $len {
-								let field = *($base.$field.add(x));
-								eprintln!(
-									"[{:?}] {}[{}] = {:#?}",
-									$base.$field.add(x),
-									stringify!($field), x,
-									field
-								);
-								$(
-									dbg_it!(
-										field;
-										$($rec_tt)+
-									);
-								)?
-							}
-						}
-						eprintln!("");
-					}
-				)+
-			}
-		}
 
 		dbg!(create_info.flags);
 		dbg_it!(

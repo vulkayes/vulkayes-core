@@ -1,4 +1,4 @@
-use std::num::NonZeroU32;
+use std::num::{NonZeroU32, NonZeroU64};
 
 use ash::vk;
 
@@ -21,6 +21,29 @@ vk_builder_wrap! {
 					.mip_level(mip_level)
 					.base_array_layer(base_array_layer)
 					.layer_count(layer_count.get())
+			}
+		}
+	}
+}
+
+vk_builder_wrap! {
+	pub struct BufferBufferCopy {
+		builder: vk::BufferCopyBuilder<'static> => vk::BufferCopy
+	}
+	impl {
+		pub fn new(
+			src_offset: u64,
+			dst_offset: u64,
+			size: NonZeroU64
+		) -> Self {
+			let builder = vk::BufferCopy::builder()
+				.src_offset(src_offset)
+				.dst_offset(dst_offset)
+				.size(size.get())
+			;
+
+			BufferBufferCopy {
+				builder
 			}
 		}
 	}
@@ -61,6 +84,30 @@ vk_builder_wrap! {
 }
 
 impl<'a> super::super::CommandBufferRecordingLockOutsideRenderPass<'a> {
+	pub fn copy_buffer_to_buffer(
+		&self,
+		source: &Buffer,
+		destination: &Buffer,
+		regions: impl AsRef<[BufferBufferCopy]>
+	) {
+		log_trace_common!(
+			"Copy buffer to buffer:",
+			crate::util::fmt::format_handle(self.handle()),
+			source,
+			destination,
+			regions.as_ref()
+		);
+
+		unsafe {
+			self.device().cmd_copy_buffer(
+				self.handle(),
+				source.handle(),
+				destination.handle(),
+				Transparent::transmute_slice_twice(regions.as_ref())
+			)
+		}
+	}
+	
 	pub fn copy_buffer_to_image(
 		&self,
 		source: &Buffer,

@@ -3,7 +3,7 @@ use std::{fmt::Debug, ops::Deref};
 use ash::vk;
 
 use super::error::DescriptorSetError;
-use crate::prelude::{DescriptorPool, DescriptorSetLayout, HasHandle, Transparent, Vrc, Vutex};
+use crate::prelude::{DescriptorPool, DescriptorSetLayout, HasHandle, Transparent, Vrc, Vutex, Device};
 
 pub mod update;
 
@@ -16,7 +16,7 @@ pub struct DescriptorSet {
 }
 impl DescriptorSet {
 	pub fn new(pool: Vrc<DescriptorPool>, layout: Vrc<DescriptorSetLayout>) -> Result<Vrc<Self>, DescriptorSetError> {
-		let [raw] = pool.allocate_descriptor_set([layout.safe_handle()])?;
+		let [raw] = pool.allocate_descriptor_sets([layout.safe_handle()])?;
 
 		Ok(Vrc::new(unsafe {
 			Self::from_existing(pool, layout, raw)
@@ -38,11 +38,15 @@ impl DescriptorSet {
 		Self { pool, layout, descriptor_set: Vutex::new(descriptor_set) }
 	}
 
-	pub fn update<'a>(&self, writes: &[update::DescriptorSetWrite<'a>], copies: &[update::DescriptorSetCopy<'a>]) {
+	pub fn update<'a>(
+		device: &Device,
+		writes: impl AsRef<[update::DescriptorSetWrite<'a>]>,
+		copies: impl AsRef<[update::DescriptorSetCopy<'a>]>
+	) {
 		unsafe {
-			self.pool.device().update_descriptor_sets(
-				Transparent::transmute_slice_twice(writes),
-				Transparent::transmute_slice_twice(copies)
+			device.update_descriptor_sets(
+				Transparent::transmute_slice_twice(writes.as_ref()),
+				Transparent::transmute_slice_twice(copies.as_ref())
 			)
 		}
 	}

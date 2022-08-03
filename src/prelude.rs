@@ -5,7 +5,7 @@ pub use crate::{
 				common::CommandBufferRecordingLockCommon,
 				outside::{
 					barrier::{BufferMemoryBarrier, ImageMemoryBarrier, MemoryBarrier},
-					copy::{BufferImageCopy, ImageSubresourceLayers}
+					copy::{BufferBufferCopy, BufferImageCopy, ImageSubresourceLayers}
 				},
 				CommandBufferBeginInfo,
 				CommandBufferRecordingLockInsideRenderPass,
@@ -49,6 +49,7 @@ pub use crate::{
 	},
 	physical_device::PhysicalDevice,
 	pipeline::{
+		compute::ComputePipeline,
 		graphics::GraphicsPipeline,
 		layout::{PipelineLayout, PushConstantRange},
 		params::{BlendLogicOp, DepthBias, DepthBoundsTest, DepthTest, PolygonMode, StencilTest}

@@ -1,4 +1,4 @@
-use std::{fmt, ops::Deref};
+use std::{fmt, ops::Deref, io::{self, Cursor}};
 
 use ash::vk;
 
@@ -14,6 +14,12 @@ pub struct ShaderModule {
 	host_memory_allocator: HostMemoryAllocator
 }
 impl ShaderModule {
+	pub fn load_spirv_bytes(bytes: &[u8]) -> io::Result<impl AsRef<[u32]>> {
+		let mut cursor = Cursor::new(bytes);
+
+		ash::util::read_spv(&mut cursor)
+	}
+
 	pub fn new(device: Vrc<Device>, code: impl AsRef<[u32]>, host_memory_allocator: HostMemoryAllocator) -> Result<Vrc<Self>, error::ShaderError> {
 		let create_info = vk::ShaderModuleCreateInfo::builder().code(code.as_ref());
 
