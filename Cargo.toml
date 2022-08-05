@@ -9,12 +9,7 @@ description = "More positive Vulkan abstraction."
 [features]
 default = [
     "vulkan1_2",
-    # "runtime_implicit_validations",
-    "naive_device_allocator",
-    "log_release_max_level_off",
-    # "rust_host_allocator",
-    # "multi_thread",
-    # "insecure_hash"
+    "naive_device_allocator"
 ]
 
 # enables host allocator Custom variant, making it a sized type
@@ -37,20 +32,6 @@ runtime_implicit_validations = []
 
 vulkan1_1 = []
 vulkan1_2 = ["vulkan1_1"]
-
-log_release_max_level_off = ["log/release_max_level_off"]
-log_release_max_level_error = ["log/release_max_level_error"]
-log_release_max_level_warn = ["log/release_max_level_warn"]
-log_release_max_level_info = ["log/release_max_level_info"]
-log_release_max_level_debug = ["log/release_max_level_debug"]
-log_release_max_level_trace = ["log/release_max_level_trace"]
-
-log_max_level_off = ["log/max_level_off"]
-log_max_level_error = ["log/max_level_error"]
-log_max_level_warn = ["log/max_level_warn"]
-log_max_level_info = ["log/max_level_info"]
-log_max_level_debug = ["log/max_level_debug"]
-log_max_level_trace = ["log/max_level_trace"]
 
 [dependencies]
 # core
