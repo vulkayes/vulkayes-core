@@ -52,6 +52,28 @@ pub unsafe trait PushConstantsTrait: Sized + std::fmt::Debug {
 	}
 }
 
+/// Trait for values that can be used as specialization constants.
+/// 
+/// See `shader_specialization_constants` macro.
+pub unsafe trait SpecializationConstantsTrait: std::fmt::Debug {
+	fn specialization_map_entries() -> &'static [vk::SpecializationMapEntry];
+	fn data(&self) -> &[u8];
+
+	fn specialization_info<'a>(&'a self) -> vk::SpecializationInfoBuilder<'a> {
+		vk::SpecializationInfo::builder()
+			.map_entries(Self::specialization_map_entries())
+			.data(self.data())
+	}
+}
+unsafe impl SpecializationConstantsTrait for () {
+	fn specialization_map_entries() -> &'static [vk::SpecializationMapEntry] { &[] }
+	fn data(&self) -> &[u8] { &[] }
+
+	fn specialization_info<'a>(&'a self) -> vk::SpecializationInfoBuilder<'a> {
+		vk::SpecializationInfo::builder()
+	}
+}
+
 #[repr(transparent)]
 #[derive(Copy, Clone, Default, Debug)]
 pub struct AlignedMatrix2<T: Copy + Default> {
@@ -332,13 +354,38 @@ macro_rules! shader_util_macro {
 macro_rules! shader_specialization_constants {
 	(
 		pub struct $name: ident {
+			layout(
+				$(local_size_x_id = $id_local_x: literal)?
+				$(, local_size_y_id = $id_local_y: literal)?
+				$(, local_size_z_id = $id_local_z: literal)?
+				$(,)?
+			) in;
 			$(
-				layout(constant_id = $id: expr) const $ty: ident $var: ident;
+				layout(constant_id = $id: literal) const $ty: ident $var: ident;
+			)*
+		}
+	) => {
+		$crate::shader_specialization_constants! {
+			pub struct $name {
+				$( layout(constant_id = $id_local_x) const uint local_size_x; )?
+				$( layout(constant_id = $id_local_y) const uint local_size_y; )?
+				$( layout(constant_id = $id_local_z) const uint local_size_z; )?
+				$(
+					layout(constant_id = $id) const $ty $var;
+				)*
+			}
+		}
+	};
+	
+	(
+		pub struct $name: ident {
+			$(
+				layout(constant_id = $id: literal) const $ty: ident $var: ident;
 			)+
 		}
 	) => {
 		$crate::offsetable_struct! {
-			#[derive(Debug, Copy, Clone)]
+			#[derive(Copy, Clone)]
 			pub struct $name {
 				$(
 					pub $var: $crate::shader_util_macro!(resolve_shader_type $ty)
@@ -346,34 +393,43 @@ macro_rules! shader_specialization_constants {
 			} repr(C) as Offsets // hidden by hygiene
 		}
 		impl $name {
-				pub const fn specialization_map_entries() -> &'static [$crate::ash::vk::SpecializationMapEntry] {
-					const ENTRIES: &'static [$crate::ash::vk::SpecializationMapEntry] = &[
-						$(
-							$crate::ash::vk::SpecializationMapEntry {
-								constant_id: $id,
-								offset: $name::offsets().$var as u32,
-								size: std::mem::size_of::<$crate::shader_util_macro!(resolve_shader_type $ty)>()
-							}
-						),+
-					];
+			pub const SPECIALIZATION_MAP: &'static [$crate::ash::vk::SpecializationMapEntry] = &[
+				$(
+					$crate::ash::vk::SpecializationMapEntry {
+						constant_id: $id,
+						offset: $name::offsets().$var as u32,
+						size: std::mem::size_of::<$crate::shader_util_macro!(resolve_shader_type $ty)>()
+					}
+				),+
+			];
+		}
+		unsafe impl $crate::shader::params::SpecializationConstantsTrait for $name {
+			fn specialization_map_entries() -> &'static [$crate::ash::vk::SpecializationMapEntry] {
+				Self::SPECIALIZATION_MAP
+			}
 
-					ENTRIES
-				}
-
-				pub fn specialization_info(&self) -> $crate::ash::vk::SpecializationInfoBuilder {
-					$crate::ash::vk::SpecializationInfo::builder()
-						.map_entries(Self::specialization_map_entries())
-						.data(
-							unsafe {
-								std::slice::from_raw_parts(
-									self as *const _ as *const u8,
-									std::mem::size_of::<$name>()
-								)
-							}
-						)
+			fn data(&self) -> &[u8] {
+				unsafe {
+					std::slice::from_raw_parts(
+						self as *const _ as *const u8,
+						std::mem::size_of::<$name>()
+					)
 				}
 			}
-	}
+		}
+		impl std::fmt::Debug for $name {
+			fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+				f.debug_struct(stringify!($name))
+					$(
+						.field(
+							concat!("layout(constant_id = ", stringify!($id), ") ", stringify!($var)),
+							&self.$var
+						)
+					)+
+					.finish()
+			}
+		}
+	};
 }
 
 /// Generates input binding descriptions and input attribute descriptions for pipeline shaders.
@@ -564,7 +620,7 @@ mod test {
 		);
 		eprintln!(
 			"{:#?}",
-			VertexShaderSpecializationConstants::specialization_map_entries()
+			VertexShaderSpecializationConstants::SPECIALIZATION_MAP
 		);
 	}
 }

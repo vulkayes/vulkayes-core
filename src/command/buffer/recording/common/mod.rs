@@ -9,6 +9,7 @@ pub mod set;
 #[derive(Debug)]
 pub struct CommandBufferRecordingLockCommon<'a> {
 	pub(super) lock: VutexGuard<'a, vk::CommandBuffer>,
+	#[allow(dead_code)]
 	pub(super) pool_lock: VutexGuard<'a, vk::CommandPool>,
 	pub(super) buffer: &'a CommandBuffer
 }

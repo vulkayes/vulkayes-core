@@ -87,7 +87,7 @@ pub use crate::{
 		}
 	},
 	shader::{
-		params::{PushConstantsTrait, ShaderEntryPoint},
+		params::{PushConstantsTrait, SpecializationConstantsTrait, ShaderEntryPoint},
 		ShaderModule
 	},
 	surface::Surface,
