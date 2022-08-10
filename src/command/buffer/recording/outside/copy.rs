@@ -2,7 +2,7 @@ use std::num::{NonZeroU32, NonZeroU64};
 
 use ash::vk;
 
-use crate::prelude::{Buffer, HasHandle, Image, ImageLayoutDestination, Transparent};
+use crate::prelude::{Buffer, HasHandle, Image, ImageLayoutSource, ImageLayoutDestination, Transparent};
 
 vk_builder_wrap! {
 	pub struct ImageSubresourceLayers {
@@ -130,6 +130,33 @@ impl<'a> super::super::CommandBufferRecordingLockOutsideRenderPass<'a> {
 				source.handle(),
 				destination.handle(),
 				destination_layout.into(),
+				Transparent::transmute_slice_twice(regions.as_ref())
+			)
+		}
+	}
+
+	pub fn copy_image_to_buffer(
+		&self,
+		source: &Image,
+		source_layout: ImageLayoutSource,
+		destination: &Buffer,
+		regions: impl AsRef<[BufferImageCopy]>
+	) {
+		log_trace_common!(
+			"Copy image to buffer:",
+			crate::util::fmt::format_handle(self.handle()),
+			source,
+			source_layout,
+			destination,
+			regions.as_ref()
+		);
+
+		unsafe {
+			self.device().cmd_copy_image_to_buffer(
+				self.handle(),
+				source.handle(),
+				source_layout.into(),
+				destination.handle(),
 				Transparent::transmute_slice_twice(regions.as_ref())
 			)
 		}

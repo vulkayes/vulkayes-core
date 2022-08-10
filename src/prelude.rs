@@ -65,6 +65,7 @@ pub use crate::{
 			layout::{
 				ImageLayoutAttachment,
 				ImageLayoutClearColorImage,
+				ImageLayoutSource,
 				ImageLayoutDestination,
 				ImageLayoutFinal,
 				ImageLayoutInputAttachment,

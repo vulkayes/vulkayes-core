@@ -49,6 +49,8 @@ vk_enum_subset! {
 	} impl Into<vk::ImageLayout>
 }
 
+pub type ImageLayoutSource = vk::ImageLayout;
+
 vk_enum_subset! {
 	/// Enum for image layout that can be used as destination of image transfer operations.
 	pub enum ImageLayoutDestination {
