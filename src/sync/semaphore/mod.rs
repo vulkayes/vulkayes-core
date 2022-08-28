@@ -5,7 +5,7 @@ use std::{
 
 use ash::vk;
 
-use crate::{device::Device, memory::host::HostMemoryAllocator, prelude::Vrc, util::sync::Vutex};
+use crate::{device::Device, memory::host::HostMemoryAllocator, prelude::Vrc};
 
 pub mod error;
 
@@ -32,7 +32,7 @@ impl Deref for BinarySemaphore {
 
 pub struct Semaphore {
 	device: Vrc<Device>,
-	semaphore: Vutex<vk::Semaphore>,
+	semaphore: vk::Semaphore,
 
 	host_memory_allocator: HostMemoryAllocator
 }
@@ -74,7 +74,7 @@ impl Semaphore {
 
 		Ok(Vrc::new(Semaphore {
 			device,
-			semaphore: Vutex::new(semaphore),
+			semaphore: semaphore,
 			host_memory_allocator
 		}))
 	}
@@ -84,18 +84,17 @@ impl Semaphore {
 	}
 }
 impl_common_handle_traits! {
-	impl HasSynchronizedHandle<vk::Semaphore>, Deref, Borrow, Eq, Hash, Ord for Semaphore {
+	impl HasHandle<vk::Semaphore>, Deref, Borrow, Eq, Hash, Ord for Semaphore {
 		target = { semaphore }
 	}
 }
 impl Drop for Semaphore {
 	fn drop(&mut self) {
-		let lock = self.semaphore.lock().expect("vutex poisoned");
-		log_trace_common!("Dropping", self, lock);
+		log_trace_common!("Dropping", self, self.semaphore);
 
 		unsafe {
 			self.device.destroy_semaphore(
-				*lock,
+				self.semaphore,
 				self.host_memory_allocator.as_ref()
 			)
 		}

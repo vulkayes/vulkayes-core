@@ -22,7 +22,7 @@ use crate::{
 	},
 	surface::Surface,
 	sync::{fence::Fence, semaphore::BinarySemaphore},
-	util::sync::{AtomicVool, Vutex}
+	util::{sync::AtomicVool, handle::HasHandle}
 };
 
 pub mod error;
@@ -89,7 +89,7 @@ pub struct Swapchain {
 
 	device: Vrc<Device>,
 	loader: ash::extensions::khr::Swapchain,
-	swapchain: Vutex<vk::SwapchainKHR>,
+	swapchain: vk::SwapchainKHR,
 	retired: AtomicVool,
 
 	host_memory_allocator: HostMemoryAllocator
@@ -134,7 +134,6 @@ impl Swapchain {
 		create_info: SwapchainCreateInfo<impl AsRef<[u32]>>,
 		host_memory_allocator: HostMemoryAllocator
 	) -> Result<SwapchainData, error::SwapchainError> {
-		let lock = self.swapchain.lock().expect("vutex poisoned");
 		// Safe because of the vutex above
 		if self.retired.load(std::sync::atomic::Ordering::Relaxed) {
 			return Err(error::SwapchainError::SwapchainRetired)
@@ -150,7 +149,7 @@ impl Swapchain {
 			.composite_alpha(create_info.composite_alpha)
 			.present_mode(create_info.present_mode)
 			.clipped(create_info.clipped)
-			.old_swapchain(*lock)
+			.old_swapchain(self.swapchain)
 			.image_sharing_mode(create_info.sharing_mode.sharing_mode())
 			.queue_family_indices(create_info.sharing_mode.indices());
 
@@ -197,7 +196,7 @@ impl Swapchain {
 			surface,
 			device: device.clone(),
 			loader,
-			swapchain: Vutex::new(swapchain),
+			swapchain,
 			retired: AtomicVool::new(false),
 
 			host_memory_allocator
@@ -240,17 +239,15 @@ impl Swapchain {
 	///
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkQueuePresentKHR.html>
 	pub unsafe fn present(&self, queue: &Queue, info: impl Deref<Target = vk::PresentInfoKHR>) -> Result<QueuePresentSuccess, QueuePresentError> {
-		let queue_lock = queue.lock().expect("queue Vutex poisoned");
-
 		log_trace_common!(
 			"Presenting on queue:",
 			self,
-			queue_lock,
+			queue,
 			info.deref()
 		);
 
 		self.loader
-			.queue_present(*queue_lock, info.deref())
+			.queue_present(queue.handle(), info.deref())
 			.map(Into::into)
 			.map_err(Into::into)
 	}
@@ -270,23 +267,12 @@ impl Swapchain {
 			}
 		}
 
-		let lock = self.swapchain.lock().expect("vutex poisoned");
-		let semaphore_lock = synchronization
-			.semaphore()
-			.map(|f| f.lock().expect("vutex poisoned"));
-		let fence_lock = synchronization
-			.fence()
-			.map(|f| f.lock().expect("vutex poisoned"));
-
 		let result = unsafe {
 			self.loader.acquire_next_image(
-				*lock,
+				self.swapchain,
 				timeout.into(),
-				semaphore_lock
-					.as_deref()
-					.copied()
-					.unwrap_or(vk::Semaphore::null()),
-				fence_lock.as_deref().copied().unwrap_or(vk::Fence::null())
+				synchronization.semaphore().map(|s| s.handle()).unwrap_or(vk::Semaphore::null()),
+				synchronization.fence().map(|f| f.handle()).unwrap_or(vk::Fence::null())
 			)
 		};
 
@@ -316,18 +302,17 @@ impl Swapchain {
 	}
 }
 impl_common_handle_traits! {
-	impl HasSynchronizedHandle<vk::SwapchainKHR>, Deref, Borrow, Eq, Hash, Ord for Swapchain {
+	impl HasHandle<vk::SwapchainKHR>, Deref, Borrow, Eq, Hash, Ord for Swapchain {
 		target = { swapchain }
 	}
 }
 impl Drop for Swapchain {
 	fn drop(&mut self) {
-		let lock = self.swapchain.lock().expect("vutex poisoned");
-		log_trace_common!("Dropping", self, lock);
+		log_trace_common!("Dropping", self, self.swapchain);
 
 		unsafe {
 			self.loader.destroy_swapchain(
-				*lock,
+				self.swapchain,
 				self.host_memory_allocator.as_ref()
 			);
 		}

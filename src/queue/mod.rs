@@ -5,7 +5,7 @@ use std::{
 
 use ash::vk::{self, DeviceQueueCreateFlags, DeviceQueueInfo2};
 
-use crate::prelude::{CommandBuffer, Device, Fence, Semaphore, SwapchainImage, Vrc, Vutex};
+use crate::{prelude::{CommandBuffer, Device, Fence, Semaphore, SwapchainImage, Vrc}, util::handle::HasHandle};
 
 pub mod error;
 pub mod sharing_mode;
@@ -13,7 +13,7 @@ pub mod sharing_mode;
 /// An internally synchronized device queue.
 pub struct Queue {
 	device: Vrc<Device>,
-	queue: Vutex<ash::vk::Queue>,
+	queue: ash::vk::Queue,
 
 	// TODO: Creation flags?
 	queue_family_index: u32,
@@ -59,14 +59,10 @@ impl Queue {
 			}
 		}
 
-		let wait_for_locks = wait_for.map(|s| s.lock().expect("vutex poisoned"));
-		let wait_for_raw = wait_for_locks.map(|l| *l);
-
+		let wait_for_raw = wait_for.map(|s| s.handle());
 		let buffers_locks = buffers.map(|s| s.lock().expect("vutex poisoned"));
 		let buffers_raw = buffers_locks.map(|l| *l);
-
-		let signal_after_locks = signal_after.map(|s| s.lock().expect("vutex poisoned"));
-		let signal_after_raw = signal_after_locks.map(|l| *l);
+		let signal_after_raw = signal_after.map(|s| s.handle());
 
 		let submit_info = vk::SubmitInfo::builder()
 			.wait_semaphores(&wait_for_raw)
@@ -100,12 +96,8 @@ impl Queue {
 
 		let any_swapchain = images[0].swapchain();
 
-		let wait_for_locks = wait_for.map(|s| s.lock().expect("vutex poisoned"));
-		let wait_for_raw = wait_for_locks.map(|l| *l);
-
-		let swapchains_locks = images.map(|i| i.swapchain().lock().expect("vutex poisoned"));
-		let swapchains_raw = swapchains_locks.map(|l| *l);
-
+		let wait_for_raw = wait_for.map(|s| s.handle());
+		let swapchains_raw = images.map(|i| i.swapchain().handle());
 		let indices = images.map(|i| i.index());
 
 		let mut results = [vk::Result::SUCCESS; IMAGES];
@@ -143,12 +135,8 @@ impl Queue {
 
 		let any_swapchain = images[0].swapchain();
 
-		let wait_for_locks = wait_for.map(|s| s.lock().expect("vutex poisoned"));
-		let wait_for_raw = wait_for_locks.map(|l| *l);
-
-		let swapchains_locks = images.map(|i| i.swapchain().lock().expect("vutex poisoned"));
-		let swapchains_raw = swapchains_locks.map(|l| *l);
-
+		let wait_for_raw = wait_for.map(|s| s.handle());
+		let swapchains_raw = images.map(|i| i.swapchain().handle());
 		let indices = images.map(|i| i.index());
 
 		let present_info = vk::PresentInfoKHR::builder()
@@ -191,7 +179,7 @@ impl Queue {
 			mem.assume_init()
 		};
 
-		Vrc::new(Queue { device, queue: Vutex::new(queue), queue_family_index, queue_index })
+		Vrc::new(Queue { device, queue, queue_family_index, queue_index })
 	}
 
 	/// Submits to given queue.
@@ -199,42 +187,29 @@ impl Queue {
 	/// ### Safety
 	///
 	/// See <https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkQueueSubmit.html>
-	///
-	/// ### Panic
-	///
-	/// This function will panic if the `Vutex` is poisoned.
 	pub unsafe fn submit_raw(&self, infos: impl AsRef<[vk::SubmitInfo]>, fence: Option<&Fence>) -> Result<(), error::QueueSubmitError> {
-		let lock = self.queue.lock().expect("vutex poisoned");
-
 		log_trace_common!(
 			"Submitting on queue:",
 			self,
-			crate::util::fmt::format_handle(*lock),
+			crate::util::fmt::format_handle(self.queue),
 			infos.as_ref(),
 			fence
 		);
 
-		if let Some(fence) = fence {
-			let fence_lock = fence.lock().expect("vutex poisoned");
-			self.device
-				.queue_submit(*lock, infos.as_ref(), *fence_lock)
-				.map_err(Into::into)
-		} else {
-			self.device
-				.queue_submit(*lock, infos.as_ref(), vk::Fence::null())
-				.map_err(Into::into)
-		}
+		self.device
+			.queue_submit(
+				self.queue,
+				infos.as_ref(),
+				fence.map(|f| f.handle()).unwrap_or(vk::Fence::null())
+			)
+		?;
+
+		Ok(())
 	}
 
 	/// Waits until all outstanding operations on the queue are completed.
-	///
-	/// ### Panic
-	///
-	/// This function will panic if the `Vutex` is poisoned.
 	pub fn wait(&self) -> Result<(), error::QueueWaitError> {
-		let lock = self.queue.lock().expect("vutex poisoned");
-
-		unsafe { self.device.queue_wait_idle(*lock).map_err(Into::into) }
+		unsafe { self.device.queue_wait_idle(self.queue).map_err(Into::into) }
 	}
 
 	pub const fn device(&self) -> &Vrc<Device> {
@@ -250,7 +225,7 @@ impl Queue {
 	}
 }
 impl_common_handle_traits! {
-	impl HasSynchronizedHandle<vk::Queue>, Deref, Borrow, Eq, Hash, Ord for Queue {
+	impl HasHandle<vk::Queue>, Deref, Borrow, Eq, Hash, Ord for Queue {
 		target = { queue }
 	}
 }

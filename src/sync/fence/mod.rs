@@ -5,13 +5,13 @@ use std::{
 
 use ash::vk;
 
-use crate::{device::Device, memory::host::HostMemoryAllocator, prelude::Vrc, util::sync::Vutex};
+use crate::{device::Device, memory::host::HostMemoryAllocator, prelude::Vrc};
 
 pub mod error;
 
 pub struct Fence {
 	device: Vrc<Device>,
-	fence: Vutex<vk::Fence>,
+	fence: vk::Fence,
 
 	host_memory_allocator: HostMemoryAllocator
 }
@@ -51,40 +51,32 @@ impl Fence {
 
 		Ok(Vrc::new(Fence {
 			device,
-			fence: Vutex::new(fence),
+			fence: fence,
 			host_memory_allocator
 		}))
 	}
 
 	/// Returns status of the fence where `true` means signalled and `false` means unsignaled.
-	///
-	/// ### Panic
-	///
-	/// This function will panic if the `Vutex` is poisoned.
 	pub fn status(&self) -> Result<bool, error::FenceStatusError> {
-		let lock = self.fence.lock().expect("vutex poisoned");
-
-		unsafe { self.device.get_fence_status(*lock).map_err(Into::into) }
+		unsafe { self.device.get_fence_status(self.fence).map_err(Into::into) }
 	}
 
 	pub fn reset(&self) -> Result<(), error::FenceError> {
-		let lock = self.fence.lock().expect("vutex poisoned");
-
-		unsafe { self.device.reset_fences(&[*lock]).map_err(Into::into) }
+		unsafe { self.device.reset_fences(&[self.fence]).map_err(Into::into) }
 	}
 
 	/// Waits for `self` with an optional timeout.
 	///
 	/// Returns `false` if the timeout expires before the fence is signaled.
 	pub fn wait(&self, timeout: crate::util::WaitTimeout) -> Result<bool, error::FenceError> {
-		let lock = self.fence.lock().expect("vutex poisoned");
-
+		let fences = [self.fence];
+		
 		// Unfortunately this is an ash API design bug that it doesn't return bool from wait_for_fences
 		let result = unsafe {
 			self.device.fp_v1_0().wait_for_fences(
 				self.device.handle(),
 				1u32,
-				[*lock].as_ptr(),
+				fences.as_ptr(),
 				false as u32,
 				timeout.into()
 			)
@@ -104,18 +96,17 @@ impl Fence {
 	}
 }
 impl_common_handle_traits! {
-	impl HasSynchronizedHandle<vk::Fence>, Deref, Borrow, Eq, Hash, Ord for Fence {
+	impl HasHandle<vk::Fence>, Deref, Borrow, Eq, Hash, Ord for Fence {
 		target = { fence }
 	}
 }
 impl Drop for Fence {
 	fn drop(&mut self) {
-		let lock = self.fence.lock().expect("vutex poisoned");
-		log_trace_common!("Dropping", self, lock);
+		log_trace_common!("Dropping", self, self.fence);
 
 		unsafe {
 			self.device.destroy_fence(
-				*lock,
+				self.fence,
 				self.host_memory_allocator.as_ref()
 			)
 		}

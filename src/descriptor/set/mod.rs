@@ -1,9 +1,9 @@
-use std::{fmt::Debug, ops::Deref};
+use std::fmt::Debug;
 
 use ash::vk;
 
 use super::error::DescriptorSetError;
-use crate::prelude::{DescriptorPool, DescriptorSetLayout, HasHandle, Transparent, Vrc, Vutex, Device};
+use crate::prelude::{DescriptorPool, DescriptorSetLayout, HasHandle, Transparent, Vrc, Device};
 
 pub mod update;
 
@@ -12,7 +12,7 @@ pub struct DescriptorSet {
 	pool: Vrc<DescriptorPool>,
 	// need to keep layout alive for writes to be valid
 	layout: Vrc<DescriptorSetLayout>,
-	descriptor_set: Vutex<vk::DescriptorSet>
+	descriptor_set: vk::DescriptorSet
 }
 impl DescriptorSet {
 	pub fn new(pool: Vrc<DescriptorPool>, layout: Vrc<DescriptorSetLayout>) -> Result<Vrc<Self>, DescriptorSetError> {
@@ -35,7 +35,7 @@ impl DescriptorSet {
 			crate::util::fmt::format_handle(descriptor_set)
 		);
 
-		Self { pool, layout, descriptor_set: Vutex::new(descriptor_set) }
+		Self { pool, layout, descriptor_set }
 	}
 
 	pub fn update<'a>(
@@ -60,7 +60,7 @@ impl DescriptorSet {
 	}
 }
 impl_common_handle_traits! {
-	impl HasSynchronizedHandle<vk::DescriptorSet>, Deref, Borrow, Eq, Hash, Ord for DescriptorSet {
+	impl HasHandle<vk::DescriptorSet>, Deref, Borrow, Eq, Hash, Ord for DescriptorSet {
 		target = { descriptor_set }
 	}
 }
